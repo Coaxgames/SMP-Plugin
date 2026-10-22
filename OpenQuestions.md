@@ -1,4 +1,4 @@
-# Open Questions (with quotes from IdeasOnPaper.md)
+# Open Questions (with quotes from Chat)
 
 ## 1. Does "COV" mean Curse of Vanishing?
 Quotes using it:
