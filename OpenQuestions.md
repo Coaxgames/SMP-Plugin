@@ -1,4 +1,4 @@
-# Open Questions (with quotes from IdeasOnPaper.md)
+# Open Questions (with quotes from Chat)
 
 ## 1. Does "COV" mean Curse of Vanishing?
 Quotes using it:
@@ -22,7 +22,7 @@ The notes never say what happens on death. "Cannot be lost" implies the item sur
 
 Stated outright as undecided.
 
-## 4. Kuiper Ball recipe layout
+## 4. Kuiper Ball recipe layout (Has been answered Locally already, i just missed it)
 - "Recipe: snowball all corners: powdered snow in middle middle left and right,breeze charge middle top and middle bottom: recipe will give you 10 each can stac to 64"
 
 Only the grid layout is unclear (the yield of 10, stacking to 64, is settled):
