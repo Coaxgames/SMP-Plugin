@@ -16,14 +16,14 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 | Item | Base | Key Ability / Rules | Recipe (from notes) |
 |---|---|---|---|
 | Nebula Spear | Netherite spear | Damage + cooldown, unbreakable; every 5 lunges → thrust (riptide-like velocity), max 4 hearts vs prot 4 diamond; comes with Lunge, no other enchants; attribute swapping ineffective; 45s CD | Corners: player head; top: trident; middle: netherite spear; bottom: redstone block; sides: gold blocks |
-| Star Mace | Mace | 2nd mace on server; Wind Burst 3, Density 2; 30s CD after 2 hits; damage cap 7 hearts; no enchant/disenchant | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
+| Star Mace | Mace | 1st mace on server; Wind Burst 3, Density 2; after 2 hits 30s CD; damage cap 7 hearts; no enchant/disenchant | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
 | Collapsing Star Mace | Mace | Mace perks + sparks if hit > 5 hearts; each spark = tiny explosion (cap 1 heart); dmg cap 7 hearts; Breach 3 + Wind Burst 2 | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
 | Astral Sword | Netherite sword | Sharpness 6, Looting 3, Fire Aspect; no enchanting | Corners: heads; top+middle: netherite ingot; bottom: breeze rod; sides: diamond blocks |
-| Void Sword | Netherite sword | Unbreakable, Sharp 4, Looting 3, Breach 1; 4-hit combo → Slowness 1 + Wither 1 for 10s | Corners: heads; middle: netherite sword; edges: wither roses |
-| Celestial Bow | Bow | Fully charged → splash damage + lingering cloud (Wither or Instant Damage 1) | Left-middle end rod, bottom blaze rod, top breeze rod, left corners heads, right column Galaxy String x3, middle end crystal |
+| Void Sword | Netherite sword | Unbreakable, Sharp 4, Looting 3; 4-hit combo → Slowness 1 + Wither 1 for 10s | Corners: heads; middle: netherite sword; edges: wither roses |
+| Celestial Bow | Bow | Fully charged → splash damage + lingering cloud (Wither or Instant Damage or Posion 1) | Left-middle end rod, bottom blaze rod, top breeze rod, left corners heads, right column Galaxy String x3, middle end crystal |
 | Wormhole Trident | Trident | Every 5 riptides → rift launches user 20 blocks forward; rift lasts 50s; enemies passing take 2 hearts + Wither 1 for 20s | Top/bottom: trident; corners: heads; middle: netherite ingot; left/right: wither skeleton skulls |
 | Cosmic Crown | Netherite helmet | Max-enchant stats, unbreakable; thorns every 2 hits taken; boosted absorption (gapple 4 hearts, notch apple 10 hearts) | Middle: netherite helmet; sides: heads; corners: notch apples; top: axolotl bucket; bottom: silence armor trim |
-| Singularity Boots | Netherite boots | No fall damage; fall ≥ 50 blocks → creeper-sized explosion on impact | Middle: netherite boots; corners: TBD item; edges: breeze rods; top/bottom: heads |
+| Singularity Boots | Netherite boots | No fall damage; fall ≥block 50 → creeper-sized explosion on impact | Middle: netherite boots; corners: TBD item; edges: breeze rods; top/bottom: heads |
 | Solstice Chestplate | Netherite chestplate | At noon: Speed 3, Strength 2, Resistance 1 for 5 min | Middle: netherite chestplate; top/bottom: end crystal; left/right: nether stars; corners: heads |
 | Lunar Leggings | Netherite leggings | At midnight: Speed 1, Strength 1, Resistance 2 for 5 min; unbreakable | Middle: netherite leggings; edges: respawn anchors; corners: heads |
 | Nova Shield | Shield | Withstands 2 axe hits before disabled; on death grants totem effect, 10 min CD | Middle: totem; top/bottom: netherite blocks; sides+top corners: pale oak; bottom corners: heads |
@@ -39,11 +39,11 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 ### 2.3 Global rules
 
 1. Legendary items are crafted **once** server-wide (exceptions: Galaxy String, Kuiper Ball, Mass Orb).
-2. Unbreakable, cannot be destroyed or lost (lava, fire, cactus, void, explosions, despawn).
-3. No Curse of Vanishing (COV); cannot be enchanted/disenchanted (anvil, grindstone, table blocked).
+2. Unbreakable, cannot be destroyed or lost (lava, fire, cactus, void, explosions, despawn,ect.).
+3. No Curse of Vanishing (COV); cannot be enchanted/disenchanted (anvil, grindstone, enchant table blocked).
 4. Cannot be stored in ender chests or any container (chests, barrels, shulkers, hoppers, droppers, item frames, armor stands, bundles, etc.).
 5. A player may hold only **one** legendary item at a time (exceptions above).
-6. Crafting triggers a **15 min ritual**; every 3 min reveals one coordinate (X or Z) of the crafter.
+6. Crafting triggers a **15 min ritual**; every 3 min reveals one coordinate (X, Y, Z) of the crafter.
 7. Despawned/abandoned item teleports to world spawn (0,0) as a block form; right-click to reclaim as item.
 
 ## 3. Technical Design
