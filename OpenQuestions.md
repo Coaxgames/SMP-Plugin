@@ -25,7 +25,7 @@ Stated outright as undecided.
 ## 4. Kuiper Ball recipe layout
 - "Recipe: snowball all corners: powdered snow in middle middle left and right,breeze charge middle top and middle bottom: recipe will give you 10 each can stac to 64"
 
-The recipe is complete (10 per craft, stacks to 64), but the layout is ambiguous:
+Only the grid layout is unclear (the yield of 10, stacking to 64, is settled):
 - "snowball all corners: powdered snow in middle" could mean snowballs in the corners and powdered snow in the middle, or the other way round.
 - "middle left and right" has no item named.
 
