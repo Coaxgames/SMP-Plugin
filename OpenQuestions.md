@@ -22,7 +22,7 @@ The notes never say what happens on death. "Cannot be lost" implies the item sur
 
 Stated outright as undecided.
 
-## 4. Kuiper Ball recipe layout
+## 4. Kuiper Ball recipe layout (Has been answered Locally already, i just missed it)
 - "Recipe: snowball all corners: powdered snow in middle middle left and right,breeze charge middle top and middle bottom: recipe will give you 10 each can stac to 64"
 
 The recipe is complete (10 per craft, stacks to 64), but the layout is ambiguous:
