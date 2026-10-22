@@ -4,8 +4,8 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 
 ## 1. Target Platform
 
-- **Server:** Paper 1.21.11+ (Bukkit/Spigot API is a subset; Paper is strongly recommended for `ItemStack` data components, Adventure text, async schedulers, and better events). Plugin declares `api-version: '1.21.11'`.
-- **Java:** 21. **Build:** Gradle (Kotlin DSL) + `paper-api` (`compileOnly`), `paperweight-userdev` only if NMS is needed (avoid).
+- **Server:** Paper 26.3. Plugin declares `api-version: '26.3'`.
+- **Java:** 25+ (Paper 26.3 runtime requirement). **Build:** Gradle + `paper-api` (`compileOnly`); use `paperweight-userdev` only if NMS is needed (avoid).
 - **Config/data:** `config.yml` (tunables), `data.yml`/SQLite (item ownership, ritual state, cooldowns, crafted flags).
 - **Packaging:** single shaded-free jar, `paper-plugin.yml` or `plugin.yml`.
 
@@ -90,7 +90,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 ## 4. Roadmap
 
 ### Phase 0 – Project Setup
-- [ ] Gradle project, Paper API 1.21.11, `plugin.yml`, main class, config loader
+- [ ] Gradle project, Paper API 26.3, `plugin.yml`, main class, config loader
 - [ ] Debug/test server setup and run script
 - [ ] Decide package layout (`item`, `ability`, `listener`, `ritual`, `storage`, `util`)
 
