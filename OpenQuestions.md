@@ -8,6 +8,7 @@ Quotes using it:
 
 The notes never spell it out. Curse of Vanishing is my guess, because it sits next to "no durability" and "cannot be destroyed or lost". Please confirm.
 
+
 ## 2. What happens to a legendary item when its holder dies?
 Related quotes:
 - "it cannot be enchanted disenchanted or broken or lost any way"
