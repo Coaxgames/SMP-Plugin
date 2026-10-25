@@ -103,7 +103,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 
 ### Phase 1 – Core Framework
 - [x] `LegendaryItem` registry + PDC identification (`galaxy:item_id` and per-item `galaxy:uuid`)
-- [x] Item builder (unbreakable, hidden flags, lore, model, Adventure-component names, configurable two-color gradient names)
+- [x] Programmatic item builder API (unbreakable, hidden flags, lore, model, Adventure-component names, configurable two-color gradient names); the in-game admin builder/editor is tracked in Phase 6
 - [x] `CooldownManager`, config-driven values (`cooldowns.default-seconds` and per-item overrides; remaining cooldowns persist)
 - [x] Persistent data store primitives for craft-once flags, ownership, and last known locations (crafting and player lifecycle integration follows in Phases 2–3)
 - [x] Admin command surface: `/galaxy give|reset|list|locate` (`reset` clears cooldowns only; craft-once history is permanent; item operations become populated as definitions are registered)
@@ -126,7 +126,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [x] **Owner local test:** On the owner's Paper 26.3 server, verify Galaxy SMP loads with Head Drop 3.1.0+ and refuses missing/older versions
 - [x] **Owner local test:** Configure Head Drop `drop.placement: item`; if testing block placement instead, enable `head.persist_lore_on_placement`; verify generated item heads carry the `headdrop:dropped` byte marker and normal player skulls are rejected by matching recipes
 - [ ] **Owner local test:** Verify Phase 4 shaped recipes' exact ingredients and output identity, including Head Drop marker acceptance and rejection of ordinary player heads; verify repeatable outputs and stack size
-- [ ] **Deferred until Phase 5 adds mace recipes:** Verify the vanilla mace recipe is absent and each custom mace can be crafted once independently
+- [ ] **Owner local test:** Verify the vanilla mace recipe is absent and Star Mace/Collapsing Star Mace each have an independent one-ever server-wide craft record
 - [ ] **Owner local test:** Verify normal crafting, shift-click, repeated attempts, Crafter automation, restart persistence, and administrative grants against craft-once records
 - [ ] **Owner local test:** Exercise container protections: chest/barrel/shulker/ender chest, hopper/dropper, bundle, crafting grid, item frame, armor stand, shift-click, drag, number-key/offhand swap, and container open/break/explosion paths
 - [ ] **Owner local test:** Verify per-item carrying caps at default, custom values, and zero/unlimited through crafting, pickup, inventory movement, join/restart recovery, reclaim, and `/galaxy give`; verify distinct item types have independent caps
@@ -134,7 +134,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [ ] **Owner local test:** Verify death drops stay at the death location; lava, fire, cactus, void, explosions, and despawn create a protected reclaim barrel at world X/Z (0,0), and claiming it restores the same item UUID
 - [ ] Re-run the relevant recipe, protection, lifecycle, and persistence tests whenever later phases add item definitions or change event handling
 
-**Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting. Phase 4 recipe/output checks are now available under Phase 4; custom mace recipe checks remain deferred until Phase 5. No test server is requested or expected.
+**Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting. Phase 4 recipe/output checks are available under Phase 4; Star Mace and Collapsing Star Mace recipe checks are available under Phase 5. No test server is requested or expected.
 
 ### Phase 3 – Ritual System
 - [x] Start the configured 15-minute ritual after a successful craft-once legendary craft, consume ingredients only after the ritual record is saved, and keep the item nonexistent until completion; repeatable exceptions remain immediate
@@ -168,8 +168,13 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 **Phase 4 status:** Item definitions, recipes, abilities, configurable placeholders and repository tests are implemented. Live Paper gameplay checks remain unchecked for owner verification. Mass Orb's formula/cap and Lunar catch-up behavior remain explicitly open for balance/owner decisions.
 
 ### Phase 5 – Complex Abilities
-- [ ] Star Mace: implement its recipe as one custom mace type, Wind Burst III/Density II, seven-heart damage cap, and 30-second cooldown after two hits; retain its independent one-ever craft allowance
-- [ ] Collapsing Star Mace: implement its recipe as a separate custom mace type, Breach III/Wind Burst II, seven-heart damage cap, and a spark/tiny-explosion response when a hit exceeds five hearts (each spark capped at one heart); retain its independent one-ever craft allowance
+- [x] Star Mace: register its shaped recipe as one custom mace type, Wind Burst III/Density II, seven-heart damage ceiling, and 30-second cooldown after two successful hits; retain its independent one-ever craft allowance
+- [x] Collapsing Star Mace: register its shaped recipe as a separate custom mace type, Breach III/Wind Burst II, seven-heart damage ceiling, and spark/tiny-explosion response when pre-cap final damage exceeds five hearts, with each spark capped at one heart; retain its independent one-ever craft allowance
+- [x] Add configurable provisional spark-count/radius/damage settings; preserve the open questions about final explosion radius and whether a hit may create multiple sparks
+- [x] Add automated coverage for mace damage capping/threshold and confirm the existing datastore test covers independent permanent craft records
+- [ ] **Owner local test:** Verify each mace recipe, Head Drop head-marker requirement, output enchantments/unbreakable status, and separate permanent craft-once records; confirm the vanilla mace recipe is unavailable
+- [ ] **Owner local test:** Verify each mace's two-hit 30-second cooldown and seven-heart damage ceiling against unarmored and Protection IV diamond targets
+- [ ] **Owner local test:** Verify Collapsing Star Mace sparks trigger only above five hearts and each spark deals no more than one heart; review the provisional spark count and radius settings
 - [ ] Nebula Spear: implement its recipe, native Lunge-only enchantment, 45-second cooldown, every-fifth-successful-lunge thrust, and four-heart maximum damage against Protection IV diamond; verify successful-lunge counting and resistance to attribute swapping on the existing Paper setup (Galaxy SMP + Head Drop only; no additional plugin)
 - [ ] Wormhole Trident: implement its recipe and count every fifth Riptide to create a rift; launch its creator 20 blocks forward on passage, keep the rift for 50 seconds after creator passage, and apply two hearts plus Wither I for 20 seconds to opponents who pass through
 - [ ] Celestial Bow: implement its recipe; on a fully charged shot, apply splash damage and create a lingering Wither-or-Poison cloud on impact using clearly labeled configurable placeholders until the effect and values are decided
@@ -178,8 +183,12 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [ ] Nova Shield: implement its recipe; disable it after two axe hits for the shield-disable timer and restore it automatically; grant the totem effect on death with a 10-minute cooldown
 - [ ] Verify damage caps against Protection IV diamond and test cooldowns, effect durations, combo reset windows, persistence, and exploit resistance for every ability
 
+**Phase 5 status:** The first two checklist items—Star Mace and Collapsing Star Mace—are implemented and repository-tested. Their Paper gameplay checks remain unchecked for owner review. No later Phase 5 items have been started.
+
 ### Phase 6 – Polish & Balance
+- [ ] Add an in-game item/recipe builder and editor for registered items, restricted to server operators/admins only; support editing recipe ingredients/shapes, item display name and gradient, lore, stats, and configurable ability values, with validated persistent saves and a safe way to review/apply changes without granting non-operators access
 - [ ] Add distinct particles, sounds, and player-facing lore for every legendary and repeatable item; use each item's configured gradient display name in death and interaction messages
+- [ ] Show a clean, readable hover tooltip for every registered item that presents all relevant item stats and abilities (including enchantments, damage/effect values, cooldowns, triggers, and special rules); keep the tooltip accurate to the item's configured behavior
 - [ ] Add `/galaxy recipes` covering every registered recipe; verify readable item models/textures without requiring a resource pack (`item_model` remains optional)
 - [ ] Move balance-sensitive values into validated config, including cooldowns, damage/effect caps, combo windows, durations, ritual settings, and projectile/rift behavior
 - [ ] Run balance tests against Protection IV diamond and verify all exact damage caps, armor interactions, and effect durations
@@ -195,7 +204,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 3. **Mass Orb fall-damage formula — [REQUIRED: Phase 4].** The required behavior is height-scaled, anvil-like fall damage, with Feather Falling XV. The remaining implementation detail is the exact damage formula (how height maps to damage) and any maximum cap; keep these as explicit placeholders rather than revisiting the requested behavior.
 4. **Singularity Boots recipe — [REQUIRED: Phase 5].** The corner ingredient is still undecided. Keep the recipe visibly incomplete until supplied; do not choose an ingredient.
 5. **Celestial Bow effect — [REQUIRED: Phase 5].** The final cloud effect (Wither or Poison), duration, and strength are undecided. Use explicit configurable placeholders until chosen; do not treat either option as final.
-6. **Collapsing Star Mace sparks — [REQUIRED: Phase 5].** Keep the specified trigger (a hit exceeding five hearts) and one-heart maximum damage per spark. The explosion size/radius and whether one hit may produce multiple sparks remain undecided.
+6. **Collapsing Star Mace sparks — [REQUIRED: Phase 5].** Keep the specified trigger (a hit exceeding five hearts) and one-heart maximum damage per spark. The implemented count (one per qualifying hit) and radius are provisional config placeholders only; the final explosion size/radius and whether one hit may produce multiple sparks remain undecided.
 7. **Wormhole Trident rift — [REQUIRED: Phase 5].** Keep the specified five-Riptide trigger, 20-block creator launch, opponent damage/effect, and 50-second post-creator-passage lifetime. Interaction radius remains undecided; confirm whether the 50 seconds begin at creator passage or creation before implementation.
 8. **Nebula Spear lunge implementation — [REQUIRED: Phase 5].** The source notes specify a Netherite spear with the native Lunge enchantment, a thrust after five lunges, Riptide II-like velocity, a four-heart maximum against Protection IV diamond, no other enchants, and a 45-second cooldown. The owner has confirmed this native behavior already works on the existing server, which uses Galaxy SMP and Head Drop only. Do not add or assume another plugin, redesign the ability, or ask the owner to reconfirm these requirements. Implement fifth-successful-lunge counting against the target Paper API and verify it without relying on guessed movement/velocity.
 9. **Cosmic Crown thorns — [REQUIRED: Phase 5].** Keep the specified trigger of every two hits taken. Damage amount and target/retaliation rule remain undecided; use a clearly labeled placeholder until agreed.

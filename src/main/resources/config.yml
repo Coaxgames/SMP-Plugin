@@ -2,6 +2,8 @@ example-message: "Hello, world!"
 
 cooldowns:
   default-seconds: 0
+  star_mace: 30
+  collapsing_star_mace: 30
 
 phase-four:
   combo-window-seconds: 3
@@ -27,6 +29,16 @@ phase-four:
   lunar-leggings:
     # False means wait for the next daily trigger after a missed offline trigger.
     catch-up-if-offline: false
+
+phase-five:
+  # Damage limits use health points converted from hearts.
+  mace-damage-cap-hearts: 7.0
+  collapsing-star-mace:
+    # Provisional spark count and radius; owner balance decisions remain open.
+    spark-count-per-hit: 1
+    spark-radius: 1.5
+    # One heart per spark maximum; configurable below that limit.
+    spark-damage: 2.0
 
 rituals:
   duration-seconds: 900

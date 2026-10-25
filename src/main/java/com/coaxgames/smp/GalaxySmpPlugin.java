@@ -4,7 +4,9 @@ import com.coaxgames.smp.ability.PhaseFourDailyEffectManager;
 import com.coaxgames.smp.command.GalaxyCommand;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.item.PhaseFourItems;
+import com.coaxgames.smp.item.PhaseFiveMaces;
 import com.coaxgames.smp.listener.LegendaryCraftListener;
+import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
 import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
@@ -32,9 +34,11 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         validateItemNameGradients();
         validateRitualSettings();
         validatePhaseFourSettings();
+        validatePhaseFiveMaceSettings();
         LegendaryItemRegistry.disableVanillaMaceRecipe();
         legendaryItems = new LegendaryItemRegistry(this);
         PhaseFourItems.register(this, legendaryItems);
+        PhaseFiveMaces.register(this, legendaryItems);
         try {
             dataStore = new LegendaryDataStore(getDataFolder().toPath());
         } catch (IOException | org.bukkit.configuration.InvalidConfigurationException exception) {
@@ -61,6 +65,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
+        getServer().getPluginManager().registerEvents(new PhaseFiveMaceAbilityListener(this), this);
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
@@ -188,6 +193,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                     && (!ConfigNumbers.isWholeNumber(getConfig(), path) || getConfig().getLong(path) <= 0)) {
                 throw new IllegalStateException(path + " must be a positive integer.");
             }
+
         }
         validateMaximumLong("phase-four.combo-window-seconds", Long.MAX_VALUE / 1_000L);
         validateMaximumLong("phase-four.astral-sword.attack-speed-seconds", Long.MAX_VALUE / 20L);
@@ -215,6 +221,46 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 }
             }
         }
+    }
+
+    private void validatePhaseFiveMaceSettings() {
+        String capPath = "phase-five.mace-damage-cap-hearts";
+        double cap = configuredNumber(capPath, 7.0);
+        if (cap <= 0.0) {
+            throw new IllegalStateException(capPath + " must be a positive number.");
+        }
+        for (String itemId : java.util.List.of("star_mace", "collapsing_star_mace")) {
+            String cooldownPath = "cooldowns." + itemId;
+            if (getConfig().contains(cooldownPath)
+                    && (!ConfigNumbers.isWholeNumber(getConfig(), cooldownPath)
+                    || getConfig().getLong(cooldownPath) <= 0)) {
+                throw new IllegalStateException(cooldownPath + " must be a positive whole number of seconds.");
+            }
+        }
+        String countPath = "phase-five.collapsing-star-mace.spark-count-per-hit";
+        int sparkCount = getConfig().getInt(countPath, 1);
+        if (sparkCount < 1 || sparkCount > 20
+                || !ConfigNumbers.isWholeNumber(getConfig(), countPath)) {
+            throw new IllegalStateException(countPath + " must be a whole number from 1 to 20.");
+        }
+        String radiusPath = "phase-five.collapsing-star-mace.spark-radius";
+        double radius = configuredNumber(radiusPath, 1.5);
+        if (radius < 0.0) {
+            throw new IllegalStateException(radiusPath + " must be a non-negative number.");
+        }
+        String damagePath = "phase-five.collapsing-star-mace.spark-damage";
+        double damage = configuredNumber(damagePath, 2.0);
+        if (damage <= 0.0 || damage > 2.0) {
+            throw new IllegalStateException(damagePath + " must be greater than zero and at most two health points.");
+        }
+    }
+
+    private double configuredNumber(String path, double fallback) {
+        if (!getConfig().contains(path)) {
+            return fallback;
+        }
+        return ConfigNumbers.finiteNumber(getConfig(), path)
+                .orElseThrow(() -> new IllegalStateException(path + " must be a finite number."));
     }
 
     private void validateMaximumLong(String path, long maximum) {

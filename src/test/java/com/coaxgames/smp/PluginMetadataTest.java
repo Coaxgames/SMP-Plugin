@@ -116,6 +116,12 @@ class PluginMetadataTest {
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.kuiper_ball"));
             assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
             assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
+            assertEquals(30L, config.getLong("cooldowns.star_mace"));
+            assertEquals(30L, config.getLong("cooldowns.collapsing_star_mace"));
+            assertEquals(7.0, config.getDouble("phase-five.mace-damage-cap-hearts"));
+            assertEquals(1, config.getInt("phase-five.collapsing-star-mace.spark-count-per-hit"));
+            assertEquals(1.5, config.getDouble("phase-five.collapsing-star-mace.spark-radius"));
+            assertEquals(2.0, config.getDouble("phase-five.collapsing-star-mace.spark-damage"));
             assertEquals(300L, config.getLong("phase-four.daily-effect-seconds"));
             assertEquals(15, config.getInt("phase-four.mass-orb.feather-falling-level"));
             assertFalse(config.getBoolean("phase-four.lunar-leggings.catch-up-if-offline"));
