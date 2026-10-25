@@ -13,6 +13,9 @@ repositories {
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:26.3-pre-2.build.0-alpha'
+    testImplementation 'io.papermc.paper:paper-api:26.3-pre-2.build.0-alpha'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 java {
@@ -23,4 +26,8 @@ java {
 tasks.withType(JavaCompile).configureEach {
     options.release = 25
     options.encoding = 'UTF-8'
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

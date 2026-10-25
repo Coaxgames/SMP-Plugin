@@ -2,4 +2,15 @@ name: GalaxySMP
 version: '0.1.1'
 main: com.coaxgames.smp.GalaxySmpPlugin
 api-version: '26.3'
-description: Basic SMP plugin example
+description: Galaxy SMP legendary items, recipes, and protection rules.
+depend:
+  - HeadDrop
+commands:
+  galaxy:
+    description: Manage Galaxy SMP legendary items.
+    usage: /galaxy <give|reset|list|locate>
+    permission: galaxy.admin
+permissions:
+  galaxy.admin:
+    description: Allows administering Galaxy SMP legendary items.
+    default: op

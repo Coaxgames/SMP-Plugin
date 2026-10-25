@@ -1,1 +1,74 @@
 example-message: "Hello, world!"
+
+cooldowns:
+  default-seconds: 0
+
+legendary-items:
+  # Edit each item's text and two hex colors to customize its name gradient.
+  display-names:
+    nebula_spear:
+      text: "Nebula Spear"
+      start-color: "#3A1C71"
+      end-color: "#D76D77"
+    star_mace:
+      text: "Star Mace"
+      start-color: "#F7971E"
+      end-color: "#FFD200"
+    collapsing_star_mace:
+      text: "Collapsing Star Mace"
+      start-color: "#CB2D3E"
+      end-color: "#EF473A"
+    astral_sword:
+      text: "Astral Sword"
+      start-color: "#4568DC"
+      end-color: "#B06AB3"
+    void_sword:
+      text: "Void Sword"
+      start-color: "#232526"
+      end-color: "#6D214F"
+    celestial_bow:
+      text: "Celestial Bow"
+      start-color: "#00B4DB"
+      end-color: "#0083B0"
+    wormhole_trident:
+      text: "Wormhole Trident"
+      start-color: "#654EA3"
+      end-color: "#EAafc8"
+    cosmic_crown:
+      text: "Cosmic Crown"
+      start-color: "#FBD786"
+      end-color: "#F7797D"
+    singularity_boots:
+      text: "Singularity Boots"
+      start-color: "#373B44"
+      end-color: "#4286F4"
+    solstice_chestplate:
+      text: "Solstice Chestplate"
+      start-color: "#F2994A"
+      end-color: "#F2C94C"
+    lunar_leggings:
+      text: "Lunar Leggings"
+      start-color: "#4568DC"
+      end-color: "#C4E0E5"
+    nova_shield:
+      text: "Nova Shield"
+      start-color: "#11998E"
+      end-color: "#38EF7D"
+    galaxy_string:
+      text: "Galaxy String"
+      start-color: "#8E2DE2"
+      end-color: "#4A00E0"
+    kuiper_ball:
+      text: "Kuiper Ball"
+      start-color: "#2980B9"
+      end-color: "#6DD5FA"
+    mass_orb:
+      text: "Mass Orb"
+      start-color: "#434343"
+      end-color: "#A8A8A8"
+  max-per-player:
+    default: 1
+    # Zero disables the per-item limit.
+    items:
+      # Example: allow two Astral Swords per player.
+      # astral_sword: 2

@@ -1,0 +1,68 @@
+# Project Change Log
+
+Human-readable record of work from Phase 0 setup through the current Phase 2 implementation. This complements the checkboxes in [ROADMAP.md](./ROADMAP.md); it does not replace them.
+
+## Phase 0 – Project Setup
+
+- Confirmed the project targets Paper 26.3, Java 25+, Gradle, and a shaded-free plugin jar.
+- Kept the existing Gradle Java project, `paper-api` as a `compileOnly` dependency, `plugin.yml`, and `GalaxySmpPlugin` main class.
+- Added a default `config.yml`, called `saveDefaultConfig()` on plugin startup, and made the example craft message configurable while retaining “Hello, world!” as its default.
+- Confirmed the package root `com.coaxgames.smp` and the intended `item`, `ability`, `listener`, `ritual`, `storage`, and `util` package layout.
+- Marked all Phase 0 checklist entries complete. The owner confirmed an existing test server and run script are used; a separate test-server launcher was briefly drafted, then removed rather than retained.
+
+## Automated Builds and Releases
+
+- Added Gradle wrapper files using Gradle 9.6.1 so CI can build without relying on a runner's preinstalled Gradle.
+- Added release-version tooling and tests. It compares the Gradle version, `plugin.yml` version, and semantic-version tags; it can honor an already-bumped source version and keeps the Gradle and plugin metadata versions in sync.
+- Added GitHub Actions workflow definitions for branch build signals, contributor PR preparation/builds, Java 25/Gradle builds, and versioned releases with the built jar and GitHub-generated release notes. Added documentation for the needed repository permissions and branch rules.
+- Investigated the actual `Testbuild?` push to `Stable` after the owner reported that no Gradle build/release occurred. That Actions run contained only the `signal` job and did not build Java code. The diagnosis was that the build workflow only watched `main`, while trusted release automation depended on workflows being present on the default branch.
+- A change to build all branches and release from the branch pushed was drafted during that investigation, but it is **not present in the current `main` workflow files**. The current checked-in `main-build.yml` only watches `main`, and the release workflow also has a `main`-only gate. Therefore, an owner push to `Stable` is not currently verified to build or publish a release. The release automation still needs a dedicated correction and a real Actions run before it can be considered verified.
+- Repository branch protection and Actions permissions were documented but not configured by these code changes. The required settings are described in `.github/RELEASE-AUTOMATION.md`.
+
+## Merging `Stable` into `main`
+
+- Resolved PR #1 (`Stable` → `main`) in an isolated Git worktree so the user's staged `.gradle/file-system.probe` in the primary checkout was left untouched.
+- Kept `Stable`'s Gradle 9.6.1 wrapper jar, wrapper properties, and Windows launcher while merging the changes from `main`.
+- Preserved the upstream Astral Sword roadmap update.
+- Built the merged branch successfully, committed the resolution as `f9a550c`, and pushed it to `Stable`. PR #1 was subsequently merged into `main`.
+
+## Phase 1 – Core Framework
+
+- Added `LegendaryItem` definitions and a registry that registers per-item listeners and exposes recipe, cooldown, and maximum-craft hooks.
+- Added PDC identity using `galaxy:item_id` plus a per-stack `galaxy:uuid`; item creation stamps this identity and identification looks the ID up in the registry.
+- Added `LegendaryItemBuilder` support for unbreakable items, hidden item flags, Adventure display names/lore, custom model data, and optional `item_model`.
+- Added a config-driven `CooldownManager`. Cooldown expiry times are stored persistently, so active cooldowns survive restarts. Configuration supports `cooldowns.default-seconds` and item-specific overrides.
+- Added `LegendaryDataStore` using the plugin data folder's `data.yml`. It persists crafted counts, item ownership, last-known locations, and player/item cooldown expiry. Writes use a temporary file and an atomic move where supported. Invalid persisted numeric values are reported rather than silently treated as valid defaults.
+- Added the `/galaxy give`, `/galaxy reset`, `/galaxy list`, and `/galaxy locate` admin command surface, permission metadata, and tab completion. A grant is recorded before the item is delivered and consumes the item's craft quota. Reset clears cooldowns only; it does not reset the permanent crafted-ever record.
+- Added JUnit tests for craft-once persistence across reloads, grant ownership/location tracking, cooldown persistence and clearing, item UUID ownership, and malformed craft-count data.
+- Added shared `HitCounter` and `DamageCap` helpers after the Sections 2–3.5 audit. `HitCounter` tracks per-player sequences with a configurable timeout, supports deterministic timestamps for tests, and can clear an individual counter or sweep expired counters. `DamageCap` validates inputs and bounds a computed final-damage value; event code still needs to verify the actual Paper final damage after armor/protection modifiers.
+- Marked the Phase 1 framework checklist complete after verification. The store/commands are explicitly described as framework primitives: recipe enforcement and live owner/location lifecycle wiring remain in Phase 2, while item definitions and abilities remain in Phases 4–5.
+
+## Phase 2 – Rules Engine
+
+- Added keyed recipe registration to `LegendaryItemRegistry`; prepared crafting results receive the plugin's item ID and unique UUID. The registry enforces craft quotas by item ID, so the Star Mace and Collapsing Star Mace will each have an independent permanent limit when their definitions arrive in Phase 5.
+- Verified the Head Drop 3.1.0 jar's Bukkit plugin name (`HeadDrop`) and configuration keys. Added it as a hard `plugin.yml` dependency and a startup check rejecting versions below 3.1.0. Added `HeadDropHead` validation for the `headdrop:dropped` BYTE value `1`; ordinary player heads are rejected in recipes.
+- Removed the vanilla mace recipe at startup. Added `PrepareItemCraftEvent`, `CraftItemEvent`, and Paper `CrafterCraftEvent` enforcement with synchronized persistence of the craft count and item UUID/location. Automated crafts can record an unknown owner until a player picks the item up.
+- Added protection listeners covering item durability, enchanting-table/anvil/grindstone/Mending routes, container and ender-chest storage, inventory click/drag/shift-click/hotbar swaps, hoppers/droppers, bundles, shulker boxes, item frames, armor stands, and non-player pickups. Player join recovery moves protected legendary items found in ender chests into reclaim storage.
+- Added per-item policy hooks for craft-once quota and legendary-only storage/loss protection. Recipe registration rejects shaped recipes that use fixed player-head ItemStacks; dynamic heads are accepted by their Head Drop marker at craft time. Repeated item records do not increment craft-once counts. Ender chests remain forbidden storage for protected legendary items.
+- Added a reclaimable barrel at world X/Z `(0,0)` for legendary item hazards/despawn; its marker survives as block-state PDC, the barrel is protected from breaking/explosions, and claiming restores the tracked item UUID. Death drops remain at death location and ownership/location are tracked across craft, pickup, drop, death, quit, recovery, and admin grant.
+- Added Phase 2.1 test planning in the roadmap for real Paper/Head Drop integration, crafting modes, protection paths, lifecycle recovery, and restart persistence. Specific item recipes are intentionally declared in their feature phases (4–5); no item definitions are registered yet.
+- `gradlew clean test build` passed with 19 tests at the end of Phase 2.1 repository-side validation (including marker value, Head Drop version gating, Paper/plugin metadata, configured gradients, independent mace craft records, repeatable craft-count behavior, and automation record persistence). Live server and future-recipe checks remain pending as recorded in the Phase 2.1 checklist.
+- Phase 4 must verify that Galaxy String and Kuiper Ball stack normally despite custom identity metadata; implement their output amounts/stacking without per-stack UUID tracking if needed. Assign `craftOnce=false` and `protectedFromLossAndStorage=false` to Galaxy String/Kuiper Ball and Mass Orb. Their per-item carrying cap is configurable, defaulting to one with zero meaning unlimited.
+- On 2026-10-25, removed the fixed one-legendary-per-player holding cap at the owner's request, then replaced it with configurable per-item caps after clarification. Each registered item type has an independent limit; the default is one copy per player, an item-specific override is available, and zero means unlimited. Crafting, pickup, inventory movement, join recovery, administrative grants, and reclaiming enforce the configured cap. Server-wide one-ever-per-item craft quotas and protected-container/loss rules remain.
+- Added `legendary-items.max-per-player.default` and `legendary-items.max-per-player.items.<item_id>` in `config.yml`. Invalid negative or non-integer configured limits fail plugin startup with an explicit error; older configurations without these keys use the default of one.
+- Added configurable per-item display text and two-color hex gradients under `legendary-items.display-names` for all 12 legendary items and three repeatable items listed in Sections 2.1–2.2. The registry applies the configured Adventure name component when creating registered legendary items. `LegendaryItemBuilder` now offers `gradientName(text, startColor, endColor)` and a reusable gradient-component factory for later item definitions and chat messages. Palette values are starter defaults and can be edited in `config.yml`; invalid colors or empty names are reported during startup. Added unit tests for gradient text, endpoint colors, and invalid inputs.
+- Recorded the Phase 3 reveal requirements: global announcement, each item's own gradient-colored name, and coordinates formatted as `(X, Y, Z)`. The exact audience and remaining message format stay open. The existing `LegendaryItemBuilder.displayName(Component)` already supports Adventure components, including gradients; the clearest source of truth is a per-item name/gradient entry in config, converted to a reusable display-name component by the builder/item definition. Recipes should remain focused on ingredients and outputs, not presentation. Reuse that same component in death and interaction messages in Phase 6.
+- Completed the repository-verifiable portion of Phase 2.1: extracted the Head Drop minimum-version comparison into a pure utility and tested accepted/rejected versions; expanded plugin descriptor checks to require Paper 26.3; verified every planned item ID has a valid configured name gradient and that the per-item cap default is one. The owner will run live Paper/Head Drop, crafting, inventory, protection, and restart tests locally; no test-server files or access are requested. Recipe/output tests are deferred until item definitions are added in Phases 4–5. These checks remain explicitly unchecked in `ROADMAP.md` until owner verification.
+
+## Verification and Current Limits
+
+- `gradlew clean test build` passed with 19 tests in the latest verification; earlier phase-specific counts above are historical checkpoints.
+- Added a mandatory progress-tracking rule to the roadmap: verified checklist work is checked off and `Changed.md` is updated in the same work session without waiting for a reminder.
+- No concrete legendary item definitions are registered yet. The framework, storage, and command infrastructure are present, but item abilities, recipes, and crafting are future roadmap work.
+- The repository's configured Paper target remains Paper API 26.3 with Java release 25. The build output is a single unshaded plugin jar.
+- The Singularity Boots recipe ingredient remains an open roadmap question; other unresolved design questions in the roadmap remain open until confirmed.
+- Expanded the Phase 2–6 checklists to map recipe registration/head marker handling, global protections, rituals and restart state, each named item's recipe/ability, cross-cutting anti-exploit work, and verification to implementation phases. Added open questions where the design does not yet specify exact behavior rather than inventing values.
+- Confirmed `/galaxy reset <item>` remains cooldown-only; it does not erase craft-once history.
+- Updated the roadmap from the owner's 2026-10-25 answers: confirmed Lunar Leggings activate at tick 13,500 of 24,000 and that an active effect resumes after restart; narrowed the remaining catch-up question to a trigger missed while offline. Added a temporary 1.65x Astral Sword attack-speed multiplier, configurable placeholders for the undecided Celestial Bow effect, and clearer notes distinguishing Mass Orb's specified behavior from its remaining damage-formula/cap details.
+- Tagged unresolved decisions with the phase that requires them and updated the affected phase checklists. Clarified that Nebula Spear verification means inspecting the existing server's successful-lunge callback, not redesigning the ability. Corrected the mace rule: the server may craft one of each mace type supported by this plugin (one Star Mace and one Collapsing Star Mace), with independent permanent server-wide records. The “first mace on the server” question remains open for the server owner in case they want a broader existing-mace check or a different rule.
