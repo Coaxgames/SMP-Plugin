@@ -46,11 +46,13 @@ public final class PhaseFourItems {
         registry.register(legendary(plugin, "solstice_chestplate", Material.NETHERITE_CHESTPLATE,
                 new String[] {"HEH", "SCS", "HEH"}, new Ingredient[] {new Ingredient(
                         'H', Material.PLAYER_HEAD), new Ingredient('E', Material.END_CRYSTAL),
-                new Ingredient('S', Material.NETHER_STAR), new Ingredient('C', Material.NETHERITE_CHESTPLATE)}));
+                new Ingredient('S', Material.NETHER_STAR), new Ingredient('C', Material.NETHERITE_CHESTPLATE)},
+                new EnchantmentLevel(Enchantment.PROTECTION, 4)));
         registry.register(legendary(plugin, "lunar_leggings", Material.NETHERITE_LEGGINGS,
                 new String[] {"HRH", "RLR", "HRH"}, new Ingredient[] {new Ingredient(
                         'H', Material.PLAYER_HEAD), new Ingredient('R', Material.RESPAWN_ANCHOR),
-                new Ingredient('L', Material.NETHERITE_LEGGINGS)}));
+                new Ingredient('L', Material.NETHERITE_LEGGINGS)},
+                new EnchantmentLevel(Enchantment.PROTECTION, 4)));
     }
 
     private static PhaseFourItemDefinition repeatable(

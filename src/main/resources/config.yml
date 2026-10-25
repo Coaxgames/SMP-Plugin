@@ -42,8 +42,6 @@ phase-five:
     # One heart per spark maximum; configurable below that limit.
     spark-damage: 2.0
   nebula-spear:
-    # Lunge level is a placeholder until the owner sets the final balance value.
-    lunge-level: 1
     # Provisional impulse and hitbox around the successful fifth lunge.
     thrust-velocity: 2.5
     thrust-radius: 2.5

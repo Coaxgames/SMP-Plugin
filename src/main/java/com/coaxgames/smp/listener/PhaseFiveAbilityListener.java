@@ -100,16 +100,34 @@ public final class PhaseFiveAbilityListener implements Listener {
         applyNebulaThrust(player);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onRiptide(PlayerRiptideEvent event) {
         if (!isItem(event.getItem(), WORMHOLE_TRIDENT)) {
+            return;
+        }
+        if (event.isCancelled()) {
+            plugin.getLogger().warning("Wormhole Trident Riptide was cancelled for "
+                    + event.getPlayer().getUniqueId() + "; no rift was created.");
             return;
         }
         UUID playerId = event.getPlayer().getUniqueId();
         int count = riptideCounts.merge(playerId, 1, Integer::sum);
         if (count >= 5) {
             riptideCounts.remove(playerId);
-            rifts.add(new Rift(playerId, event.getPlayer().getLocation()));
+            Location location = event.getPlayer().getLocation();
+            double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
+            rifts.add(new Rift(playerId, location));
+            for (int point = 0; point < 24; point++) {
+                double angle = 2.0 * Math.PI * point / 24.0;
+                Location marker = location.clone().add(
+                        Math.cos(angle) * radius,
+                        0.25 + (point % 3) * 0.2,
+                        Math.sin(angle) * radius);
+                location.getWorld().spawnParticle(Particle.PORTAL, marker, 4, 0.1, 0.2, 0.1, 0.02);
+            }
+            event.getPlayer().playSound(location, Sound.BLOCK_END_PORTAL_SPAWN, 0.7F, 1.2F);
+            plugin.getLogger().info("Wormhole Trident rift created for " + playerId + " at "
+                    + location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() + ".");
         }
     }
 

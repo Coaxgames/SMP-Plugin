@@ -27,8 +27,7 @@ public final class PhaseFiveItems {
                         new Ingredient('S', Material.NETHERITE_SPEAR),
                         new Ingredient('R', Material.REDSTONE_BLOCK)
                 },
-                new EnchantmentLevel(Enchantment.LUNGE,
-                        plugin.getConfig().getInt("phase-five.nebula-spear.lunge-level", 1))));
+                new EnchantmentLevel(Enchantment.LUNGE, 3)));
         registry.register(item(plugin, "wormhole_trident", Material.TRIDENT,
                 new String[] {"HTH", "WNW", "HTH"},
                 new Ingredient[] {
@@ -47,7 +46,11 @@ public final class PhaseFiveItems {
                         new Ingredient('E', Material.END_ROD),
                         new Ingredient('C', Material.END_CRYSTAL),
                         new Ingredient('L', Material.BLAZE_ROD)
-                }));
+                },
+                new EnchantmentLevel(Enchantment.POWER, 5),
+                new EnchantmentLevel(Enchantment.FLAME, 1),
+                new EnchantmentLevel(Enchantment.PUNCH, 2),
+                new EnchantmentLevel(Enchantment.INFINITY, 1)));
         registry.register(item(plugin, "cosmic_crown", Material.NETHERITE_HELMET,
                 new String[] {"NAN", "HCH", "NSN"},
                 new Ingredient[] {
@@ -70,7 +73,8 @@ public final class PhaseFiveItems {
                         new Ingredient('H', Material.PLAYER_HEAD),
                         new Ingredient('B', Material.BREEZE_ROD),
                         new Ingredient('0', Material.NETHERITE_BOOTS)
-                }));
+                },
+                new EnchantmentLevel(Enchantment.PROTECTION, 4)));
         registry.register(item(plugin, "nova_shield", Material.SHIELD,
                 new String[] {"PNP", "PTP", "HNH"},
                 new Ingredient[] {

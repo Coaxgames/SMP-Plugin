@@ -260,10 +260,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         validatePositiveSetting("phase-five.nebula-spear.thrust-velocity", 2.5);
         validatePositiveSetting("phase-five.nebula-spear.thrust-radius", 2.5);
-        long lungeLevel = configuredWholeNumber("phase-five.nebula-spear.lunge-level", 1L);
-        if (lungeLevel < 1 || lungeLevel > 3) {
-            throw new IllegalStateException("phase-five.nebula-spear.lunge-level must be from 1 to 3.");
-        }
         double spearDamage = configuredNumber("phase-five.nebula-spear.thrust-damage-hearts", 4.0);
         if (spearDamage <= 0.0 || spearDamage > 4.0) {
             throw new IllegalStateException(

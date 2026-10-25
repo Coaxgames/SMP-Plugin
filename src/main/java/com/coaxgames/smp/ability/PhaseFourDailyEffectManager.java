@@ -76,6 +76,8 @@ public final class PhaseFourDailyEffectManager {
             if (plugin.getDataStore().startDailyEffect(
                     player.getUniqueId(), itemId, player.getWorld().getUID(), worldDay, expiresAt)) {
                 applyEffects(player, itemId, durationMillis);
+                plugin.getLogger().info("Granted " + itemId + " daily effects to "
+                        + player.getUniqueId() + " for " + durationMillis / 1_000L + " seconds.");
             }
         } catch (IOException exception) {
             plugin.getLogger().log(Level.SEVERE,
@@ -113,6 +115,14 @@ public final class PhaseFourDailyEffectManager {
     }
 
     private void apply(Player player, PotionEffectType type, int durationTicks, int amplifier) {
-        player.addPotionEffect(new PotionEffect(type, durationTicks, amplifier, true, true, true));
+        PotionEffect current = player.getPotionEffect(type);
+        if (current != null && current.getAmplifier() > amplifier) {
+            return;
+        }
+        PotionEffect effect = new PotionEffect(type, durationTicks, amplifier, true, true, true);
+        if (!player.addPotionEffect(effect, true)) {
+            plugin.getLogger().warning("Could not apply " + type.getKey() + " for daily equipment effect to "
+                    + player.getUniqueId() + ".");
+        }
     }
 }

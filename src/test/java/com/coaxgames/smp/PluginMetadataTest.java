@@ -35,7 +35,6 @@ class PluginMetadataTest {
                 "phase-four.mass-orb.passive-refresh-ticks",
                 "phase-five.collapsing-star-mace.spark-count-per-hit",
                 "phase-five.nova-shield.disable-seconds",
-                "phase-five.nebula-spear.lunge-level",
                 "cooldowns.star_mace",
                 "cooldowns.collapsing_star_mace",
                 "cooldowns.nebula_spear",
