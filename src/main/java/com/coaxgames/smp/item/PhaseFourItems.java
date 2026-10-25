@@ -18,15 +18,15 @@ public final class PhaseFourItems {
         Objects.requireNonNull(registry, "registry");
 
         registry.register(repeatable(plugin, "galaxy_string", Material.STRING, 1,
-                null, new String[] {"B", "R", "E"}, new Ingredient(
+                null, true, new String[] {"B", "R", "E"}, new Ingredient(
                         'B', Material.BLAZE_ROD), new Ingredient('R', Material.BREEZE_ROD),
                 new Ingredient('E', Material.END_ROD)));
         registry.register(repeatable(plugin, "kuiper_ball", Material.SNOWBALL, 10,
-                64, new String[] {"SBS", "PPP", "SBS"}, new Ingredient(
+                64, false, new String[] {"SBS", "PPP", "SBS"}, new Ingredient(
                         'S', Material.SNOWBALL), new Ingredient('B', Material.WIND_CHARGE),
                 new Ingredient('P', Material.POWDER_SNOW_BUCKET)));
         registry.register(repeatable(plugin, "mass_orb", Material.HEAVY_CORE, 1,
-                null, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
+                null, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
                         'G', Material.GOLD_BLOCK), new Ingredient('B', Material.BLUE_ICE),
                 new Ingredient('N', Material.NETHERITE_BLOCK), new Ingredient('H', Material.HEAVY_CORE)));
 
@@ -59,6 +59,7 @@ public final class PhaseFourItems {
             Material material,
             int amount,
             Integer maxStackSize,
+            boolean hasPerPlayerCarryLimit,
             String[] shape,
             Ingredient... ingredients
     ) {
@@ -68,7 +69,7 @@ public final class PhaseFourItems {
             meta.setMaxStackSize(maxStackSize);
             item.setItemMeta(meta);
         }
-        return definition(plugin, id, item, shape, false, false, ingredients);
+        return definition(plugin, id, item, shape, false, false, hasPerPlayerCarryLimit, ingredients);
     }
 
     private static PhaseFourItemDefinition legendary(
@@ -83,7 +84,7 @@ public final class PhaseFourItems {
         for (EnchantmentLevel enchantment : enchantments) {
             item.addUnsafeEnchantment(enchantment.enchantment(), enchantment.level());
         }
-        return definition(plugin, id, item, shape, true, true, ingredients);
+        return definition(plugin, id, item, shape, true, true, true, ingredients);
     }
 
     private static PhaseFourItemDefinition definition(
@@ -93,6 +94,7 @@ public final class PhaseFourItems {
             String[] shape,
             boolean craftOnce,
             boolean protectedItem,
+            boolean hasPerPlayerCarryLimit,
             Ingredient... ingredients
     ) {
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(plugin, id), item);
@@ -104,7 +106,8 @@ public final class PhaseFourItems {
                 recipe.setIngredient(ingredient.symbol(), ingredient.material());
             }
         }
-        return new PhaseFourItemDefinition(id, item, recipe, craftOnce, protectedItem);
+        return new PhaseFourItemDefinition(
+                id, item, recipe, craftOnce, protectedItem, hasPerPlayerCarryLimit);
     }
 
     private record Ingredient(char symbol, Material material) {
@@ -119,19 +122,22 @@ public final class PhaseFourItems {
         private final ShapedRecipe recipe;
         private final boolean craftOnce;
         private final boolean protectedItem;
+        private final boolean hasPerPlayerCarryLimit;
 
         private PhaseFourItemDefinition(
                 String id,
                 ItemStack baseItem,
                 ShapedRecipe recipe,
                 boolean craftOnce,
-                boolean protectedItem
+                boolean protectedItem,
+                boolean hasPerPlayerCarryLimit
         ) {
             this.id = id;
             this.baseItem = baseItem.clone();
             this.recipe = recipe;
             this.craftOnce = craftOnce;
             this.protectedItem = protectedItem;
+            this.hasPerPlayerCarryLimit = hasPerPlayerCarryLimit;
         }
 
         @Override
@@ -173,6 +179,11 @@ public final class PhaseFourItems {
         @Override
         public boolean trackUniqueInstance() {
             return craftOnce;
+        }
+
+        @Override
+        public boolean hasPerPlayerCarryLimit() {
+            return hasPerPlayerCarryLimit;
         }
     }
 }

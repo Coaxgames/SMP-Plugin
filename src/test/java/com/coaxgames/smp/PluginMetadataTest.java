@@ -32,7 +32,14 @@ class PluginMetadataTest {
                 "phase-four.daily-effect-seconds",
                 "phase-four.kuiper-ball.freeze-seconds",
                 "phase-four.mass-orb.feather-falling-level",
-                "phase-four.mass-orb.passive-refresh-ticks")) {
+                "phase-four.mass-orb.passive-refresh-ticks",
+                "phase-five.collapsing-star-mace.spark-count-per-hit",
+                "phase-five.nova-shield.disable-seconds",
+                "phase-five.nebula-spear.lunge-level",
+                "cooldowns.star_mace",
+                "cooldowns.collapsing_star_mace",
+                "cooldowns.nebula_spear",
+                "cooldowns.nova_shield")) {
             assertTrue(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, path), path);
         }
         assertFalse(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, "phase-four.kuiper-ball.burst-radius"));
@@ -114,6 +121,7 @@ class PluginMetadataTest {
                     new InputStreamReader(configStream, StandardCharsets.UTF_8));
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.galaxy_string"));
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.kuiper_ball"));
+            assertEquals(0, config.getInt("legendary-items.max-per-player.items.mass_orb"));
             assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
             assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
             assertEquals(30L, config.getLong("cooldowns.star_mace"));
@@ -122,6 +130,12 @@ class PluginMetadataTest {
             assertEquals(1, config.getInt("phase-five.collapsing-star-mace.spark-count-per-hit"));
             assertEquals(1.5, config.getDouble("phase-five.collapsing-star-mace.spark-radius"));
             assertEquals(2.0, config.getDouble("phase-five.collapsing-star-mace.spark-damage"));
+            assertEquals("WITHER", config.getString("phase-five.celestial-bow.cloud-effect"));
+            assertEquals(4.0, config.getDouble("phase-five.celestial-bow.splash-radius"));
+            assertEquals(20.0, config.getDouble("phase-five.wormhole-trident.creator-launch-distance"));
+            assertEquals(2.0, config.getDouble("phase-five.wormhole-trident.interaction-radius"));
+            assertEquals(50.0, config.getDouble("phase-five.singularity-boots.explosion-fall-distance"));
+            assertEquals(5L, config.getLong("phase-five.nova-shield.disable-seconds"));
             assertEquals(300L, config.getLong("phase-four.daily-effect-seconds"));
             assertEquals(15, config.getInt("phase-four.mass-orb.feather-falling-level"));
             assertFalse(config.getBoolean("phase-four.lunar-leggings.catch-up-if-offline"));

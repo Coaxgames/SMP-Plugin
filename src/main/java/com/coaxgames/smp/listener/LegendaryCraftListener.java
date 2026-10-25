@@ -221,8 +221,20 @@ public final class LegendaryCraftListener implements Listener {
     }
 
     private boolean craftBlocked(LegendaryItem item, ItemStack[] matrix) {
-        return item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()
-                || !HeadDropHead.allRecipeHeadsAreMarked(matrix);
+        if (item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()
+                || !HeadDropHead.allRecipeHeadsAreMarked(matrix)) {
+            return true;
+        }
+        return item.id().equals("celestial_bow")
+                && (matrix.length < 9 || !isItem(matrix[2], "galaxy_string")
+                || !isItem(matrix[5], "galaxy_string")
+                || !isItem(matrix[8], "galaxy_string"));
+    }
+
+    private boolean isItem(ItemStack stack, String itemId) {
+        return plugin.getLegendaryItems().identify(stack)
+                .map(definition -> definition.id().equals(itemId))
+                .orElse(false);
     }
 
     private void consumeIngredients(ItemStack[] contents, Inventory inventory, Set<Integer> ingredientSlots) {

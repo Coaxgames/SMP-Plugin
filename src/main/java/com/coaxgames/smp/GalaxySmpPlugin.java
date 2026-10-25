@@ -4,8 +4,10 @@ import com.coaxgames.smp.ability.PhaseFourDailyEffectManager;
 import com.coaxgames.smp.command.GalaxyCommand;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.item.PhaseFourItems;
+import com.coaxgames.smp.item.PhaseFiveItems;
 import com.coaxgames.smp.item.PhaseFiveMaces;
 import com.coaxgames.smp.listener.LegendaryCraftListener;
+import com.coaxgames.smp.listener.PhaseFiveAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
 import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
@@ -34,11 +36,12 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         validateItemNameGradients();
         validateRitualSettings();
         validatePhaseFourSettings();
-        validatePhaseFiveMaceSettings();
+        validatePhaseFiveSettings();
         LegendaryItemRegistry.disableVanillaMaceRecipe();
         legendaryItems = new LegendaryItemRegistry(this);
         PhaseFourItems.register(this, legendaryItems);
         PhaseFiveMaces.register(this, legendaryItems);
+        PhaseFiveItems.register(this, legendaryItems);
         try {
             dataStore = new LegendaryDataStore(getDataFolder().toPath());
         } catch (IOException | org.bukkit.configuration.InvalidConfigurationException exception) {
@@ -66,6 +69,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFiveMaceAbilityListener(this), this);
+        getServer().getPluginManager().registerEvents(new PhaseFiveAbilityListener(this), this);
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
@@ -223,13 +227,14 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
     }
 
-    private void validatePhaseFiveMaceSettings() {
+    private void validatePhaseFiveSettings() {
         String capPath = "phase-five.mace-damage-cap-hearts";
         double cap = configuredNumber(capPath, 7.0);
         if (cap <= 0.0) {
             throw new IllegalStateException(capPath + " must be a positive number.");
         }
-        for (String itemId : java.util.List.of("star_mace", "collapsing_star_mace")) {
+        for (String itemId : java.util.List.of(
+                "star_mace", "collapsing_star_mace", "nebula_spear", "nova_shield")) {
             String cooldownPath = "cooldowns." + itemId;
             if (getConfig().contains(cooldownPath)
                     && (!ConfigNumbers.isWholeNumber(getConfig(), cooldownPath)
@@ -253,6 +258,60 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         if (damage <= 0.0 || damage > 2.0) {
             throw new IllegalStateException(damagePath + " must be greater than zero and at most two health points.");
         }
+        validatePositiveSetting("phase-five.nebula-spear.thrust-velocity", 2.5);
+        validatePositiveSetting("phase-five.nebula-spear.thrust-radius", 2.5);
+        long lungeLevel = configuredWholeNumber("phase-five.nebula-spear.lunge-level", 1L);
+        if (lungeLevel < 1 || lungeLevel > 3) {
+            throw new IllegalStateException("phase-five.nebula-spear.lunge-level must be from 1 to 3.");
+        }
+        double spearDamage = configuredNumber("phase-five.nebula-spear.thrust-damage-hearts", 4.0);
+        if (spearDamage <= 0.0 || spearDamage > 4.0) {
+            throw new IllegalStateException(
+                    "phase-five.nebula-spear.thrust-damage-hearts must be greater than zero and at most four.");
+        }
+        validatePositiveSetting("phase-five.wormhole-trident.interaction-radius", 2.0);
+        validatePositiveSetting("phase-five.wormhole-trident.creator-launch-distance", 20.0);
+        validatePositiveSetting("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50.0);
+        validatePositiveSetting("phase-five.wormhole-trident.opponent-damage-hearts", 2.0);
+        validatePositiveSetting("phase-five.wormhole-trident.opponent-wither-seconds", 20.0);
+        validatePositiveSetting("phase-five.celestial-bow.cloud-radius", 3.0);
+        validatePositiveSetting("phase-five.celestial-bow.cloud-duration-seconds", 10.0);
+        validatePositiveSetting("phase-five.celestial-bow.cloud-effect-seconds", 5.0);
+        validatePositiveSetting("phase-five.celestial-bow.splash-radius", 4.0);
+        validatePositiveSetting("phase-five.celestial-bow.splash-damage", 2.0);
+        double cloudAmplifier = configuredNumber("phase-five.celestial-bow.cloud-effect-amplifier", 0.0);
+        if (cloudAmplifier != Math.rint(cloudAmplifier) || cloudAmplifier > 255.0) {
+            throw new IllegalStateException(
+                    "phase-five.celestial-bow.cloud-effect-amplifier must be a whole number from 0 to 255.");
+        }
+        String cloudEffect = getConfig().getString("phase-five.celestial-bow.cloud-effect", "WITHER");
+        if (!"WITHER".equalsIgnoreCase(cloudEffect) && !"POISON".equalsIgnoreCase(cloudEffect)) {
+            throw new IllegalStateException(
+                    "phase-five.celestial-bow.cloud-effect must be WITHER or POISON.");
+        }
+        validatePositiveSetting("phase-five.cosmic-crown.thorns-damage", 2.0);
+        validatePositiveSetting("phase-five.singularity-boots.explosion-fall-distance", 50.0);
+        long shieldDisableSeconds = configuredWholeNumber("phase-five.nova-shield.disable-seconds", 5L);
+        if (shieldDisableSeconds <= 0 || shieldDisableSeconds > Integer.MAX_VALUE / 20L) {
+            throw new IllegalStateException(
+                    "phase-five.nova-shield.disable-seconds is outside the supported positive range.");
+        }
+    }
+
+    private void validatePositiveSetting(String path, double fallback) {
+        if (configuredNumber(path, fallback) <= 0.0) {
+            throw new IllegalStateException(path + " must be a positive number.");
+        }
+    }
+
+    private long configuredWholeNumber(String path, long fallback) {
+        if (!getConfig().contains(path)) {
+            return fallback;
+        }
+        if (!ConfigNumbers.isWholeNumber(getConfig(), path)) {
+            throw new IllegalStateException(path + " must be a whole number.");
+        }
+        return getConfig().getLong(path);
     }
 
     private double configuredNumber(String path, double fallback) {

@@ -68,7 +68,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             }
         }
 
-        if (COLLAPSING_STAR_MACE.equals(itemId)
+        if (!onCooldown && COLLAPSING_STAR_MACE.equals(itemId)
                 && MaceDamage.exceedsSparkThreshold(finalDamageBeforeCap)) {
             scheduleSparks(target, attacker);
         }

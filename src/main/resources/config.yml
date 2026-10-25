@@ -4,6 +4,8 @@ cooldowns:
   default-seconds: 0
   star_mace: 30
   collapsing_star_mace: 30
+  nebula_spear: 45
+  nova_shield: 600
 
 phase-four:
   combo-window-seconds: 3
@@ -39,6 +41,37 @@ phase-five:
     spark-radius: 1.5
     # One heart per spark maximum; configurable below that limit.
     spark-damage: 2.0
+  nebula-spear:
+    # Lunge level is a placeholder until the owner sets the final balance value.
+    lunge-level: 1
+    # Provisional impulse and hitbox around the successful fifth lunge.
+    thrust-velocity: 2.5
+    thrust-radius: 2.5
+    thrust-damage-hearts: 4.0
+  wormhole-trident:
+    # The radius is intentionally provisional pending owner confirmation.
+    interaction-radius: 2.0
+    creator-launch-distance: 20
+    lifetime-after-passage-seconds: 50
+    opponent-damage-hearts: 2.0
+    opponent-wither-seconds: 20
+  celestial-bow:
+    # Cloud effect and splash values are provisional until balance review.
+    cloud-effect: WITHER
+    cloud-radius: 3.0
+    cloud-duration-seconds: 10
+    cloud-effect-seconds: 5
+    cloud-effect-amplifier: 0
+    splash-radius: 4.0
+    splash-damage: 2.0
+  cosmic-crown:
+    # Provisional direct-attacker target and retaliation damage pending owner review.
+    thorns-damage: 2.0
+  singularity-boots:
+    explosion-fall-distance: 50
+  nova-shield:
+    # Shield disable period is provisional pending balance review.
+    disable-seconds: 5
 
 rituals:
   duration-seconds: 900
@@ -115,5 +148,6 @@ legendary-items:
     items:
       galaxy_string: 0
       kuiper_ball: 0
+      mass_orb: 0
       # Example: allow two Astral Swords per player.
       # astral_sword: 2

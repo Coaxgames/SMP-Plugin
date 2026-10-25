@@ -34,4 +34,8 @@ public interface LegendaryItem extends Listener {
     default boolean trackUniqueInstance() {
         return craftOnce();
     }
+
+    default boolean hasPerPlayerCarryLimit() {
+        return true;
+    }
 }

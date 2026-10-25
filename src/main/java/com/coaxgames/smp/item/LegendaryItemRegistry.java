@@ -151,8 +151,10 @@ public final class LegendaryItemRegistry {
     }
 
     public int maxPerPlayer(String itemId) {
-        if (get(itemId).isEmpty()) {
-            throw new IllegalArgumentException("Unknown legendary item: " + itemId);
+        LegendaryItem item = get(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + itemId));
+        if (!item.hasPerPlayerCarryLimit()) {
+            return 0;
         }
         org.bukkit.plugin.java.JavaPlugin javaPlugin = (org.bukkit.plugin.java.JavaPlugin) plugin;
         String path = "legendary-items.max-per-player.items." + itemId;

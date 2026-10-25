@@ -168,12 +168,16 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPickup(EntityPickupItemEvent event) {
         ItemStack stack = event.getItem().getItemStack();
-        if (items.containsProtectedItem(stack) && !items.isLegendary(stack)) {
-            event.setCancelled(true);
-            return;
-        }
         var definition = items.identify(stack).orElse(null);
         if (definition == null) {
+            if (items.containsProtectedItem(stack) && !items.isLegendary(stack)) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+        if (!definition.protectedFromLossAndStorage()
+                && !definition.trackUniqueInstance()
+                && !definition.hasPerPlayerCarryLimit()) {
             return;
         }
         if (definition.trackUniqueInstance() && isPendingRitualItem(stack)) {
@@ -186,7 +190,8 @@ public final class LegendaryRulesListener implements Listener {
             }
             return;
         }
-        if (!items.hasCapacity(player, definition.id(), stack.getAmount())) {
+        if (definition.hasPerPlayerCarryLimit()
+                && !items.hasCapacity(player, definition.id(), stack.getAmount())) {
             event.setCancelled(true);
             return;
         }
