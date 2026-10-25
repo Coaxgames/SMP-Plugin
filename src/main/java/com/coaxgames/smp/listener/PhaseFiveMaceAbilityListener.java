@@ -44,17 +44,16 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         }
 
         UUID playerId = attacker.getUniqueId();
-        if (plugin.getCooldownManager().isOnCooldown(playerId, itemId)) {
-            event.setCancelled(true);
+        boolean onCooldown = plugin.getCooldownManager().isOnCooldown(playerId, itemId);
+        if (onCooldown) {
             clearHitCount(playerId, itemId);
-            return;
         }
 
         double finalDamageBeforeCap = event.getFinalDamage();
         double cap = nonNegativeConfig("phase-five.mace-damage-cap-hearts", 7.0) * 2.0;
         event.setDamage(MaceDamage.capBaseDamage(event.getDamage(), cap));
 
-        if (finalDamageBeforeCap > 0.0 && incrementHitCount(playerId, itemId) >= 2) {
+        if (!onCooldown && finalDamageBeforeCap > 0.0 && incrementHitCount(playerId, itemId) >= 2) {
             clearHitCount(playerId, itemId);
             try {
                 if (!plugin.getCooldownManager().start(playerId, itemId)) {
