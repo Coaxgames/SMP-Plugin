@@ -87,6 +87,10 @@ public final class LegendaryItemRegistry {
         return java.util.List.copyOf(items.values());
     }
 
+    public Collection<NamespacedKey> getRecipeKeys() {
+        return java.util.List.copyOf(recipes.keySet());
+    }
+
     public Optional<LegendaryItem> getForRecipe(Recipe recipe) {
         if (!(recipe instanceof Keyed keyed)) {
             return Optional.empty();

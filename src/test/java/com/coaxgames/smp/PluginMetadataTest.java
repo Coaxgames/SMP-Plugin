@@ -17,6 +17,28 @@ import com.coaxgames.smp.item.LegendaryItemBuilder;
 
 class PluginMetadataTest {
     @Test
+    void bundledConfigWholeNumberSettingsPassStartupValidation() throws Exception {
+        var config = new YamlConfiguration();
+        try (var stream = getClass().getResourceAsStream("/config.yml")) {
+            assertNotNull(stream);
+            config.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
+        }
+        for (String path : java.util.List.of(
+                "rituals.duration-seconds",
+                "rituals.reveal-interval-seconds",
+                "phase-four.combo-window-seconds",
+                "phase-four.astral-sword.attack-speed-seconds",
+                "phase-four.daily-trigger-tick",
+                "phase-four.daily-effect-seconds",
+                "phase-four.kuiper-ball.freeze-seconds",
+                "phase-four.mass-orb.feather-falling-level",
+                "phase-four.mass-orb.passive-refresh-ticks")) {
+            assertTrue(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, path), path);
+        }
+        assertFalse(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, "phase-four.kuiper-ball.burst-radius"));
+    }
+
+    @Test
     void requiresTheHeadDropPluginAtRuntime() throws IOException {
         try (var pluginYml = getClass().getResourceAsStream("/plugin.yml")) {
             assertNotNull(pluginYml);

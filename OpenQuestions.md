@@ -74,13 +74,10 @@ if the craft is started then it will not be in the wrold until the timer is up B
 
 
 
-## 7. Spear and lunge mechanics in 1.21.11
+## 7. Spear and lunge mechanics
 - "Nebula spear"
 - "Netherite spear damage and cooldown, no durability or way to destroy it"
 - "When lunging 5 times summons a thrust which has similar velocity to a riptide 2 jump and deals a maximum of 4 hearts of damage to prot 4 diamond (comes with lunge, no additional enchants are permitted)"
 
-The notes make no technical claims here. Whether the Paper API exposes spear lunges in 1.21.11 is unverified and needs checking.
-
-------------
-it works... i have made a server with it already bruh...
+The owner confirmed this native Lunge behavior works on the existing server. The server uses Galaxy SMP and Head Drop only; no additional lunge plugin is involved. Requirements are recorded in [IdeasOnPaper.md](./IdeasOnPaper.md). Phase 5 implementation still needs to detect successful lunges using the target Paper API rather than inferred movement or velocity; see [ROADMAP.md](./ROADMAP.md).
 ------------

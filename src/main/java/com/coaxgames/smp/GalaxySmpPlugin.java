@@ -10,6 +10,7 @@ import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
 import com.coaxgames.smp.ritual.RitualManager;
 import com.coaxgames.smp.storage.LegendaryDataStore;
+import com.coaxgames.smp.util.ConfigNumbers;
 import com.coaxgames.smp.util.CooldownManager;
 import com.coaxgames.smp.util.HeadDropVersion;
 import java.io.IOException;
@@ -53,6 +54,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        for (var online : getServer().getOnlinePlayers()) {
+            online.discoverRecipes(legendaryItems.getRecipeKeys());
+        }
+        getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
@@ -164,7 +169,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 "rituals.duration-seconds",
                 "rituals.reveal-interval-seconds")) {
             if (getConfig().contains(path)
-                    && (!getConfig().isLong(path) || getConfig().getLong(path) <= 0)) {
+                    && (!ConfigNumbers.isWholeNumber(getConfig(), path) || getConfig().getLong(path) <= 0)) {
                 throw new IllegalStateException(path + " must be a positive number of seconds.");
             }
         }
@@ -180,7 +185,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 "phase-four.mass-orb.feather-falling-level",
                 "phase-four.mass-orb.passive-refresh-ticks")) {
             if (getConfig().contains(path)
-                    && (!getConfig().isLong(path) || getConfig().getLong(path) <= 0)) {
+                    && (!ConfigNumbers.isWholeNumber(getConfig(), path) || getConfig().getLong(path) <= 0)) {
                 throw new IllegalStateException(path + " must be a positive integer.");
             }
         }

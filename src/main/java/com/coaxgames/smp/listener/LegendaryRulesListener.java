@@ -232,6 +232,7 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        player.discoverRecipes(items.getRecipeKeys());
         Inventory enderChest = player.getEnderChest();
         for (int slot = 0; slot < enderChest.getSize(); slot++) {
             ItemStack stack = enderChest.getItem(slot);
