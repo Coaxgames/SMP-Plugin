@@ -90,9 +90,9 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 ## 4. Roadmap
 
 ### Phase 0 – Project Setup
-- [ ] Gradle project, Paper API 26.3, `plugin.yml`, main class, config loader
-- [ ] Debug/test server setup and run script
-- [ ] Decide package layout (`item`, `ability`, `listener`, `ritual`, `storage`, `util`)
+- [x] Gradle project, Paper API 26.3, `plugin.yml`, main class, config loader
+- [x] Debug/test server setup and run script (use the existing server and run script)
+- [x] Decide package layout (`com.coaxgames.smp` root; `item`, `ability`, `listener`, `ritual`, `storage`, `util`)
 
 ### Phase 1 – Core Framework
 - [ ] `LegendaryItem` registry + PDC identification

@@ -10,13 +10,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class GalaxySmpPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
+        saveDefaultConfig();
         getServer().getPluginManager().registerEvents(this, this);
     }
 
     @EventHandler
     public void onCraft(CraftItemEvent event) {
         if (event.getWhoClicked() instanceof Player player) {
-            player.sendMessage(Component.text("Hello, world!"));
+            player.sendMessage(Component.text(getConfig().getString("example-message", "Hello, world!")));
         }
     }
 }

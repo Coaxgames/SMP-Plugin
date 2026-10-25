@@ -1,0 +1,16 @@
+name: Contributor push signal
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm branch push received
+        run: echo "A trusted workflow will prepare the pull request."
