@@ -1,6 +1,6 @@
 # Project Change Log
 
-Human-readable record of work from Phase 0 setup through the current Phase 2 implementation. This complements the checkboxes in [ROADMAP.md](./ROADMAP.md); it does not replace them.
+Human-readable record of work from Phase 0 setup through the current Phase 3 implementation. This complements the checkboxes in [ROADMAP.md](./ROADMAP.md); it does not replace them.
 
 ## Phase 0 – Project Setup
 
@@ -53,11 +53,21 @@ Human-readable record of work from Phase 0 setup through the current Phase 2 imp
 - Added `legendary-items.max-per-player.default` and `legendary-items.max-per-player.items.<item_id>` in `config.yml`. Invalid negative or non-integer configured limits fail plugin startup with an explicit error; older configurations without these keys use the default of one.
 - Added configurable per-item display text and two-color hex gradients under `legendary-items.display-names` for all 12 legendary items and three repeatable items listed in Sections 2.1–2.2. The registry applies the configured Adventure name component when creating registered legendary items. `LegendaryItemBuilder` now offers `gradientName(text, startColor, endColor)` and a reusable gradient-component factory for later item definitions and chat messages. Palette values are starter defaults and can be edited in `config.yml`; invalid colors or empty names are reported during startup. Added unit tests for gradient text, endpoint colors, and invalid inputs.
 - Recorded the Phase 3 reveal requirements: global announcement, each item's own gradient-colored name, and coordinates formatted as `(X, Y, Z)`. The exact audience and remaining message format stay open. The existing `LegendaryItemBuilder.displayName(Component)` already supports Adventure components, including gradients; the clearest source of truth is a per-item name/gradient entry in config, converted to a reusable display-name component by the builder/item definition. Recipes should remain focused on ingredients and outputs, not presentation. Reuse that same component in death and interaction messages in Phase 6.
-- Completed the repository-verifiable portion of Phase 2.1: extracted the Head Drop minimum-version comparison into a pure utility and tested accepted/rejected versions; expanded plugin descriptor checks to require Paper 26.3; verified every planned item ID has a valid configured name gradient and that the per-item cap default is one. The owner will run live Paper/Head Drop, crafting, inventory, protection, and restart tests locally; no test-server files or access are requested. Recipe/output tests are deferred until item definitions are added in Phases 4–5. These checks remain explicitly unchecked in `ROADMAP.md` until owner verification.
+- Completed the repository-verifiable portion of Phase 2.1: extracted the Head Drop minimum-version comparison into a pure utility and tested accepted/rejected versions; expanded plugin descriptor checks to require Paper 26.3; verified every planned item ID has a valid configured name gradient and that the per-item cap default is one. The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. Remaining gameplay checks are explicitly waiting in `ROADMAP.md`; recipe/output tests are deferred until item definitions are added in Phases 4–5. No test-server files or access are requested.
+
+## Phase 3 – Ritual System
+
+- Added persisted ritual records with item ID/UUID, crafter UUID/name and coordinates, crafting location, start/completion timestamps, and reveal progress. Craft-once quotas are reserved atomically when the ritual starts and are rolled back if ingredient consumption fails.
+- Legendary craft-once results are withheld during the ritual. Player crafting and automated Crafter events consume one ingredient per occupied recipe slot, return material crafting remainders, and restore the original ingredient matrix if startup/consumption fails. Repeatable items keep the immediate-craft path.
+- Added the default 900-second ritual and 180-second reveal interval, both configurable and validated at plugin startup. The crafter sees an updating boss bar; portal/end-rod particles animate above the crafting location; the completed registered item drops at that location.
+- Added global reveal messages with the item's configured gradient name and crafter coordinates formatted as `(X, Y, Z)`. The audience is global and the remaining message template is configurable; reveal progress is saved before broadcast to avoid repeating a reveal after restart.
+- Active rituals resume from saved timestamps. Completion checks for an already-dropped matching UUID before retrying, delays pickup if saving completion fails, and resumes safely on the next scheduler pass. Reclaim barrels persist their world/block coordinates and are rebuilt at startup.
+- Added explicit rollback for failed ritual startup and preserved prior reclaim-marker data if a marker write fails. Fixed the join-cap recovery path so it removes only the configured excess instead of dropping every matching item.
+- Updated `ROADMAP.md` with the completed implementation and automated-test checkboxes. Live Paper crafting, restart, deadline, animation, and reveal checks remain explicitly unchecked for owner verification; item-recipe-dependent checks remain deferred until Phases 4–5 register recipes.
 
 ## Verification and Current Limits
 
-- `gradlew clean test build` passed with 19 tests in the latest verification; earlier phase-specific counts above are historical checkpoints.
+- `gradlew test build` passed after Phase 3 changes with 23 tests and no failures; Phase 2.1's earlier 19-test result is a historical checkpoint.
 - Added a mandatory progress-tracking rule to the roadmap: verified checklist work is checked off and `Changed.md` is updated in the same work session without waiting for a reminder.
 - No concrete legendary item definitions are registered yet. The framework, storage, and command infrastructure are present, but item abilities, recipes, and crafting are future roadmap work.
 - The repository's configured Paper target remains Paper API 26.3 with Java release 25. The build output is a single unshaded plugin jar.

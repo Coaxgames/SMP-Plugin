@@ -2,11 +2,14 @@ package com.coaxgames.smp.listener;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.storage.LegendaryDataStore.ItemRecord;
+import com.coaxgames.smp.storage.LegendaryDataStore.ReclaimMarkerRecord;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Barrel;
 import org.bukkit.block.Block;
@@ -16,11 +19,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
-final class ReclaimableItemService {
+public final class ReclaimableItemService {
     private final GalaxySmpPlugin plugin;
     private final NamespacedKey itemUuidKey;
 
-    ReclaimableItemService(GalaxySmpPlugin plugin) {
+    public ReclaimableItemService(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         itemUuidKey = new NamespacedKey(plugin, "reclaim-item-uuid");
     }
@@ -55,7 +58,13 @@ final class ReclaimableItemService {
         }
 
         try {
-            plugin.getDataStore().recordItemLocation(itemUuid, target.getLocation());
+            Location targetLocation = target.getLocation();
+            plugin.getDataStore().recordReclaimMarker(
+                    itemUuid,
+                    targetLocation.getWorld().getName(),
+                    targetLocation.getBlockX(),
+                    targetLocation.getBlockY(),
+                    targetLocation.getBlockZ());
         } catch (IOException exception) {
             target.setType(Material.AIR);
             plugin.getLogger().log(Level.SEVERE,
@@ -86,7 +95,7 @@ final class ReclaimableItemService {
             plugin.getLogger().severe("Reclaim marker references an unknown legendary item: " + itemUuid);
             return true;
         }
-        if (!plugin.getLegendaryItems().hasCapacity(player, record.itemId(), 1)) {
+        if (!plugin.getRitualManager().hasCapacity(player, record.itemId(), 1)) {
             player.sendMessage("You already hold the configured maximum of " + record.itemId() + ".");
             return true;
         }
@@ -99,6 +108,7 @@ final class ReclaimableItemService {
         try {
             plugin.getDataStore().setItemOwner(record.itemId(), itemUuid, player.getUniqueId());
             plugin.getDataStore().recordItemLocation(itemUuid, player.getLocation());
+            plugin.getDataStore().clearReclaimMarker(itemUuid);
         } catch (IOException exception) {
             barrel.getPersistentDataContainer().set(itemUuidKey, PersistentDataType.STRING, itemUuid.toString());
             barrel.update(true, false);
@@ -115,6 +125,62 @@ final class ReclaimableItemService {
         BlockState state = block.getState();
         return state instanceof Barrel barrel
                 && barrel.getPersistentDataContainer().has(itemUuidKey, PersistentDataType.STRING);
+    }
+
+    public void rebuildSpawnBlockMarkers() {
+        for (ReclaimMarkerRecord marker : plugin.getDataStore().getReclaimMarkers()) {
+            var world = Bukkit.getWorld(marker.world());
+            if (world == null) {
+                plugin.getLogger().severe("Cannot rebuild reclaim marker for " + marker.itemUuid()
+                        + ": world is not loaded: " + marker.world());
+                continue;
+            }
+            if (marker.y() < world.getMinHeight() || marker.y() >= world.getMaxHeight()) {
+                plugin.getLogger().severe("Cannot rebuild reclaim marker outside world height for "
+                        + marker.itemUuid() + " at " + marker.world() + " (" + marker.x() + ", "
+                        + marker.y() + ", " + marker.z() + ").");
+                continue;
+            }
+            var chunk = world.getChunkAt(marker.x() >> 4, marker.z() >> 4);
+            Block block = world.getBlockAt(marker.x(), marker.y(), marker.z());
+            if (block.getState() instanceof Barrel existing
+                    && marker.itemUuid().toString().equals(
+                            existing.getPersistentDataContainer().get(itemUuidKey, PersistentDataType.STRING))) {
+                removeDroppedDuplicate(chunk.getEntities(), marker.itemUuid());
+                continue;
+            }
+            if (!block.getType().isAir()) {
+                plugin.getLogger().severe("Cannot restore reclaim marker for " + marker.itemUuid()
+                        + ": saved block location is occupied at " + block.getLocation() + ".");
+                continue;
+            }
+            block.setType(Material.BARREL);
+            BlockState state = block.getState();
+            if (!(state instanceof Barrel barrel)) {
+                block.setType(Material.AIR);
+                plugin.getLogger().severe("Could not rebuild reclaim barrel for " + marker.itemUuid() + ".");
+                continue;
+            }
+            barrel.getPersistentDataContainer().set(itemUuidKey, PersistentDataType.STRING,
+                    marker.itemUuid().toString());
+            if (!barrel.update(true, false)) {
+                block.setType(Material.AIR);
+                plugin.getLogger().severe("Could not persist rebuilt reclaim marker for "
+                        + marker.itemUuid() + ".");
+                continue;
+            }
+            removeDroppedDuplicate(chunk.getEntities(), marker.itemUuid());
+        }
+    }
+
+    private void removeDroppedDuplicate(org.bukkit.entity.Entity[] entities, UUID itemUuid) {
+        for (org.bukkit.entity.Entity entity : entities) {
+            if (entity instanceof Item item
+                    && plugin.getLegendaryItems().getUniqueId(item.getItemStack())
+                            .filter(itemUuid::equals).isPresent()) {
+                item.remove();
+            }
+        }
     }
 
     private Block findReclaimBlock(org.bukkit.World world) {

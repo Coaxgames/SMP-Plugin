@@ -86,7 +86,10 @@ public final class LegendaryRulesListener implements Listener {
             return;
         }
         if (!items.isLegendary(event.getCurrentItem()) && !items.isLegendary(event.getCursor())
-                && !items.isLegendary(hotbarItem(event))) {
+                && !items.isLegendary(hotbarItem(event))
+                && !items.containsRegisteredItem(event.getCurrentItem())
+                && !items.containsRegisteredItem(event.getCursor())
+                && !items.containsRegisteredItem(hotbarItem(event))) {
             return;
         }
         boolean clickedTop = event.getClickedInventory() == event.getView().getTopInventory();
@@ -109,14 +112,9 @@ public final class LegendaryRulesListener implements Listener {
         if (event.getWhoClicked() instanceof Player player
                 && event.getClickedInventory() == event.getView().getTopInventory()
                 && event.getClickedInventory() != player.getInventory()
-                && exceedsItemLimit(player, event.getCurrentItem())) {
+                && exceedsItemLimit(player, event)) {
             event.setCancelled(true);
             return;
-        }
-        if (event.getWhoClicked() instanceof Player player
-                && event.getClickedInventory() == player.getInventory()
-                && exceedsAnyItemLimit(player)) {
-            event.setCancelled(true);
         }
     }
 
@@ -134,11 +132,6 @@ public final class LegendaryRulesListener implements Listener {
                 && event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot < event.getView().getTopInventory().getSize())) {
             event.setCancelled(true);
             return;
-        }
-        if (event.getWhoClicked() instanceof Player player
-                && event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot >= event.getView().getTopInventory().getSize())
-                && exceedsAnyItemLimit(player)) {
-            event.setCancelled(true);
         }
     }
 
@@ -164,6 +157,10 @@ public final class LegendaryRulesListener implements Listener {
             return;
         }
         if (!items.isLegendary(stack)) {
+            return;
+        }
+        if (isPendingRitualItem(stack)) {
+            event.setCancelled(true);
             return;
         }
         if (!(event.getEntity() instanceof Player player)) {
@@ -231,26 +228,7 @@ public final class LegendaryRulesListener implements Listener {
                         + "'s ender chest; the item remains in place.");
             }
         }
-        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            var definition = items.identify(stack).orElse(null);
-            if (definition == null) {
-                continue;
-            }
-            int limit = items.maxPerPlayer(definition.id());
-            if (limit == 0 || items.countForPlayer(player, definition.id()) <= limit) {
-                continue;
-            }
-            Item dropped = player.getWorld().dropItem(player.getLocation(), stack.clone());
-            if (reclaim.returnToReclaimBlock(dropped)) {
-                player.getInventory().setItem(slot, null);
-            } else {
-                dropped.remove();
-                plugin.getLogger().severe("Could not enforce the configured per-player cap for "
-                        + definition.id() + " held by " + player.getUniqueId()
-                        + "; the item remains in the player's inventory.");
-            }
-        }
+        enforceCarryingCaps(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -268,6 +246,10 @@ public final class LegendaryRulesListener implements Listener {
         if (!(event.getEntity() instanceof Item item) || !isLegendary(item.getItemStack())) {
             return;
         }
+        if (isPendingRitualItem(item.getItemStack())) {
+            event.setCancelled(true);
+            return;
+        }
         if (RECOVERY_DAMAGE_CAUSES.contains(event.getCause())) {
             event.setCancelled(true);
             reclaim.returnToReclaimBlock(item);
@@ -278,6 +260,9 @@ public final class LegendaryRulesListener implements Listener {
     public void onItemCombust(EntityCombustEvent event) {
         if (event.getEntity() instanceof Item item && isLegendary(item.getItemStack())) {
             event.setCancelled(true);
+            if (isPendingRitualItem(item.getItemStack())) {
+                return;
+            }
             reclaim.returnToReclaimBlock(item);
         }
     }
@@ -286,6 +271,9 @@ public final class LegendaryRulesListener implements Listener {
     public void onItemDespawn(ItemDespawnEvent event) {
         if (isLegendary(event.getEntity().getItemStack())) {
             event.setCancelled(true);
+            if (isPendingRitualItem(event.getEntity().getItemStack())) {
+                return;
+            }
             reclaim.returnToReclaimBlock(event.getEntity());
         }
     }
@@ -402,6 +390,11 @@ public final class LegendaryRulesListener implements Listener {
         return items.containsProtectedItem(stack);
     }
 
+    private boolean isPendingRitualItem(ItemStack stack) {
+        return items.getUniqueId(stack)
+                .filter(plugin.getRitualManager()::isPending).isPresent();
+    }
+
     private boolean isBundle(ItemStack stack) {
         return stack != null && stack.getItemMeta() instanceof org.bukkit.inventory.meta.BundleMeta;
     }
@@ -424,19 +417,68 @@ public final class LegendaryRulesListener implements Listener {
         return inventory.getType() != InventoryType.PLAYER && inventory.getType() != InventoryType.CRAFTING;
     }
 
-    private boolean exceedsAnyItemLimit(Player player) {
-        for (var item : items.getAll()) {
-            int limit = items.maxPerPlayer(item.id());
-            if (limit > 0 && items.countForPlayer(player, item.id()) > limit) {
-                return true;
-            }
+    private boolean exceedsItemLimit(Player player, InventoryClickEvent event) {
+        var definition = items.identify(event.getCurrentItem()).orElse(null);
+        if (definition == null) {
+            return false;
         }
-        return false;
+        int incomingAmount = switch (event.getAction()) {
+            case PICKUP_ALL, MOVE_TO_OTHER_INVENTORY -> event.getCurrentItem().getAmount();
+            case PICKUP_HALF -> (event.getCurrentItem().getAmount() + 1) / 2;
+            case PICKUP_ONE -> 1;
+            case PICKUP_SOME -> {
+                ItemStack cursor = event.getCursor();
+                int cursorAmount = cursor != null && items.identify(cursor)
+                        .filter(item -> item.id().equals(definition.id())).isPresent()
+                        ? cursor.getAmount() : 0;
+                yield Math.min(event.getCurrentItem().getAmount(),
+                        Math.max(0, event.getCurrentItem().getMaxStackSize() - cursorAmount));
+            }
+            default -> 0;
+        };
+        return incomingAmount > 0
+                && !items.hasCapacity(player, definition.id(), incomingAmount);
     }
 
-    private boolean exceedsItemLimit(Player player, ItemStack stack) {
-        var definition = items.identify(stack).orElse(null);
-        return definition != null && !items.hasCapacity(player, definition.id(), stack.getAmount());
+    private void enforceCarryingCaps(Player player) {
+        for (var definition : items.getAll()) {
+            int limit = items.maxPerPlayer(definition.id());
+            if (limit == 0) {
+                continue;
+            }
+            int excess = items.countForPlayer(player, definition.id()) - limit;
+            if (excess <= 0) {
+                continue;
+            }
+            for (int slot = player.getInventory().getSize() - 1; slot >= 0 && excess > 0; slot--) {
+                ItemStack stack = player.getInventory().getItem(slot);
+                if (items.identify(stack).filter(item -> item.id().equals(definition.id())).isEmpty()) {
+                    continue;
+                }
+                int removeAmount = Math.min(excess, stack.getAmount());
+                ItemStack removed = stack.clone();
+                removed.setAmount(removeAmount);
+                if (removeAmount == stack.getAmount()) {
+                    player.getInventory().setItem(slot, null);
+                } else {
+                    ItemStack remaining = stack.clone();
+                    remaining.setAmount(stack.getAmount() - removeAmount);
+                    player.getInventory().setItem(slot, remaining);
+                }
+                if (items.isProtectedItem(removed)) {
+                    Item dropped = player.getWorld().dropItem(player.getLocation(), removed);
+                    if (!reclaim.returnToReclaimBlock(dropped)) {
+                        dropped.remove();
+                        player.getInventory().addItem(removed);
+                        plugin.getLogger().severe("Could not safely enforce the configured per-player cap for "
+                                + definition.id() + " held by " + player.getUniqueId() + ".");
+                    }
+                } else {
+                    player.getWorld().dropItemNaturally(player.getLocation(), removed);
+                }
+                excess -= removeAmount;
+            }
+        }
     }
 
     private ItemStack hotbarItem(InventoryClickEvent event) {

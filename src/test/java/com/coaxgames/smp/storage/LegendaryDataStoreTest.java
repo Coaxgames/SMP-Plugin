@@ -125,6 +125,110 @@ class LegendaryDataStoreTest {
     }
 
     @Test
+    void ritualStateAndRevealProgressSurviveReloadUntilDeliveryCompletes() throws Exception {
+        UUID itemUuid = UUID.randomUUID();
+        UUID crafterUuid = UUID.randomUUID();
+        LegendaryDataStore firstStore = new LegendaryDataStore(dataDirectory);
+
+        assertTrue(firstStore.startRitual(
+                "astral_sword",
+                1,
+                itemUuid,
+                crafterUuid,
+                "CrafterName",
+                "world",
+                10.5,
+                64.0,
+                -2.5,
+                12.25,
+                65.0,
+                -4.75,
+                1_000L,
+                901_000L,
+                true
+        ));
+
+        LegendaryDataStore afterRestart = new LegendaryDataStore(dataDirectory);
+        var ritual = afterRestart.getActiveRituals().getFirst();
+        assertEquals(itemUuid, ritual.itemUuid());
+        assertEquals(crafterUuid, ritual.crafterUuid());
+        assertEquals("CrafterName", ritual.crafterName());
+        assertEquals("world", ritual.world());
+        assertEquals(10.5, ritual.x());
+        assertEquals(12.25, ritual.crafterX());
+        assertEquals(901_000L, ritual.completesAtMillis());
+        assertEquals(0, ritual.reveals());
+        assertEquals(1, afterRestart.getCraftCount("astral_sword"));
+        assertTrue(afterRestart.advanceRitualReveal(itemUuid, 0));
+
+        LegendaryDataStore afterReveal = new LegendaryDataStore(dataDirectory);
+        assertEquals(1, afterReveal.getActiveRituals().getFirst().reveals());
+        afterReveal.finishRitual(itemUuid, "world", 11.5, 65.0, -2.5);
+
+        LegendaryDataStore afterDelivery = new LegendaryDataStore(dataDirectory);
+        assertTrue(afterDelivery.getActiveRituals().isEmpty());
+        assertEquals(1, afterDelivery.getCraftCount("astral_sword"));
+        assertEquals(11.5, afterDelivery.getTrackedItem(itemUuid).x());
+        assertEquals("world", afterDelivery.getTrackedItem(itemUuid).world());
+    }
+
+    @Test
+    void ritualCraftOnceQuotaIsEnforcedAtomically() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID firstUuid = UUID.randomUUID();
+        UUID secondUuid = UUID.randomUUID();
+        assertTrue(store.startRitual(
+                "void_sword", 1, firstUuid, null, "Crafter",
+                "world", 0, 64, 0, 0, 64, 0, 1_000L, 901_000L, true));
+        assertFalse(store.startRitual(
+                "void_sword", 1, secondUuid, null, "Crafter",
+                "world", 0, 64, 0, 0, 64, 0, 2_000L, 902_000L, true));
+        assertEquals(1, store.getCraftCount("void_sword"));
+        assertEquals(1, store.getActiveRituals().size());
+    }
+
+    @Test
+    void abortingFailedRitualConsumptionRestoresCraftAllowance() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID itemUuid = UUID.randomUUID();
+
+        assertTrue(store.startRitual(
+                "void_sword", 1, itemUuid, null, "Crafter",
+                "world", 0, 64, 0, 0, 64, 0, 1_000L, 901_000L, true));
+        assertTrue(store.abortRitual(itemUuid));
+        assertEquals(0, store.getCraftCount("void_sword"));
+        assertNull(store.getTrackedItem(itemUuid));
+        assertTrue(store.getActiveRituals().isEmpty());
+        assertTrue(store.startRitual(
+                "void_sword", 1, UUID.randomUUID(), null, "Crafter",
+                "world", 0, 64, 0, 0, 64, 0, 2_000L, 902_000L, true));
+    }
+
+    @Test
+    void reclaimMarkerLocationPersistsAndCanBeClearedAfterClaim() throws Exception {
+        UUID itemUuid = UUID.randomUUID();
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        store.recordAdministrativeGrant(
+                "nebula_spear",
+                1,
+                itemUuid,
+                UUID.randomUUID(),
+                new Location(null, 0, 64, 0));
+        store.recordReclaimMarker(itemUuid, "world", 0, 128, 0);
+
+        LegendaryDataStore reloadedStore = new LegendaryDataStore(dataDirectory);
+        var marker = reloadedStore.getReclaimMarkers().getFirst();
+        assertEquals(itemUuid, marker.itemUuid());
+        assertEquals("world", marker.world());
+        assertEquals(0, marker.x());
+        assertEquals(128, marker.y());
+        assertEquals(0, marker.z());
+
+        reloadedStore.clearReclaimMarker(itemUuid);
+        assertTrue(new LegendaryDataStore(dataDirectory).getReclaimMarkers().isEmpty());
+    }
+
+    @Test
     void anItemUuidCannotBeReassignedToAnotherItemType() throws Exception {
         UUID itemUuid = UUID.randomUUID();
         LegendaryDataStore store = new LegendaryDataStore(dataDirectory);

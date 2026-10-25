@@ -3,6 +3,12 @@ example-message: "Hello, world!"
 cooldowns:
   default-seconds: 0
 
+rituals:
+  duration-seconds: 900
+  reveal-interval-seconds: 180
+  # Audience is global; customize the remaining announcement format here.
+  reveal-message: "{item} crafted by {crafter} at ({x}, {y}, {z})"
+
 legendary-items:
   # Edit each item's text and two hex colors to customize its name gradient.
   display-names:

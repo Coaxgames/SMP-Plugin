@@ -3,10 +3,16 @@ package com.coaxgames.smp.listener;
 import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.HeadDropHead;
 import com.coaxgames.smp.item.LegendaryItem;
+import com.coaxgames.smp.ritual.RitualManager;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Level;
+import net.kyori.adventure.text.Component;
 import org.bukkit.block.Crafter;
+import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,6 +21,7 @@ import org.bukkit.event.block.CrafterCraftEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 public final class LegendaryCraftListener implements Listener {
@@ -33,8 +40,17 @@ public final class LegendaryCraftListener implements Listener {
         CraftingInventory inventory = event.getInventory();
         if (craftBlocked(item, inventory.getMatrix())
                 || event.getView().getPlayer() instanceof Player player
-                && !plugin.getLegendaryItems().hasCapacity(player, item.id(), 1)) {
+                && !plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
             inventory.setResult(null);
+            return;
+        }
+        if (item.craftOnce()) {
+            ItemStack preview = new ItemStack(Material.BARRIER);
+            var meta = preview.getItemMeta();
+            meta.displayName(Component.text("15-minute ritual: ")
+                    .append(plugin.getLegendaryItems().displayName(item.id())));
+            preview.setItemMeta(meta);
+            inventory.setResult(preview);
             return;
         }
         inventory.setResult(plugin.getLegendaryItems().createItem(item.id()));
@@ -50,8 +66,45 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         if (!(event.getWhoClicked() instanceof Player player)
-                || craftBlocked(item, event.getInventory().getMatrix())
-                || !plugin.getLegendaryItems().hasCapacity(player, item.id(), 1)) {
+                || craftBlocked(item, event.getInventory().getMatrix())) {
+            event.setCancelled(true);
+            event.getInventory().setResult(null);
+            return;
+        }
+        if (item.craftOnce()) {
+            if (!plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
+                event.setCancelled(true);
+                event.getInventory().setResult(null);
+                return;
+            }
+            event.setCancelled(true);
+            Location location = event.getInventory().getLocation();
+            if (location == null || location.getWorld() == null) {
+                location = player.getLocation();
+            }
+            Optional<UUID> ritualUuid = Optional.empty();
+            ItemStack[] originalIngredients = copyContents(event.getInventory().getMatrix());
+            try {
+                ritualUuid = plugin.getRitualManager().start(item, player, location);
+                if (ritualUuid.isEmpty()) {
+                    event.getInventory().setResult(null);
+                    return;
+                }
+                consumeIngredients(event.getInventory().getMatrix(), event.getInventory());
+                player.sendMessage(Component.text("Your ritual has begun. The item will appear after 15 minutes."));
+            } catch (IOException | RuntimeException exception) {
+                rollbackFailedRitualStart(
+                        ritualUuid, item, exception, event.getInventory(), originalIngredients);
+                event.getInventory().setResult(null);
+                plugin.getLogger().log(Level.SEVERE,
+                        "Could not start ritual for " + item.id()
+                                + "; ingredient consumption or ritual persistence failed.",
+                        exception);
+                player.sendMessage("The craft could not be completed safely; no ritual item was issued.");
+            }
+            return;
+        }
+        if (!plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
             event.setCancelled(true);
             event.getInventory().setResult(null);
             return;
@@ -96,6 +149,25 @@ public final class LegendaryCraftListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (item.craftOnce()) {
+            event.setCancelled(true);
+            Optional<UUID> ritualUuid = Optional.empty();
+            Inventory inventory = crafter.getInventory();
+            ItemStack[] originalIngredients = copyContents(inventory.getContents());
+            try {
+                ritualUuid = plugin.getRitualManager().start(item, null, event.getBlock().getLocation());
+                if (ritualUuid.isPresent()) {
+                    consumeIngredients(inventory.getContents(), inventory);
+                }
+            } catch (IOException | RuntimeException exception) {
+                rollbackFailedRitualStart(ritualUuid, item, exception, inventory, originalIngredients);
+                plugin.getLogger().log(Level.SEVERE,
+                        "Could not start automated ritual for " + item.id()
+                                + "; ingredient consumption or ritual persistence failed.",
+                        exception);
+            }
+            return;
+        }
 
         ItemStack result = plugin.getLegendaryItems().createItem(item.id());
         var itemUuid = plugin.getLegendaryItems().getUniqueId(result).orElseThrow(
@@ -124,5 +196,70 @@ public final class LegendaryCraftListener implements Listener {
     private boolean craftBlocked(LegendaryItem item, ItemStack[] matrix) {
         return item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()
                 || !HeadDropHead.allRecipeHeadsAreMarked(matrix);
+    }
+
+    private void consumeIngredients(ItemStack[] contents, Inventory inventory) {
+        ItemStack[] updated = new ItemStack[contents.length];
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack ingredient = contents[slot];
+            if (ingredient == null || ingredient.getType().isAir()) {
+                continue;
+            }
+            Material remainder = ingredient.getType().getCraftingRemainingItem();
+            ItemStack consumed = ingredient.clone();
+            consumed.setAmount(consumed.getAmount() - 1);
+            if (consumed.getAmount() > 0) {
+                updated[slot] = consumed;
+            } else if (remainder != null && !remainder.isAir()) {
+                updated[slot] = new ItemStack(remainder);
+            }
+        }
+        if (inventory instanceof CraftingInventory craftingInventory) {
+            craftingInventory.setMatrix(updated);
+        } else {
+            inventory.setContents(updated);
+        }
+    }
+
+    private void rollbackFailedRitualStart(
+            Optional<UUID> ritualUuid,
+            LegendaryItem item,
+            Exception originalException,
+            Inventory inventory,
+            ItemStack[] originalIngredients
+    ) {
+        if (ritualUuid.isEmpty()) {
+            return;
+        }
+        try {
+            plugin.getDataStore().abortRitual(ritualUuid.get());
+        } catch (IOException | RuntimeException rollbackException) {
+            originalException.addSuppressed(rollbackException);
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not roll back failed ingredient consumption for ritual " + ritualUuid.get()
+                            + " (" + item.id() + "); manual data repair may be required.",
+                    rollbackException);
+            return;
+        }
+        try {
+            if (inventory instanceof CraftingInventory craftingInventory) {
+                craftingInventory.setMatrix(copyContents(originalIngredients));
+            } else {
+                inventory.setContents(copyContents(originalIngredients));
+            }
+        } catch (RuntimeException restoreException) {
+            originalException.addSuppressed(restoreException);
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not restore ingredients after ritual startup failed for " + item.id() + ".",
+                    restoreException);
+        }
+    }
+
+    private ItemStack[] copyContents(ItemStack[] contents) {
+        ItemStack[] copy = new ItemStack[contents.length];
+        for (int slot = 0; slot < contents.length; slot++) {
+            copy[slot] = contents[slot] == null ? null : contents[slot].clone();
+        }
+        return copy;
     }
 }

@@ -99,7 +99,7 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text("Unknown legendary item: " + args[2]));
             return;
         }
-        if (!plugin.getLegendaryItems().hasCapacity(target, definition.id(), 1)) {
+        if (!plugin.getRitualManager().hasCapacity(target, definition.id(), 1)) {
             sender.sendMessage(Component.text(target.getName() + " already holds the configured maximum of "
                     + definition.id() + " (" + plugin.getLegendaryItems().maxPerPlayer(definition.id()) + ")."));
             return;

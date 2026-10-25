@@ -4,6 +4,8 @@ import com.coaxgames.smp.command.GalaxyCommand;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.listener.LegendaryCraftListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
+import com.coaxgames.smp.listener.ReclaimableItemService;
+import com.coaxgames.smp.ritual.RitualManager;
 import com.coaxgames.smp.storage.LegendaryDataStore;
 import com.coaxgames.smp.util.CooldownManager;
 import com.coaxgames.smp.util.HeadDropVersion;
@@ -15,6 +17,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private LegendaryItemRegistry legendaryItems;
     private LegendaryDataStore dataStore;
     private CooldownManager cooldownManager;
+    private RitualManager ritualManager;
 
     @Override
     public void onEnable() {
@@ -22,6 +25,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         saveDefaultConfig();
         validatePlayerItemLimits();
         validateItemNameGradients();
+        validateRitualSettings();
         LegendaryItemRegistry.disableVanillaMaceRecipe();
         legendaryItems = new LegendaryItemRegistry(this);
         try {
@@ -31,7 +35,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        new ReclaimableItemService(this).rebuildSpawnBlockMarkers();
         cooldownManager = new CooldownManager(getConfig(), dataStore, legendaryItems);
+        ritualManager = new RitualManager(this);
+        ritualManager.resume();
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
         if (getCommand("galaxy") == null) {
@@ -44,6 +51,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (ritualManager != null) {
+            ritualManager.shutdown();
+        }
         if (dataStore != null) {
             try {
                 dataStore.save();
@@ -72,6 +82,13 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             throw new IllegalStateException("Cooldown manager is not available before plugin startup.");
         }
         return cooldownManager;
+    }
+
+    public RitualManager getRitualManager() {
+        if (ritualManager == null) {
+            throw new IllegalStateException("Ritual manager is not available before plugin startup.");
+        }
+        return ritualManager;
     }
 
     private void requireHeadDrop() {
@@ -119,6 +136,17 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 com.coaxgames.smp.item.LegendaryItemBuilder.gradientComponent(name, startColor, endColor);
             } catch (NullPointerException | IllegalArgumentException exception) {
                 throw new IllegalStateException("Invalid configured item name gradient at " + itemPath + ".", exception);
+            }
+        }
+    }
+
+    private void validateRitualSettings() {
+        for (String path : java.util.List.of(
+                "rituals.duration-seconds",
+                "rituals.reveal-interval-seconds")) {
+            if (getConfig().contains(path)
+                    && (!getConfig().isLong(path) || getConfig().getLong(path) <= 0)) {
+                throw new IllegalStateException(path + " must be a positive number of seconds.");
             }
         }
     }

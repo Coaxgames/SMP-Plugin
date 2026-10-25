@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
@@ -127,6 +128,24 @@ public final class LegendaryItemRegistry {
         return false;
     }
 
+    public boolean containsRegisteredItem(ItemStack stack) {
+        if (identify(stack).isPresent()) {
+            return true;
+        }
+        if (stack != null && stack.getItemMeta() instanceof BundleMeta bundle) {
+            return bundle.getItems().stream().anyMatch(this::containsRegisteredItem);
+        }
+        if (stack != null && stack.getItemMeta() instanceof BlockStateMeta blockStateMeta
+                && blockStateMeta.getBlockState() instanceof ShulkerBox shulker) {
+            for (ItemStack item : shulker.getInventory().getContents()) {
+                if (containsRegisteredItem(item)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public int maxPerPlayer(String itemId) {
         if (get(itemId).isEmpty()) {
             throw new IllegalArgumentException("Unknown legendary item: " + itemId);
@@ -135,6 +154,20 @@ public final class LegendaryItemRegistry {
         String path = "legendary-items.max-per-player.items." + itemId;
         return javaPlugin.getConfig().getInt(path,
                 javaPlugin.getConfig().getInt("legendary-items.max-per-player.default", 1));
+    }
+
+    public Component displayName(String itemId) {
+        LegendaryItem definition = get(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + itemId));
+        org.bukkit.plugin.java.JavaPlugin javaPlugin = (org.bukkit.plugin.java.JavaPlugin) plugin;
+        String namePath = "legendary-items.display-names." + itemId;
+        if (!javaPlugin.getConfig().contains(namePath + ".text")) {
+            return Component.text(itemId);
+        }
+        return LegendaryItemBuilder.gradientComponent(
+                javaPlugin.getConfig().getString(namePath + ".text"),
+                javaPlugin.getConfig().getString(namePath + ".start-color"),
+                javaPlugin.getConfig().getString(namePath + ".end-color"));
     }
 
     public int countForPlayer(Player player, String itemId) {

@@ -122,8 +122,8 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 
 ### Phase 2.1 – Integration Tests
 - [x] Add automated tests for Head Drop marker-byte validation/version gating, Paper/plugin metadata, per-item gradient config coverage, independent mace craft records, ownerless automation-item persistence, and Phase 1 persistence behavior; `gradlew test build` passes
-- [ ] **Owner local test:** On the owner's Paper 26.3 server, verify Galaxy SMP loads with Head Drop 3.1.0+ and refuses missing/older versions
-- [ ] **Owner local test:** Configure Head Drop `drop.placement: item`; if testing block placement instead, enable `head.persist_lore_on_placement`; verify generated item heads carry the `headdrop:dropped` byte marker and normal player skulls are rejected by matching recipes
+- [x] **Owner local test:** On the owner's Paper 26.3 server, verify Galaxy SMP loads with Head Drop 3.1.0+ and refuses missing/older versions
+- [x] **Owner local test:** Configure Head Drop `drop.placement: item`; if testing block placement instead, enable `head.persist_lore_on_placement`; verify generated item heads carry the `headdrop:dropped` byte marker and normal player skulls are rejected by matching recipes
 - [ ] **Deferred until Phases 4–5 add recipes:** Verify each shaped recipe's exact ingredients and output identity; verify the vanilla mace recipe is absent and each custom mace can be crafted once independently
 - [ ] **Owner local test:** Verify normal crafting, shift-click, repeated attempts, Crafter automation, restart persistence, and administrative grants against craft-once records
 - [ ] **Owner local test:** Exercise container protections: chest/barrel/shulker/ender chest, hopper/dropper, bundle, crafting grid, item frame, armor stand, shift-click, drag, number-key/offhand swap, and container open/break/explosion paths
@@ -132,15 +132,20 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [ ] **Owner local test:** Verify death drops stay at the death location; lava, fire, cactus, void, explosions, and despawn create a protected reclaim barrel at world X/Z (0,0), and claiming it restores the same item UUID
 - [ ] Re-run the relevant recipe, protection, lifecycle, and persistence tests whenever later phases add item definitions or change event handling
 
-**Phase 2.1 deferrals:** The owner will run the Paper/Head Drop, crafting, inventory, protection, and restart checks locally; no test server is requested or expected to be provided. Exact recipe/output checks remain deferred until item definitions and recipes are added in Phases 4–5. Leave these items unchecked until the owner confirms those tests pass.
+**Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting, and exact recipe/output checks are deferred until item definitions and recipes are added in Phases 4–5. No test server is requested or expected.
 
 ### Phase 3 – Ritual System
-- [ ] Start a 15-minute ritual after a successful legendary craft, consume ingredients, and keep the legendary item nonexistent until completion; repeatable exceptions have no ritual
-- [ ] Show the ritual boss bar/announcement and animation above the crafting table; drop the completed item at that table when the timer ends
-- [ ] Announce the item name and crafter coordinates every 3 minutes; render each item's configured gradient name in global announcements and place coordinates in parentheses as `(X, Y, Z)`; audience and remaining message format use placeholders until decided (see Open Question 1)
-- [ ] Persist item ID, craft/ritual start time, table location, reveal count/axis progress, owner, cooldowns, and reclaimable spawn-block markers
-- [ ] Resume active rituals after restart without duplicate items or announcements; rebuild reclaimable spawn-block markers on load
-- [ ] Test cancellation, shutdown/restart, unloaded worlds/chunks, and a craft completed exactly at the ritual deadline
+- [x] Start the configured 15-minute ritual after a successful craft-once legendary craft, consume ingredients only after the ritual record is saved, and keep the item nonexistent until completion; repeatable exceptions remain immediate
+- [x] Show an updating boss bar to the crafter, animate above the crafting location, and drop the completed item there when the timer ends
+- [x] Announce the configured-gradient item name and crafter coordinates globally every 3 minutes, with coordinates formatted as `(X, Y, Z)` and a configurable message template; the audience/message placeholder is now implemented as global broadcast with an editable template (see Open Question 1)
+- [x] Persist ritual item identity, crafter and table locations, start/completion times, reveal count, craft quota reservation, owner, cooldowns, and reclaimable spawn-block markers
+- [x] Resume active rituals after restart, persist reveal progress before broadcasting to avoid duplicate announcements, reconcile an already-dropped item before retrying completion, and rebuild reclaimable spawn-block markers on load
+- [x] Add automated data-store coverage for ritual restart/reveal/completion, craft quota rollback after a failed ritual start, and reclaim-marker persistence; `gradlew test build` passes
+- [ ] **Owner local test:** Verify a legendary craft consumes exactly the required ingredients/remainders and gives no item before the configured deadline; test manual crafting, shift-click, and Crafter automation
+- [ ] **Owner local test:** Verify the crafter boss bar, crafting-location animation, global reveal name/coordinates/message, completion drop location, and that repeatable recipes remain immediate once Phases 4–5 register recipes
+- [ ] **Owner local test:** Restart during an active ritual and at/after its deadline; verify one output and no repeated reveal, confirm unloaded-world/chunk recovery, and exercise craft cancellation/failure without losing ingredients or craft allowance
+
+**Phase 3 status:** Implementation and repository tests are complete. The three live Paper checks remain unchecked for owner verification; no live server test has been claimed.
 
 ### Phase 4 – Simple Items (first playable)
 - [ ] Galaxy String: implement its shaped recipe as a plain, repeatable crafting component with no ability; it must not consume a craft-once quota and must remain stackable
