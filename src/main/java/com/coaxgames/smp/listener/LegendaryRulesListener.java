@@ -128,6 +128,22 @@ public final class LegendaryRulesListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot >= event.getView().getTopInventory().getSize())
+                && event.getWhoClicked() instanceof Player player) {
+            var definition = items.identify(event.getOldCursor()).orElse(null);
+            if (definition != null) {
+                int incomingAmount = event.getNewItems().values().stream()
+                        .filter(stack -> items.identify(stack)
+                                .map(item -> item.id().equals(definition.id())).orElse(false))
+                        .mapToInt(ItemStack::getAmount)
+                        .sum();
+                if (incomingAmount > 0
+                        && !items.hasCapacity(player, definition.id(), incomingAmount)) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
         if (isLegendary(event.getOldCursor())
                 && event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot < event.getView().getTopInventory().getSize())) {
             event.setCancelled(true);
@@ -156,10 +172,11 @@ public final class LegendaryRulesListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (!items.isLegendary(stack)) {
+        var definition = items.identify(stack).orElse(null);
+        if (definition == null) {
             return;
         }
-        if (isPendingRitualItem(stack)) {
+        if (definition.trackUniqueInstance() && isPendingRitualItem(stack)) {
             event.setCancelled(true);
             return;
         }
@@ -169,9 +186,11 @@ public final class LegendaryRulesListener implements Listener {
             }
             return;
         }
-        var definition = items.identify(stack).orElse(null);
-        if (definition != null && !items.hasCapacity(player, definition.id(), stack.getAmount())) {
+        if (!items.hasCapacity(player, definition.id(), stack.getAmount())) {
             event.setCancelled(true);
+            return;
+        }
+        if (!items.isLegendary(stack)) {
             return;
         }
         if (!persistOwnerAndLocation(stack, player.getUniqueId(), player.getLocation())) {
@@ -426,6 +445,7 @@ public final class LegendaryRulesListener implements Listener {
             case PICKUP_ALL, MOVE_TO_OTHER_INVENTORY -> event.getCurrentItem().getAmount();
             case PICKUP_HALF -> (event.getCurrentItem().getAmount() + 1) / 2;
             case PICKUP_ONE -> 1;
+            case HOTBAR_SWAP, HOTBAR_MOVE_AND_READD, SWAP_WITH_CURSOR -> event.getCurrentItem().getAmount();
             case PICKUP_SOME -> {
                 ItemStack cursor = event.getCursor();
                 int cursorAmount = cursor != null && items.identify(cursor)
@@ -434,10 +454,34 @@ public final class LegendaryRulesListener implements Listener {
                 yield Math.min(event.getCurrentItem().getAmount(),
                         Math.max(0, event.getCurrentItem().getMaxStackSize() - cursorAmount));
             }
+            case COLLECT_TO_CURSOR -> {
+                ItemStack cursor = event.getCursor();
+                int cursorAmount = cursor != null && items.identify(cursor)
+                        .filter(item -> item.id().equals(definition.id())).isPresent()
+                        ? cursor.getAmount() : 0;
+                int available = Math.max(0, event.getCurrentItem().getMaxStackSize() - cursorAmount);
+                int inTopInventory = items.countItems(
+                        event.getView().getTopInventory().getContents(), definition.id());
+                yield Math.min(available, inTopInventory);
+            }
             default -> 0;
         };
-        return incomingAmount > 0
-                && !items.hasCapacity(player, definition.id(), incomingAmount);
+        int outgoingAmount = 0;
+        if (event.getAction() == InventoryAction.HOTBAR_SWAP) {
+            outgoingAmount = matchingAmount(hotbarItem(event), definition.id());
+        } else if (event.getAction() == InventoryAction.SWAP_WITH_CURSOR) {
+            outgoingAmount = matchingAmount(event.getCursor(), definition.id());
+        }
+        int limit = items.maxPerPlayer(definition.id());
+        return limit > 0 && items.countForPlayer(player, definition.id())
+                + incomingAmount - outgoingAmount > limit;
+    }
+
+    private int matchingAmount(ItemStack stack, String itemId) {
+        return items.identify(stack)
+                .filter(definition -> definition.id().equals(itemId))
+                .map(ignored -> stack.getAmount())
+                .orElse(0);
     }
 
     private void enforceCarryingCaps(Player player) {

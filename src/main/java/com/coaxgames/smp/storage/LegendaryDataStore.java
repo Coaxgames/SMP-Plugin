@@ -553,6 +553,133 @@ public final class LegendaryDataStore {
         save();
     }
 
+    public synchronized boolean startDailyEffect(
+            UUID playerUuid,
+            String itemId,
+            UUID worldUuid,
+            long worldDay,
+            long expiresAtMillis
+    ) throws IOException {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        Objects.requireNonNull(worldUuid, "worldUuid");
+        validateId(itemId);
+        if (worldDay < 0 || expiresAtMillis <= System.currentTimeMillis()) {
+            throw new IllegalArgumentException("Invalid daily effect day or expiry.");
+        }
+        String dailyPath = "daily-effects." + playerUuid + "." + itemId + "." + worldUuid;
+        if (data.contains(dailyPath + ".day")
+                && readWholeNumber(dailyPath + ".day") >= worldDay) {
+            return false;
+        }
+        String activePath = "active-effects." + playerUuid + "." + itemId;
+        String pausedPath = "paused-effects." + playerUuid + "." + itemId;
+        Map<String, Object> previousDaily = data.contains(dailyPath)
+                ? sectionValues(dailyPath) : Map.of();
+        Object previousActive = data.get(activePath);
+        Object previousPaused = data.get(pausedPath);
+        data.set(dailyPath + ".day", worldDay);
+        data.set(dailyPath + ".expires-at", expiresAtMillis);
+        data.set(activePath, expiresAtMillis);
+        data.set(pausedPath, null);
+        try {
+            save();
+        } catch (IOException exception) {
+            if (previousDaily.isEmpty()) {
+                data.set(dailyPath, null);
+            } else {
+                restoreSection(dailyPath, previousDaily);
+            }
+            data.set(activePath, previousActive);
+            data.set(pausedPath, previousPaused);
+            throw exception;
+        }
+        return true;
+    }
+
+    public synchronized long getActiveEffectExpiry(UUID playerUuid, String itemId) {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        validateId(itemId);
+        String path = "active-effects." + playerUuid + "." + itemId;
+        return data.contains(path) ? readWholeNumber(path) : 0L;
+    }
+
+    public synchronized void clearActiveEffect(UUID playerUuid, String itemId) throws IOException {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        validateId(itemId);
+        String path = "active-effects." + playerUuid + "." + itemId;
+        if (!data.contains(path)) {
+            return;
+        }
+        Object previous = data.get(path);
+        data.set(path, null);
+        try {
+            save();
+        } catch (IOException exception) {
+            data.set(path, previous);
+            throw exception;
+        }
+    }
+
+    public synchronized void pauseActiveEffects(long nowMillis) throws IOException {
+        ConfigurationSection players = data.getConfigurationSection("active-effects");
+        if (players == null) {
+            return;
+        }
+        String previousData = data.saveToString();
+        for (String playerUuid : List.copyOf(players.getKeys(false))) {
+            ConfigurationSection effects = data.getConfigurationSection("active-effects." + playerUuid);
+            if (effects == null) {
+                continue;
+            }
+            for (String itemId : List.copyOf(effects.getKeys(false))) {
+                String activePath = "active-effects." + playerUuid + "." + itemId;
+                long remaining = Math.max(0L, readWholeNumber(activePath) - nowMillis);
+                String pausedPath = "paused-effects." + playerUuid + "." + itemId;
+                if (remaining > 0) {
+                    data.set(pausedPath, remaining);
+                } else {
+                    data.set(pausedPath, null);
+                }
+                data.set(activePath, null);
+            }
+        }
+        try {
+            save();
+        } catch (IOException exception) {
+            restoreSnapshot(previousData, exception);
+            throw exception;
+        }
+    }
+
+    public synchronized void resumeActiveEffects(long nowMillis) throws IOException {
+        ConfigurationSection players = data.getConfigurationSection("paused-effects");
+        if (players == null) {
+            return;
+        }
+        String previousData = data.saveToString();
+        for (String playerUuid : List.copyOf(players.getKeys(false))) {
+            ConfigurationSection effects = data.getConfigurationSection("paused-effects." + playerUuid);
+            if (effects == null) {
+                continue;
+            }
+            for (String itemId : List.copyOf(effects.getKeys(false))) {
+                String pausedPath = "paused-effects." + playerUuid + "." + itemId;
+                long remaining = readWholeNumber(pausedPath);
+                if (remaining > 0) {
+                    data.set("active-effects." + playerUuid + "." + itemId,
+                            Math.addExact(nowMillis, remaining));
+                }
+                data.set(pausedPath, null);
+            }
+        }
+        try {
+            save();
+        } catch (IOException exception) {
+            restoreSnapshot(previousData, exception);
+            throw exception;
+        }
+    }
+
     public synchronized int clearCooldownsForItem(String cooldownId) throws IOException {
         validateId(cooldownId);
         ConfigurationSection players = data.getConfigurationSection("cooldowns");
@@ -638,6 +765,14 @@ public final class LegendaryDataStore {
         data.set(path, null);
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             data.set(path + "." + entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void restoreSnapshot(String snapshot, IOException originalException) {
+        try {
+            data.loadFromString(snapshot);
+        } catch (InvalidConfigurationException restoreException) {
+            originalException.addSuppressed(restoreException);
         }
     }
 

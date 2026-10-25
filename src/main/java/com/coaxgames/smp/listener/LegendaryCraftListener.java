@@ -7,6 +7,7 @@ import com.coaxgames.smp.ritual.RitualManager;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import net.kyori.adventure.text.Component;
@@ -23,6 +24,9 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapedRecipe;
 
 public final class LegendaryCraftListener implements Listener {
     private final GalaxySmpPlugin plugin;
@@ -38,9 +42,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         CraftingInventory inventory = event.getInventory();
-        if (craftBlocked(item, inventory.getMatrix())
-                || event.getView().getPlayer() instanceof Player player
-                && !plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
+        if (craftBlocked(item, inventory.getMatrix())) {
             inventory.setResult(null);
             return;
         }
@@ -53,7 +55,13 @@ public final class LegendaryCraftListener implements Listener {
             inventory.setResult(preview);
             return;
         }
-        inventory.setResult(plugin.getLegendaryItems().createItem(item.id()));
+        ItemStack result = plugin.getLegendaryItems().createItem(item.id());
+        if (event.getView().getPlayer() instanceof Player player
+                && !plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
+            inventory.setResult(null);
+            return;
+        }
+        inventory.setResult(result);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -84,13 +92,20 @@ public final class LegendaryCraftListener implements Listener {
             }
             Optional<UUID> ritualUuid = Optional.empty();
             ItemStack[] originalIngredients = copyContents(event.getInventory().getMatrix());
+            Set<Integer> ingredientSlots = recipeIngredientSlots(event.getRecipe(), originalIngredients);
+            if (ingredientSlots.isEmpty()) {
+                event.getInventory().setResult(null);
+                plugin.getLogger().severe("Could not match shaped recipe ingredients for ritual " + item.id()
+                        + "; craft was cancelled without consuming ingredients.");
+                return;
+            }
             try {
                 ritualUuid = plugin.getRitualManager().start(item, player, location);
                 if (ritualUuid.isEmpty()) {
                     event.getInventory().setResult(null);
                     return;
                 }
-                consumeIngredients(event.getInventory().getMatrix(), event.getInventory());
+                consumeIngredients(originalIngredients, event.getInventory(), ingredientSlots);
                 player.sendMessage(Component.text("Your ritual has begun. The item will appear after 15 minutes."));
             } catch (IOException | RuntimeException exception) {
                 rollbackFailedRitualStart(
@@ -104,17 +119,19 @@ public final class LegendaryCraftListener implements Listener {
             }
             return;
         }
-        if (!plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
-            event.setCancelled(true);
-            event.getInventory().setResult(null);
-            return;
-        }
-
         ItemStack result = event.getCurrentItem();
         if (result == null || plugin.getLegendaryItems().identify(result)
                 .filter(registered -> registered.id().equals(item.id())).isEmpty()) {
             result = plugin.getLegendaryItems().createItem(item.id());
-            event.setCurrentItem(result);
+        }
+        if (!plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
+            event.setCancelled(true);
+            event.getInventory().setResult(null);
+            return;
+        }
+        event.setCurrentItem(result);
+        if (!item.trackUniqueInstance()) {
+            return;
         }
         var itemUuid = plugin.getLegendaryItems().getUniqueId(result).orElseThrow(
                 () -> new IllegalStateException("Prepared legendary recipe result has no UUID: " + item.id()));
@@ -154,10 +171,16 @@ public final class LegendaryCraftListener implements Listener {
             Optional<UUID> ritualUuid = Optional.empty();
             Inventory inventory = crafter.getInventory();
             ItemStack[] originalIngredients = copyContents(inventory.getContents());
+            Set<Integer> ingredientSlots = recipeIngredientSlots(event.getRecipe(), originalIngredients);
+            if (ingredientSlots.isEmpty()) {
+                plugin.getLogger().severe("Could not match automated shaped recipe ingredients for ritual "
+                        + item.id() + "; craft was cancelled without consuming ingredients.");
+                return;
+            }
             try {
                 ritualUuid = plugin.getRitualManager().start(item, null, event.getBlock().getLocation());
                 if (ritualUuid.isPresent()) {
-                    consumeIngredients(inventory.getContents(), inventory);
+                    consumeIngredients(originalIngredients, inventory, ingredientSlots);
                 }
             } catch (IOException | RuntimeException exception) {
                 rollbackFailedRitualStart(ritualUuid, item, exception, inventory, originalIngredients);
@@ -170,6 +193,10 @@ public final class LegendaryCraftListener implements Listener {
         }
 
         ItemStack result = plugin.getLegendaryItems().createItem(item.id());
+        if (!item.trackUniqueInstance()) {
+            event.setResult(result);
+            return;
+        }
         var itemUuid = plugin.getLegendaryItems().getUniqueId(result).orElseThrow(
                 () -> new IllegalStateException("Automated craft result has no UUID: " + item.id()));
         try {
@@ -198,12 +225,12 @@ public final class LegendaryCraftListener implements Listener {
                 || !HeadDropHead.allRecipeHeadsAreMarked(matrix);
     }
 
-    private void consumeIngredients(ItemStack[] contents, Inventory inventory) {
-        ItemStack[] updated = new ItemStack[contents.length];
-        for (int slot = 0; slot < contents.length; slot++) {
-            ItemStack ingredient = contents[slot];
+    private void consumeIngredients(ItemStack[] contents, Inventory inventory, Set<Integer> ingredientSlots) {
+        ItemStack[] updated = copyContents(contents);
+        for (int slot : ingredientSlots) {
+            ItemStack ingredient = updated[slot];
             if (ingredient == null || ingredient.getType().isAir()) {
-                continue;
+                throw new IllegalStateException("Matched recipe ingredient disappeared from slot " + slot + ".");
             }
             Material remainder = ingredient.getType().getCraftingRemainingItem();
             ItemStack consumed = ingredient.clone();
@@ -219,6 +246,42 @@ public final class LegendaryCraftListener implements Listener {
         } else {
             inventory.setContents(updated);
         }
+    }
+
+    private Set<Integer> recipeIngredientSlots(Recipe recipe, ItemStack[] matrix) {
+        if (!(recipe instanceof ShapedRecipe shaped) || matrix.length != 9) {
+            return Set.of();
+        }
+        String[] shape = shaped.getShape();
+        int patternWidth = java.util.Arrays.stream(shape).mapToInt(String::length).max().orElse(0);
+        if (patternWidth == 0 || patternWidth > 3 || shape.length > 3) {
+            return Set.of();
+        }
+        for (int offsetY = 0; offsetY <= 3 - shape.length; offsetY++) {
+            for (int offsetX = 0; offsetX <= 3 - patternWidth; offsetX++) {
+                Set<Integer> slots = new java.util.HashSet<>();
+                boolean matches = true;
+                for (int row = 0; row < shape.length && matches; row++) {
+                    for (int column = 0; column < shape[row].length(); column++) {
+                        char symbol = shape[row].charAt(column);
+                        if (symbol == ' ') {
+                            continue;
+                        }
+                        RecipeChoice choice = shaped.getChoiceMap().get(symbol);
+                        int slot = (offsetY + row) * 3 + offsetX + column;
+                        if (choice == null || !choice.test(matrix[slot])) {
+                            matches = false;
+                            break;
+                        }
+                        slots.add(slot);
+                    }
+                }
+                if (matches && !slots.isEmpty()) {
+                    return Set.copyOf(slots);
+                }
+            }
+        }
+        return Set.of();
     }
 
     private void rollbackFailedRitualStart(

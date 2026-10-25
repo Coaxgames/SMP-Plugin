@@ -3,6 +3,31 @@ example-message: "Hello, world!"
 cooldowns:
   default-seconds: 0
 
+phase-four:
+  combo-window-seconds: 3
+  daily-trigger-tick: 13500
+  daily-effect-seconds: 300
+  astral-sword:
+    attack-speed-seconds: 30
+  kuiper-ball:
+    freeze-seconds: 30
+    burst-radius: 4.0
+    burst-strength: 1.5
+  mass-orb:
+    passive-refresh-ticks: 40
+    # Provisional height-scaled damage: max(0, fall-distance - 3) * damage-per-block,
+    # capped at maximum-damage, then reduced by the configured Feather Falling XV placeholder.
+    # Damage is in Minecraft health points.
+    free-fall-distance: 3.0
+    damage-per-block: 1.0
+    maximum-damage: 40.0
+    feather-falling-level: 15
+    feather-falling-reduction-per-level: 0.12
+    maximum-feather-falling-reduction: 0.8
+  lunar-leggings:
+    # False means wait for the next daily trigger after a missed offline trigger.
+    catch-up-if-offline: false
+
 rituals:
   duration-seconds: 900
   reveal-interval-seconds: 180
@@ -76,5 +101,7 @@ legendary-items:
     default: 1
     # Zero disables the per-item limit.
     items:
+      galaxy_string: 0
+      kuiper_ball: 0
       # Example: allow two Astral Swords per player.
       # astral_sword: 2

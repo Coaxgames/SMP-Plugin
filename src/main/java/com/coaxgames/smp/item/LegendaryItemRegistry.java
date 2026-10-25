@@ -262,7 +262,9 @@ public final class LegendaryItemRegistry {
         if (item.getType().isAir()) {
             throw new IllegalStateException("Legendary item cannot use an air base item: " + id);
         }
-        item.setAmount(1);
+        if (definition.craftOnce()) {
+            item.setAmount(1);
+        }
 
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
@@ -281,7 +283,11 @@ public final class LegendaryItemRegistry {
             }
         }
         meta.getPersistentDataContainer().set(itemIdKey, PersistentDataType.STRING, id);
-        meta.getPersistentDataContainer().set(itemUuidKey, PersistentDataType.STRING, itemUuid.toString());
+        if (definition.trackUniqueInstance()) {
+            meta.getPersistentDataContainer().set(itemUuidKey, PersistentDataType.STRING, itemUuid.toString());
+        } else {
+            meta.getPersistentDataContainer().remove(itemUuidKey);
+        }
         if (!item.setItemMeta(meta)) {
             throw new IllegalStateException("Could not apply identity metadata to legendary item: " + id);
         }

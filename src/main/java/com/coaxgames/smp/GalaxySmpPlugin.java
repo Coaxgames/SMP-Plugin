@@ -1,8 +1,11 @@
 package com.coaxgames.smp;
 
+import com.coaxgames.smp.ability.PhaseFourDailyEffectManager;
 import com.coaxgames.smp.command.GalaxyCommand;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
+import com.coaxgames.smp.item.PhaseFourItems;
 import com.coaxgames.smp.listener.LegendaryCraftListener;
+import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
 import com.coaxgames.smp.ritual.RitualManager;
@@ -18,6 +21,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private LegendaryDataStore dataStore;
     private CooldownManager cooldownManager;
     private RitualManager ritualManager;
+    private PhaseFourDailyEffectManager phaseFourDailyEffects;
 
     @Override
     public void onEnable() {
@@ -26,8 +30,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         validatePlayerItemLimits();
         validateItemNameGradients();
         validateRitualSettings();
+        validatePhaseFourSettings();
         LegendaryItemRegistry.disableVanillaMaceRecipe();
         legendaryItems = new LegendaryItemRegistry(this);
+        PhaseFourItems.register(this, legendaryItems);
         try {
             dataStore = new LegendaryDataStore(getDataFolder().toPath());
         } catch (IOException | org.bukkit.configuration.InvalidConfigurationException exception) {
@@ -39,8 +45,17 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         cooldownManager = new CooldownManager(getConfig(), dataStore, legendaryItems);
         ritualManager = new RitualManager(this);
         ritualManager.resume();
+        phaseFourDailyEffects = new PhaseFourDailyEffectManager(this);
+        try {
+            phaseFourDailyEffects.start();
+        } catch (IOException exception) {
+            getLogger().log(Level.SEVERE, "Could not resume persisted Phase 4 effects; disabling the plugin.", exception);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
+        getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
@@ -54,8 +69,12 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         if (ritualManager != null) {
             ritualManager.shutdown();
         }
+        if (phaseFourDailyEffects != null) {
+            phaseFourDailyEffects.shutdown();
+        }
         if (dataStore != null) {
             try {
+                dataStore.pauseActiveEffects(System.currentTimeMillis());
                 dataStore.save();
             } catch (IOException exception) {
                 getLogger().log(Level.SEVERE, "Could not save plugin data during shutdown.", exception);
@@ -148,6 +167,53 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                     && (!getConfig().isLong(path) || getConfig().getLong(path) <= 0)) {
                 throw new IllegalStateException(path + " must be a positive number of seconds.");
             }
+        }
+    }
+
+    private void validatePhaseFourSettings() {
+        for (String path : java.util.List.of(
+                "phase-four.combo-window-seconds",
+                "phase-four.astral-sword.attack-speed-seconds",
+                "phase-four.daily-trigger-tick",
+                "phase-four.daily-effect-seconds",
+                "phase-four.kuiper-ball.freeze-seconds",
+                "phase-four.mass-orb.feather-falling-level",
+                "phase-four.mass-orb.passive-refresh-ticks")) {
+            if (getConfig().contains(path)
+                    && (!getConfig().isLong(path) || getConfig().getLong(path) <= 0)) {
+                throw new IllegalStateException(path + " must be a positive integer.");
+            }
+        }
+        validateMaximumLong("phase-four.combo-window-seconds", Long.MAX_VALUE / 1_000L);
+        validateMaximumLong("phase-four.astral-sword.attack-speed-seconds", Long.MAX_VALUE / 20L);
+        validateMaximumLong("phase-four.daily-effect-seconds", Long.MAX_VALUE / 1_000L);
+        validateMaximumLong("phase-four.kuiper-ball.freeze-seconds", Integer.MAX_VALUE / 20L);
+        validateMaximumLong("phase-four.mass-orb.feather-falling-level", Integer.MAX_VALUE);
+        validateMaximumLong("phase-four.mass-orb.passive-refresh-ticks", Integer.MAX_VALUE);
+        long triggerTick = getConfig().getLong("phase-four.daily-trigger-tick", 13_500L);
+        if (triggerTick >= 24_000L) {
+            throw new IllegalStateException("phase-four.daily-trigger-tick must be between 0 and 23999.");
+        }
+        for (String path : java.util.List.of(
+                "phase-four.kuiper-ball.burst-radius",
+                "phase-four.kuiper-ball.burst-strength",
+                "phase-four.mass-orb.free-fall-distance",
+                "phase-four.mass-orb.damage-per-block",
+                "phase-four.mass-orb.maximum-damage",
+                "phase-four.mass-orb.feather-falling-reduction-per-level",
+                "phase-four.mass-orb.maximum-feather-falling-reduction")) {
+            if (getConfig().contains(path)) {
+                double value = getConfig().getDouble(path, -1.0);
+                if (!Double.isFinite(value) || value < 0.0) {
+                    throw new IllegalStateException(path + " must be a non-negative number.");
+                }
+            }
+        }
+    }
+
+    private void validateMaximumLong(String path, long maximum) {
+        if (getConfig().contains(path) && getConfig().getLong(path) > maximum) {
+            throw new IllegalStateException(path + " exceeds the supported maximum of " + maximum + ".");
         }
     }
 }

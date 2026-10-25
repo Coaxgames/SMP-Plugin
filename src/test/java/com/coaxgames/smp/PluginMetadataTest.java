@@ -66,4 +66,21 @@ class PluginMetadataTest {
             }
         }
     }
+
+    @Test
+    void phaseFourConfigPreservesRepeatableStackingAndDocumentsPlaceholders() throws IOException {
+        try (var configStream = getClass().getResourceAsStream("/config.yml")) {
+            assertNotNull(configStream);
+            var config = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(configStream, StandardCharsets.UTF_8));
+            assertEquals(0, config.getInt("legendary-items.max-per-player.items.galaxy_string"));
+            assertEquals(0, config.getInt("legendary-items.max-per-player.items.kuiper_ball"));
+            assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
+            assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
+            assertEquals(300L, config.getLong("phase-four.daily-effect-seconds"));
+            assertEquals(15, config.getInt("phase-four.mass-orb.feather-falling-level"));
+            assertFalse(config.getBoolean("phase-four.lunar-leggings.catch-up-if-offline"));
+            assertEquals(1.0, config.getDouble("phase-four.mass-orb.damage-per-block"));
+        }
+    }
 }

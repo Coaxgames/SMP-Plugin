@@ -124,7 +124,8 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [x] Add automated tests for Head Drop marker-byte validation/version gating, Paper/plugin metadata, per-item gradient config coverage, independent mace craft records, ownerless automation-item persistence, and Phase 1 persistence behavior; `gradlew test build` passes
 - [x] **Owner local test:** On the owner's Paper 26.3 server, verify Galaxy SMP loads with Head Drop 3.1.0+ and refuses missing/older versions
 - [x] **Owner local test:** Configure Head Drop `drop.placement: item`; if testing block placement instead, enable `head.persist_lore_on_placement`; verify generated item heads carry the `headdrop:dropped` byte marker and normal player skulls are rejected by matching recipes
-- [ ] **Deferred until Phases 4–5 add recipes:** Verify each shaped recipe's exact ingredients and output identity; verify the vanilla mace recipe is absent and each custom mace can be crafted once independently
+- [ ] **Owner local test:** Verify Phase 4 shaped recipes' exact ingredients and output identity, including Head Drop marker acceptance and rejection of ordinary player heads; verify repeatable outputs and stack size
+- [ ] **Deferred until Phase 5 adds mace recipes:** Verify the vanilla mace recipe is absent and each custom mace can be crafted once independently
 - [ ] **Owner local test:** Verify normal crafting, shift-click, repeated attempts, Crafter automation, restart persistence, and administrative grants against craft-once records
 - [ ] **Owner local test:** Exercise container protections: chest/barrel/shulker/ender chest, hopper/dropper, bundle, crafting grid, item frame, armor stand, shift-click, drag, number-key/offhand swap, and container open/break/explosion paths
 - [ ] **Owner local test:** Verify per-item carrying caps at default, custom values, and zero/unlimited through crafting, pickup, inventory movement, join/restart recovery, reclaim, and `/galaxy give`; verify distinct item types have independent caps
@@ -132,7 +133,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [ ] **Owner local test:** Verify death drops stay at the death location; lava, fire, cactus, void, explosions, and despawn create a protected reclaim barrel at world X/Z (0,0), and claiming it restores the same item UUID
 - [ ] Re-run the relevant recipe, protection, lifecycle, and persistence tests whenever later phases add item definitions or change event handling
 
-**Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting, and exact recipe/output checks are deferred until item definitions and recipes are added in Phases 4–5. No test server is requested or expected.
+**Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting. Phase 4 recipe/output checks are now available under Phase 4; custom mace recipe checks remain deferred until Phase 5. No test server is requested or expected.
 
 ### Phase 3 – Ritual System
 - [x] Start the configured 15-minute ritual after a successful craft-once legendary craft, consume ingredients only after the ritual record is saved, and keep the item nonexistent until completion; repeatable exceptions remain immediate
@@ -142,20 +143,28 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - [x] Resume active rituals after restart, persist reveal progress before broadcasting to avoid duplicate announcements, reconcile an already-dropped item before retrying completion, and rebuild reclaimable spawn-block markers on load
 - [x] Add automated data-store coverage for ritual restart/reveal/completion, craft quota rollback after a failed ritual start, and reclaim-marker persistence; `gradlew test build` passes
 - [ ] **Owner local test:** Verify a legendary craft consumes exactly the required ingredients/remainders and gives no item before the configured deadline; test manual crafting, shift-click, and Crafter automation
-- [ ] **Owner local test:** Verify the crafter boss bar, crafting-location animation, global reveal name/coordinates/message, completion drop location, and that repeatable recipes remain immediate once Phases 4–5 register recipes
+- [ ] **Owner local test:** Verify the crafter boss bar, crafting-location animation, global reveal name/coordinates/message, completion drop location, and that Phase 4 repeatable recipes remain immediate
 - [ ] **Owner local test:** Restart during an active ritual and at/after its deadline; verify one output and no repeated reveal, confirm unloaded-world/chunk recovery, and exercise craft cancellation/failure without losing ingredients or craft allowance
 
 **Phase 3 status:** Implementation and repository tests are complete. The three live Paper checks remain unchecked for owner verification; no live server test has been claimed.
 
 ### Phase 4 – Simple Items (first playable)
-- [ ] Galaxy String: implement its shaped recipe as a plain, repeatable crafting component with no ability; it must not consume a craft-once quota and must remain stackable
-- [ ] Kuiper Ball: recipe yields 10, stack size 64; thrown snowball freezes for 30 seconds and creates the wind-charge-like burst; it must not consume a craft-once quota and its stacks must merge normally
-- [ ] Mass Orb: repeatable recipe; it must not consume a craft-once quota or receive legendary-only loss/storage protection; its carrying cap is configurable per item ID (default one, zero unlimited); Slowness IV and height-scaled, anvil-like fall damage with the Feather Falling XV effect; use a documented formula placeholder until confirmed
-- [ ] Astral Sword: implement its recipe, Sharpness VI/Looting III/Fire Aspect, prohibit further enchanting, and grant a placeholder 1.65x attack-speed multiplier for 30 seconds after a four-hit combo
-- [ ] Void Sword: implement its recipe, Unbreakable/Sharpness IV/Looting III, prohibit further enchanting, and apply Slowness I plus Wither I for 10 seconds after a four-hit combo
-- [ ] Solstice Chestplate: implement its recipe and grant Speed III, Strength II, and Resistance I for five minutes once per Minecraft day when world time reaches 13,500 ticks
-- [ ] Lunar Leggings: implement its recipe, remain Unbreakable, and grant Speed I, Strength I, and Resistance II for five minutes when world time reaches tick 13,500 of the 24,000-tick day; persist and resume the remaining effect duration across restarts
-- [ ] Verify each item identity, recipe, global protection rule, cooldown/effect duration, and restart behavior
+- [x] Galaxy String: shaped, repeatable recipe; plain crafting component, no ability or craft quota; stack-compatible item identity with no unique-instance UUID
+- [x] Kuiper Ball: shaped recipe yields 10, custom stack maximum 64; marked thrown snowballs freeze a direct hit for 30 seconds and create a configurable wind-charge-like velocity burst; repeatable with normal stack merging
+- [x] Mass Orb: repeatable recipe with no legendary-only loss/storage protection; configurable per-item cap (default one, zero unlimited); Slowness IV while held; height-scaled fall damage and Feather Falling XV reduction use documented, configurable placeholders pending owner balance decision
+- [x] Astral Sword: recipe, Sharpness VI/Looting III/Fire Aspect, no-enchant protection, and temporary 1.65x attack-speed multiplier for 30 seconds after four hits
+- [x] Void Sword: recipe, Unbreakable/Sharpness IV/Looting III, no-enchant protection, and Slowness I plus Wither I for 10 seconds after four hits
+- [x] Solstice Chestplate: recipe and Speed III, Strength II, Resistance I for five minutes when world time crosses tick 13,500; daily trigger is persisted
+- [x] Lunar Leggings: recipe, Unbreakable, and Speed I, Strength I, Resistance II for five minutes at world tick 13,500; active remaining duration pauses over clean shutdown and resumes after restart
+- [x] Add automated tests for daily-effect persistence and Mass Orb damage formula/cap placeholder; `gradlew test build` passes
+- [ ] **Owner local test:** Verify all seven shaped recipes' exact ingredients and outputs; Head Drop heads work and ordinary player heads are rejected
+- [ ] **Owner local test:** Verify Galaxy String and Kuiper Ball stacking, Kuiper Ball output of 10/stack size 64, and repeatable crafts do not start rituals or consume craft-once quota
+- [ ] **Owner local test:** Verify Astral/Void four-hit combos, effect targets and durations, Astral attack-speed multiplier, and reset window
+- [ ] **Owner local test:** Verify Kuiper Ball freeze and burst; Mass Orb cap, Slowness IV, fall-damage placeholder and Feather Falling XV behavior
+- [ ] **Owner local test:** Wear Solstice Chestplate/Lunar Leggings at tick 13,500, check effect amplifiers/duration and once-per-day behavior, restart during an active effect, and decide Lunar missed-trigger catch-up behavior
+- [ ] Verify Phase 4 items on Paper 26.3, including protection/enchant rules, craft/ritual lifecycle, persistence and recovery; no texture pack is required for mechanics testing
+
+**Phase 4 status:** Item definitions, recipes, abilities, configurable placeholders and repository tests are implemented. Live Paper gameplay checks remain unchecked for owner verification. Mass Orb's formula/cap and Lunar catch-up behavior remain explicitly open for balance/owner decisions.
 
 ### Phase 5 – Complex Abilities
 - [ ] Star Mace: implement its recipe as one custom mace type, Wind Burst III/Density II, seven-heart damage cap, and 30-second cooldown after two hits; retain its independent one-ever craft allowance

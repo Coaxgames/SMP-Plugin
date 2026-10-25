@@ -205,6 +205,36 @@ class LegendaryDataStoreTest {
     }
 
     @Test
+    void dailyArmorEffectsAreLimitedPerWorldDayAndResumeAfterReload() throws Exception {
+        UUID playerUuid = UUID.randomUUID();
+        UUID worldUuid = UUID.randomUUID();
+        long startedAt = System.currentTimeMillis();
+        long expiresAt = startedAt + 300_000L;
+        LegendaryDataStore firstStore = new LegendaryDataStore(dataDirectory);
+
+        assertTrue(firstStore.startDailyEffect(playerUuid, "lunar_leggings", worldUuid, 12L, expiresAt));
+        assertFalse(firstStore.startDailyEffect(playerUuid, "lunar_leggings", worldUuid, 12L, expiresAt));
+        assertEquals(expiresAt,
+                new LegendaryDataStore(dataDirectory).getActiveEffectExpiry(playerUuid, "lunar_leggings"));
+
+        LegendaryDataStore reloadedStore = new LegendaryDataStore(dataDirectory);
+        reloadedStore.pauseActiveEffects(startedAt + 30_000L);
+        assertEquals(0L, reloadedStore.getActiveEffectExpiry(playerUuid, "lunar_leggings"));
+        long restartAt = startedAt + 5_000_000L;
+        reloadedStore.resumeActiveEffects(restartAt);
+        long resumedExpiry = restartAt + 270_000L;
+        assertEquals(resumedExpiry,
+                new LegendaryDataStore(dataDirectory).getActiveEffectExpiry(playerUuid, "lunar_leggings"));
+        assertTrue(reloadedStore.startDailyEffect(
+                playerUuid, "lunar_leggings", worldUuid, 13L, resumedExpiry + 24_000L));
+        assertEquals(resumedExpiry + 24_000L,
+                new LegendaryDataStore(dataDirectory).getActiveEffectExpiry(playerUuid, "lunar_leggings"));
+        reloadedStore.clearActiveEffect(playerUuid, "lunar_leggings");
+        assertEquals(0L,
+                new LegendaryDataStore(dataDirectory).getActiveEffectExpiry(playerUuid, "lunar_leggings"));
+    }
+
+    @Test
     void reclaimMarkerLocationPersistsAndCanBeClearedAfterClaim() throws Exception {
         UUID itemUuid = UUID.randomUUID();
         LegendaryDataStore store = new LegendaryDataStore(dataDirectory);

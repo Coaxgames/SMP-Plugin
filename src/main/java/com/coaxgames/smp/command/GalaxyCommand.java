@@ -99,29 +99,36 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text("Unknown legendary item: " + args[2]));
             return;
         }
-        if (!plugin.getRitualManager().hasCapacity(target, definition.id(), 1)) {
+        ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
+        if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
             sender.sendMessage(Component.text(target.getName() + " already holds the configured maximum of "
                     + definition.id() + " (" + plugin.getLegendaryItems().maxPerPlayer(definition.id()) + ")."));
             return;
         }
-        int slot = target.getInventory().firstEmpty();
-        if (slot < 0) {
-            sender.sendMessage(Component.text(target.getName() + " has no empty inventory slot."));
-            return;
+        if (definition.trackUniqueInstance()) {
+            int slot = target.getInventory().firstEmpty();
+            if (slot < 0) {
+                sender.sendMessage(Component.text(target.getName() + " has no empty inventory slot."));
+                return;
+            }
+            UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
+                    .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
+            plugin.getDataStore().recordAdministrativeGrant(
+                    definition.id(),
+                    definition.maxCrafts(),
+                    itemUuid,
+                    target.getUniqueId(),
+                    target.getLocation(),
+                    definition.craftOnce()
+            );
+            target.getInventory().setItem(slot, item);
+        } else {
+            var leftovers = target.getInventory().addItem(item);
+            if (!leftovers.isEmpty()) {
+                sender.sendMessage(Component.text(target.getName() + "'s inventory has no room for the full stack."));
+                return;
+            }
         }
-
-        ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
-        UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
-                .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
-        plugin.getDataStore().recordAdministrativeGrant(
-                definition.id(),
-                definition.maxCrafts(),
-                itemUuid,
-                target.getUniqueId(),
-                target.getLocation(),
-                definition.craftOnce()
-        );
-        target.getInventory().setItem(slot, item);
         sender.sendMessage(Component.text("Gave " + definition.id() + " to " + target.getName()
                 + (definition.craftOnce() ? ". Its craft quota is now permanently used." : ".")));
     }
@@ -150,6 +157,10 @@ public final class GalaxyCommand implements TabExecutor {
         }
         sender.sendMessage(Component.text("Registered legendary items:"));
         for (LegendaryItem item : items) {
+            if (!item.craftOnce()) {
+                sender.sendMessage(Component.text("- " + item.id() + " (repeatable)"));
+                continue;
+            }
             int crafted = plugin.getDataStore().getCraftCount(item.id());
             sender.sendMessage(Component.text("- " + item.id() + " (crafted " + crafted
                     + "/" + item.maxCrafts() + ")"));

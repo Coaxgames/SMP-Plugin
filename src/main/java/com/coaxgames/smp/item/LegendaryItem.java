@@ -30,4 +30,8 @@ public interface LegendaryItem extends Listener {
     default boolean protectedFromLossAndStorage() {
         return true;
     }
+
+    default boolean trackUniqueInstance() {
+        return craftOnce();
+    }
 }
