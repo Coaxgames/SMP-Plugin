@@ -208,9 +208,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 "phase-four.mass-orb.feather-falling-reduction-per-level",
                 "phase-four.mass-orb.maximum-feather-falling-reduction")) {
             if (getConfig().contains(path)) {
-                double value = getConfig().getDouble(path, -1.0);
-                if (!Double.isFinite(value) || value < 0.0) {
-                    throw new IllegalStateException(path + " must be a non-negative number.");
+                var value = ConfigNumbers.finiteNumber(getConfig(), path);
+                if (value.isEmpty() || value.getAsDouble() < 0.0) {
+                    throw new IllegalStateException(path + " must be a non-negative number; found "
+                            + getConfig().get(path) + ".");
                 }
             }
         }

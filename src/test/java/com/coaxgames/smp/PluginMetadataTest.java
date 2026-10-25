@@ -36,6 +36,23 @@ class PluginMetadataTest {
             assertTrue(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, path), path);
         }
         assertFalse(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, "phase-four.kuiper-ball.burst-radius"));
+        for (String path : java.util.List.of(
+                "phase-four.kuiper-ball.burst-radius",
+                "phase-four.kuiper-ball.burst-strength",
+                "phase-four.mass-orb.free-fall-distance",
+                "phase-four.mass-orb.damage-per-block",
+                "phase-four.mass-orb.maximum-damage",
+                "phase-four.mass-orb.feather-falling-reduction-per-level",
+                "phase-four.mass-orb.maximum-feather-falling-reduction")) {
+            assertTrue(com.coaxgames.smp.util.ConfigNumbers.finiteNumber(config, path).orElse(-1.0) >= 0.0, path);
+        }
+        var edited = new YamlConfiguration();
+        edited.set("a", 4);
+        edited.set("b", "2.5");
+        edited.set("c", "nope");
+        assertEquals(4.0, com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "a").orElse(-1.0));
+        assertEquals(2.5, com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "b").orElse(-1.0));
+        assertTrue(com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "c").isEmpty());
     }
 
     @Test

@@ -24,7 +24,7 @@ public final class PhaseFourItems {
         registry.register(repeatable(plugin, "kuiper_ball", Material.SNOWBALL, 10,
                 64, new String[] {"SBS", "PPP", "SBS"}, new Ingredient(
                         'S', Material.SNOWBALL), new Ingredient('B', Material.WIND_CHARGE),
-                new Ingredient('P', Material.POWDER_SNOW)));
+                new Ingredient('P', Material.POWDER_SNOW_BUCKET)));
         registry.register(repeatable(plugin, "mass_orb", Material.HEAVY_CORE, 1,
                 null, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
                         'G', Material.GOLD_BLOCK), new Ingredient('B', Material.BLUE_ICE),

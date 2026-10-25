@@ -216,7 +216,8 @@ public final class PhaseFourAbilityListener implements Listener {
     }
 
     private double nonNegativeConfig(String path, double fallback) {
-        double value = plugin.getConfig().getDouble(path, fallback);
+        double value = com.coaxgames.smp.util.ConfigNumbers.finiteNumber(plugin.getConfig(), path)
+                .orElse(fallback);
         if (!Double.isFinite(value) || value < 0) {
             throw new IllegalStateException(path + " must be a non-negative number.");
         }
