@@ -83,6 +83,11 @@ public final class PhaseFourItems {
             EnchantmentLevel... enchantments
     ) {
         ItemStack item = new ItemStack(material);
+        if (id.equals("astral_sword") || id.equals("void_sword")) {
+            var meta = item.getItemMeta();
+            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
+            item.setItemMeta(meta);
+        }
         for (EnchantmentLevel enchantment : enchantments) {
             item.addUnsafeEnchantment(enchantment.enchantment(), enchantment.level());
         }

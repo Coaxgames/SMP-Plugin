@@ -46,6 +46,11 @@ public final class PhaseFiveMaces {
             EnchantmentLevel... enchantments
     ) {
         ItemStack item = new ItemStack(Material.MACE);
+        if (id.equals("collapsing_star_mace")) {
+            var meta = item.getItemMeta();
+            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
+            item.setItemMeta(meta);
+        }
         for (EnchantmentLevel enchantment : enchantments) {
             item.addUnsafeEnchantment(enchantment.enchantment(), enchantment.level());
         }

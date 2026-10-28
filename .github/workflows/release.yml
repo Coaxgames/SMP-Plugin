@@ -168,7 +168,10 @@ jobs:
         working-directory: source
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: test -f "build/libs/galaxy-smp-plugin-${VERSION}.jar"
+        run: |
+          test -f "build/libs/galaxy-smp-plugin-${VERSION}.jar"
+          test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip"
+          test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1"
 
       - name: Commit version and push it to main
         id: publish-commit
@@ -194,7 +197,10 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           RELEASE_SHA: ${{ steps.publish-commit.outputs.release_sha }}
         run: |
-          gh release create "$VERSION" "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
+          gh release create "$VERSION" \
+            "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
+            "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip" \
+            "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1" \
             --title "$VERSION" \
             --generate-notes \
             --target "$RELEASE_SHA"

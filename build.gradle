@@ -31,3 +31,43 @@ tasks.withType(JavaCompile).configureEach {
 tasks.test {
     useJUnitPlatform()
 }
+
+def generatedResourcePack = layout.buildDirectory.dir('generated/resource-pack')
+
+tasks.register('generateResourcePack', Exec) {
+    inputs.dir('Textures')
+    inputs.file('scripts/build-resource-pack.py')
+    outputs.dir(generatedResourcePack)
+    workingDir = projectDir
+
+    def python = providers.gradleProperty('pythonExecutable')
+            .getOrElse(org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'python' : 'python3')
+    commandLine python, 'scripts/build-resource-pack.py', 'Textures', generatedResourcePack.get().asFile
+}
+
+tasks.register('resourcePack', Zip) {
+    dependsOn tasks.named('generateResourcePack')
+    from(generatedResourcePack)
+    archiveFileName = "galaxy-smp-resource-pack-${project.version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+}
+
+tasks.register('resourcePackSha1') {
+    dependsOn tasks.named('resourcePack')
+    def archive = tasks.named('resourcePack').flatMap { it.archiveFile }
+    inputs.file(archive)
+    outputs.file(layout.buildDirectory.file("distributions/galaxy-smp-resource-pack-${project.version}.zip.sha1"))
+    doLast {
+        def packFile = archive.get().asFile
+        def sha1File = outputs.files.singleFile
+        sha1File.parentFile.mkdirs()
+        sha1File.text = java.security.MessageDigest.getInstance('SHA-1')
+                .digest(packFile.bytes)
+                .collect { String.format('%02x', it) }
+                .join() + System.lineSeparator()
+    }
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('resourcePackSha1')
+}

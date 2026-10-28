@@ -190,11 +190,14 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 
 **Phase 5 status:** Both mace implementations and all six remaining item implementations are complete and repository-tested. Owner-local Paper gameplay and balance checks remain unchecked for review. The unresolved Singularity Boots corners remain empty by design and do not block this phase; no ingredient will be added until the owner supplies it.
 
+**Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Server URL/hash configuration and player acceptance still require deployment by the server owner.
+
 ### Phase 6 – Polish & Balance
 - [ ] Add an in-game item/recipe builder and editor for registered items, restricted to server operators/admins only; support editing recipe ingredients/shapes, item display name and gradient, lore, stats, and configurable ability values, with validated persistent saves and a safe way to review/apply changes without granting non-operators access
 - [ ] Add distinct particles, sounds, and player-facing lore for every legendary and repeatable item; use each item's configured gradient display name in death and interaction messages
 - [ ] Show a clean, readable hover tooltip for every registered item that presents all relevant item stats and abilities (including enchantments, damage/effect values, cooldowns, triggers, and special rules); keep the tooltip accurate to the item's configured behavior
 - [ ] Add `/galaxy recipes` covering every registered recipe; verify readable item models/textures without requiring a resource pack (`item_model` remains optional)
+- [x] Generate a separate versioned Minecraft 26.3 resource pack from the embedded Blockbench models/textures, assign item models to Astral Sword, Void Sword, and Collapsing Star Mace, and attach the ZIP and SHA-1 sidecar to releases
 - [ ] Move balance-sensitive values into validated config, including cooldowns, damage/effect caps, combo windows, durations, ritual settings, and projectile/rift behavior
 - [ ] Run balance tests against Protection IV diamond and verify all exact damage caps, armor interactions, and effect durations
 - [ ] Complete a dupe/transfer exploit pass for crafter, shulker, bundle, portals, dispensers, containers, item frames/armor stands, death, reconnect, and concurrent crafting/recovery
