@@ -112,6 +112,12 @@ def resolve_texture(name, textures_by_name, model_path, loose_textures=None):
     fail(f"{model_path.name}: exported model references missing texture {name!r}.")
 
 
+def resource_location(texture, model_id):
+    if ":" in texture:
+        return texture
+    return f"galaxy:item/{model_id}/{texture}"
+
+
 def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loose_textures=None):
     old_textures = exported.get("textures", {})
     new_textures = {}
@@ -125,11 +131,7 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
             new_textures[alias] = aliases.get(value, value)
         else:
             resolved = resolve_texture(value, textures_by_name, model_path, loose_textures)
-            new_textures[alias] = (
-                f"galaxy:item/{model_id}/{resolved}"
-                if resolved.startswith("galaxy:item/")
-                else resolved
-            )
+            new_textures[alias] = resource_location(resolved, model_id)
 
     rewritten = dict(exported)
     rewritten.pop("groups", None)
@@ -141,11 +143,7 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
                 face["texture"] = aliases[texture]
             elif isinstance(texture, str) and not texture.startswith("#"):
                 resolved = resolve_texture(texture, textures_by_name, model_path, loose_textures)
-                face["texture"] = (
-                    "galaxy:item/" + model_id + "/" + resolved
-                    if resolved.startswith("galaxy:item/")
-                    else resolved
-                )
+                face["texture"] = resource_location(resolved, model_id)
     return rewritten
 
 
@@ -372,8 +370,10 @@ def main(source_dir, output_dir):
         if item.get("model", {}).get("model") != f"galaxy:item/{model_id}":
             fail(f"{item_path}: item definition does not point to its generated model.")
         for texture in model.get("textures", {}).values():
-            if not isinstance(texture, str) or texture.startswith("#") or ":" not in texture:
+            if not isinstance(texture, str) or texture.startswith("#"):
                 continue
+            if ":" not in texture:
+                fail(f"{model_path}: texture reference is missing a namespace: {texture!r}.")
             namespace, texture_path = texture.split(":", 1)
             if namespace == "galaxy":
                 png_path = output_dir / "assets" / namespace / "textures" / f"{texture_path}.png"
