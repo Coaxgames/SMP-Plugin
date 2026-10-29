@@ -135,14 +135,6 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
 
     rewritten = dict(exported)
     rewritten.pop("groups", None)
-    # Blockbench first-person offsets with a large Z push the model through the camera's near plane,
-    # making it invisible in hand; fall back to the inherited handheld transform for those slots.
-    display = rewritten.get("display", {})
-    for slot in [s for s in display if s.startswith("firstperson_")]:
-        translation = display[slot].get("translation", [0, 0, 0])
-        if abs(translation[2]) > 5:
-            print(f"Dropped {slot} display override for {model_id}: translation z={translation[2]} hides the item in hand")
-            del display[slot]
     rewritten["textures"] = new_textures
     for element in rewritten.get("elements", []):
         for face in element.get("faces", {}).values():
