@@ -2,16 +2,20 @@ package com.coaxgames.smp.item;
 
 import java.util.HashMap;
 import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.entity.Player;
@@ -309,9 +313,103 @@ public final class LegendaryItemRegistry {
         Component displayName = configuredDisplayName(id);
         meta.itemName(displayName);
         meta.displayName(displayName);
+        List<Component> lore = new ArrayList<>();
+        abilityLore(id).forEach(line -> lore.add(Component.text(line, NamedTextColor.GRAY)));
+        if (!item.getEnchantments().isEmpty()) {
+            lore.add(Component.text("Enchantments", NamedTextColor.LIGHT_PURPLE));
+            item.getEnchantments().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(
+                            enchantment -> enchantment.getKey().toString())))
+                    .forEach(entry -> lore.add(Component.text(
+                            "- " + enchantmentName(entry.getKey()) + " " + romanNumeral(entry.getValue()),
+                            NamedTextColor.GRAY)));
+        }
+        if (!lore.isEmpty()) {
+            meta.lore(lore);
+        }
         if (!item.setItemMeta(meta)) {
             throw new IllegalStateException("Could not apply display name to legendary item: " + id);
         }
+    }
+
+    private List<String> abilityLore(String id) {
+        return switch (id) {
+            case "galaxy_string" -> List.of("Special crafting ingredient for the Celestial Bow.");
+            case "kuiper_ball" -> List.of("Throw to freeze a hit target and launch nearby entities.");
+            case "mass_orb" -> List.of(
+                    "While carried, greatly reduces fall damage.",
+                    "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
+                            + " health points.");
+            case "astral_sword" -> List.of(
+                    "Every 4 consecutive hits: gain increased attack speed for "
+                            + configLong("phase-four.astral-sword.attack-speed-seconds", 30) + " seconds.");
+            case "void_sword" -> List.of(
+                    "Every 4 consecutive hits: inflict Slowness I and Wither I for 10 seconds.");
+            case "solstice_chestplate" -> List.of(
+                    "At world time 13,500: Speed III, Strength II, and Resistance I for "
+                            + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
+            case "lunar_leggings" -> List.of(
+                    "At world time 13,500: Speed I, Strength I, and Resistance II for "
+                            + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
+            case "star_mace" -> List.of(
+                    "After 2 successful hits: 30-second cooldown.",
+                    "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.");
+            case "collapsing_star_mace" -> List.of(
+                    "Above 5 hearts of pre-cap damage: create a damaging spark.",
+                    "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.",
+                    "Cooldown: 30 seconds after 2 successful hits.");
+            case "nebula_spear" -> List.of(
+                    "Every 5 successful Lunge activations: thrust forward and damage targets ahead.",
+                    "Cooldown: " + configLong("cooldowns.nebula_spear", 45) + " seconds.");
+            case "wormhole_trident" -> List.of(
+                    "Every 5 successful Riptides: open a rift.",
+                    "Passing through launches you forward; opponents take damage and Wither.");
+            case "celestial_bow" -> List.of(
+                    "Fully charged shots deal splash damage and create a lingering "
+                            + plugin.getConfig().getString("phase-five.celestial-bow.cloud-effect", "Wither")
+                            + " cloud.");
+            case "cosmic_crown" -> List.of(
+                    "Every 2 hits taken: retaliate against the attacker.",
+                    "Boosts absorption; golden apples grant 4 hearts, enchanted golden apples 10.");
+            case "singularity_boots" -> List.of(
+                    "Cancel fall damage.",
+                    "Falls of " + configNumber("phase-five.singularity-boots.explosion-fall-distance", 50.0)
+                            + " blocks or more cause an explosion.");
+            case "nova_shield" -> List.of(
+                    "After 2 axe hits: disable this shield briefly.",
+                    "Prevents one lethal hit; rescue cooldown: "
+                            + configLong("cooldowns.nova_shield", 600) + " seconds.");
+            default -> List.of();
+        };
+    }
+
+    private long configLong(String path, long fallback) {
+        return plugin.getConfig().getLong(path, fallback);
+    }
+
+    private double configNumber(String path, double fallback) {
+        return plugin.getConfig().getDouble(path, fallback);
+    }
+
+    private String enchantmentName(Enchantment enchantment) {
+        String key = enchantment.getKey().getKey();
+        String[] words = key.split("_");
+        StringBuilder name = new StringBuilder();
+        for (String word : words) {
+            if (!name.isEmpty()) {
+                name.append(' ');
+            }
+            name.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return name.toString();
+    }
+
+    private String romanNumeral(int level) {
+        String[] numerals = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+        if (level > 0 && level < numerals.length) {
+            return numerals[level];
+        }
+        return Integer.toString(level);
     }
 
     public static void disableVanillaMaceRecipe() {

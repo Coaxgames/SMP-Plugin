@@ -123,6 +123,12 @@ public final class LegendaryRulesListener implements Listener {
         if (containsProtectedItem(event.getInventory().getContents())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("Legendary items cannot be stored in containers.");
+            return;
+        }
+        if (event.getPlayer() instanceof Player player
+                && (event.getInventory().getType() == InventoryType.CRAFTING
+                || event.getInventory().getType() == InventoryType.WORKBENCH)) {
+            player.discoverRecipes(items.getRecipeKeys());
         }
     }
 
@@ -237,7 +243,11 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        player.discoverRecipes(items.getRecipeKeys());
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.discoverRecipes(items.getRecipeKeys());
+            }
+        });
         Inventory enderChest = player.getEnderChest();
         for (int slot = 0; slot < enderChest.getSize(); slot++) {
             ItemStack stack = enderChest.getItem(slot);
