@@ -42,8 +42,9 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         CraftingInventory inventory = event.getInventory();
-        if (craftBlocked(item, inventory.getMatrix())) {
-            inventory.setResult(null);
+        String blockedReason = craftBlockReason(item, inventory.getMatrix());
+        if (blockedReason != null) {
+            inventory.setResult(blockedPreview(blockedReason));
             return;
         }
         if (item.craftOnce()) {
@@ -58,7 +59,7 @@ public final class LegendaryCraftListener implements Listener {
         ItemStack result = plugin.getLegendaryItems().createItem(item.id());
         if (event.getView().getPlayer() instanceof Player player
                 && !plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
-            inventory.setResult(null);
+            inventory.setResult(blockedPreview("You are carrying the maximum allowed " + item.id() + "."));
             return;
         }
         inventory.setResult(result);
@@ -73,16 +74,24 @@ public final class LegendaryCraftListener implements Listener {
             }
             return;
         }
-        if (!(event.getWhoClicked() instanceof Player player)
-                || craftBlocked(item, event.getInventory().getMatrix())) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             event.setCancelled(true);
             event.getInventory().setResult(null);
+            return;
+        }
+        String blockedReason = craftBlockReason(item, event.getInventory().getMatrix());
+        if (blockedReason != null) {
+            event.setCancelled(true);
+            event.getInventory().setResult(null);
+            player.sendMessage(Component.text(blockedReason));
             return;
         }
         if (item.craftOnce()) {
             if (!plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
                 event.setCancelled(true);
                 event.getInventory().setResult(null);
+                player.sendMessage(Component.text(
+                        "You are carrying the maximum allowed " + item.id() + "."));
                 return;
             }
             event.setCancelled(true);
@@ -127,6 +136,8 @@ public final class LegendaryCraftListener implements Listener {
         if (!plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
             event.setCancelled(true);
             event.getInventory().setResult(null);
+            player.sendMessage(Component.text(
+                    "You are carrying the maximum allowed " + item.id() + "."));
             return;
         }
         event.setCurrentItem(result);
@@ -162,7 +173,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         if (!(event.getBlock().getState() instanceof Crafter crafter)
-                || craftBlocked(item, crafter.getInventory().getContents())) {
+                || craftBlockReason(item, crafter.getInventory().getContents()) != null) {
             event.setCancelled(true);
             return;
         }
@@ -220,15 +231,28 @@ public final class LegendaryCraftListener implements Listener {
         }
     }
 
-    private boolean craftBlocked(LegendaryItem item, ItemStack[] matrix) {
-        if (item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()
-                || !HeadDropHead.allRecipeHeadsAreMarked(matrix)) {
-            return true;
+    private String craftBlockReason(LegendaryItem item, ItemStack[] matrix) {
+        if (item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()) {
+            return "The one-time craft for " + item.id() + " has already been used.";
         }
-        return item.id().equals("celestial_bow")
+        if (!HeadDropHead.allRecipeHeadsAreMarked(matrix)) {
+            return "Use player heads dropped by Head Drop in this recipe.";
+        }
+        if (item.id().equals("celestial_bow")
                 && (matrix.length < 9 || !isItem(matrix[2], "galaxy_string")
                 || !isItem(matrix[5], "galaxy_string")
-                || !isItem(matrix[8], "galaxy_string"));
+                || !isItem(matrix[8], "galaxy_string"))) {
+            return "The Celestial Bow requires Galaxy String in all three right-column slots.";
+        }
+        return null;
+    }
+
+    private ItemStack blockedPreview(String reason) {
+        ItemStack preview = new ItemStack(Material.BARRIER);
+        var meta = preview.getItemMeta();
+        meta.displayName(Component.text(reason));
+        preview.setItemMeta(meta);
+        return preview;
     }
 
     private boolean isItem(ItemStack stack, String itemId) {

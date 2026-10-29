@@ -65,6 +65,15 @@ public final class LegendaryItemRegistry {
                 throw new IllegalArgumentException("Legendary recipe must have a key: " + id);
             }
             recipeKey = keyed.getKey();
+            if (recipe instanceof org.bukkit.inventory.ShapedRecipe shapedRecipe) {
+                ItemStack recipeResult = shapedRecipe.getResult().clone();
+                applyDisplayName(id, recipeResult);
+                org.bukkit.inventory.ShapedRecipe namedRecipe =
+                        new org.bukkit.inventory.ShapedRecipe(recipeKey, recipeResult);
+                namedRecipe.shape(shapedRecipe.getShape());
+                shapedRecipe.getChoiceMap().forEach(namedRecipe::setIngredient);
+                recipe = namedRecipe;
+            }
             if (recipes.containsKey(recipeKey) || Bukkit.getRecipe(recipeKey) != null) {
                 throw new IllegalStateException("Recipe key is already registered: " + recipeKey);
             }
@@ -163,8 +172,11 @@ public final class LegendaryItemRegistry {
     }
 
     public Component displayName(String itemId) {
-        LegendaryItem definition = get(itemId)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + itemId));
+        get(itemId).orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + itemId));
+        return configuredDisplayName(itemId);
+    }
+
+    private Component configuredDisplayName(String itemId) {
         org.bukkit.plugin.java.JavaPlugin javaPlugin = (org.bukkit.plugin.java.JavaPlugin) plugin;
         String namePath = "legendary-items.display-names." + itemId;
         if (!javaPlugin.getConfig().contains(namePath + ".text")) {
@@ -272,21 +284,10 @@ public final class LegendaryItemRegistry {
             item.setAmount(1);
         }
 
+        applyDisplayName(id, item);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
-            throw new IllegalStateException("Legendary item has no item metadata: " + id);
-        }
-        org.bukkit.plugin.java.JavaPlugin javaPlugin = (org.bukkit.plugin.java.JavaPlugin) plugin;
-        String namePath = "legendary-items.display-names." + id;
-        if (javaPlugin.getConfig().contains(namePath + ".text")) {
-            String name = javaPlugin.getConfig().getString(namePath + ".text");
-            String startColor = javaPlugin.getConfig().getString(namePath + ".start-color");
-            String endColor = javaPlugin.getConfig().getString(namePath + ".end-color");
-            try {
-                meta.displayName(LegendaryItemBuilder.gradientComponent(name, startColor, endColor));
-            } catch (NullPointerException | IllegalArgumentException exception) {
-                throw new IllegalStateException("Invalid item name gradient at " + namePath + ".", exception);
-            }
+            throw new IllegalStateException("Legendary item has no item metadata after naming: " + id);
         }
         meta.getPersistentDataContainer().set(itemIdKey, PersistentDataType.STRING, id);
         if (definition.trackUniqueInstance()) {
@@ -298,6 +299,19 @@ public final class LegendaryItemRegistry {
             throw new IllegalStateException("Could not apply identity metadata to legendary item: " + id);
         }
         return item;
+    }
+
+    private void applyDisplayName(String id, ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            throw new IllegalStateException("Legendary item has no metadata for display name: " + id);
+        }
+        Component displayName = configuredDisplayName(id);
+        meta.itemName(displayName);
+        meta.displayName(displayName);
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not apply display name to legendary item: " + id);
+        }
     }
 
     public static void disableVanillaMaceRecipe() {

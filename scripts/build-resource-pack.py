@@ -249,6 +249,24 @@ def main(source_dir, output_dir):
         encoding="utf-8",
     )
 
+    atlas_dir = output_dir / "assets" / "minecraft" / "atlases"
+    atlas_dir.mkdir(parents=True, exist_ok=True)
+    (atlas_dir / "blocks.json").write_text(
+        json.dumps(
+            {
+                "sources": [
+                    {
+                        "type": "minecraft:directory",
+                        "source": "item",
+                        "prefix": "item/",
+                    }
+                ]
+            },
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
     item_dir = output_dir / "assets" / "galaxy" / "items"
     model_dir = output_dir / "assets" / "galaxy" / "models" / "item"
     standalone_texture_dir = output_dir / "assets" / "galaxy" / "textures" / "source"
