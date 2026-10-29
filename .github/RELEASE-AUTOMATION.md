@@ -19,19 +19,8 @@ The workflows use the repository's `GITHUB_TOKEN`; no personal access token or o
 
 ## Publishing the item resource pack
 
-`gradlew build` extracts embedded PNGs from the Java Block/Item `.bbmodel` files in `Textures/`, converts the models into Minecraft 26.3 item assets, packages `galaxy-smp-resource-pack-<version>.zip`, and writes a matching `.zip.sha1` file under `build/distributions/`. The release workflow attaches both files separately from the plugin jar. The pack targets Minecraft 26.3 (`min_format`/`max_format` 97.1).
+`gradlew build` extracts embedded PNGs from every `.bbmodel` file in `Textures/`, adds flipbook animation metadata, and creates a separate Minecraft 26.3 resource-pack ZIP and SHA-1 sidecar. These are attached to the GitHub Release separately from the plugin JAR.
 
-To configure automatic server delivery after a release:
+Automatic conversion of `.bbmodel` geometry to Minecraft model JSON is currently disabled for debugging. When a matching Blockbench-exported Java item `.json` exists, the generator uses it to create the pack's model and item definition. Without that export, the textures and animations are still packaged, but no model JSON or item definition is emitted for that source.
 
-1. Copy the direct download URL for the resource-pack ZIP from its GitHub Release asset.
-2. Copy the SHA-1 hex digest from the matching `.zip.sha1` release asset.
-3. Add them to the server's `server.properties`:
-
-   ```properties
-   resource-pack=https://github.com/Coaxgames/SMP-Plugin/releases/download/<version>/galaxy-smp-resource-pack-<version>.zip
-   resource-pack-sha1=<sha1-from-the-sidecar>
-   ```
-
-4. Restart the server. Players must accept the offered pack to see the custom models. For local client testing, download the ZIP and place it in `.minecraft/resourcepacks`.
-
-The generator discovers every `.bbmodel` in `Textures/`. A matching Blockbench-exported Java item `.json` is used when available; otherwise the `.bbmodel` geometry is converted. All embedded PNGs and loose PNG/`.mcmeta` assets are included, and custom item textures are registered in the blocks atlas. Tall flipbook PNG strips receive animation `.mcmeta` with their Blockbench frame time. A `.json` is the exported model geometry; `.mcmeta` is separate Minecraft animation metadata. Texture flipbooks animate in the client, while bone/keyframe animation of model geometry is not supported by regular Minecraft item models. Python 3 is required to run the pack generator (`-PpythonExecutable=...` can select a different interpreter).
+The pack targets Minecraft 26.3 (`min_format`/`max_format` 97.1). Python 3 is required to run the generator (`-PpythonExecutable=...` can select a different interpreter).

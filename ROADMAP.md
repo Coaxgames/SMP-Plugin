@@ -50,7 +50,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 3. Legendary items are unbreakable and protected from loss. On player death, the item remains at the death location unless destroyed by hazards such as lava, the void, or cactus; a hazard-destroyed item is returned to (0,0) as a reclaimable block. An item left to despawn is also returned there.
 4. Curse of Vanishing (COV) is prohibited; items cannot be enchanted or disenchanted (anvil, grindstone, and enchanting table blocked).
 5. Cannot be stored in ender chests or any container (chests, barrels, shulkers, hoppers, droppers, item frames, armor stands, bundles, etc.).
-6. Crafting triggers a **15 min ritual**, except for Galaxy String, Kuiper Ball, and Mass Orb. The item does not exist in the world until the timer ends. An animation appears above the crafting table, then the item drops there. Every 3 min, chat reveals the crafter's coordinates and the crafted item's name.
+6. Crafting triggers a **3 min ritual**, except for Galaxy String, Kuiper Ball, and Mass Orb. The item does not exist in the world until the timer ends. An animation appears above the crafting table, then the item drops there. Every 3 min, chat reveals the crafter's coordinates and the crafted item's name.
 
 ## 3. Technical Design
 
@@ -65,7 +65,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each custom mace type has its own independent, permanent server-wide one-craft limit: one Star Mace and one Collapsing Star Mace may each be crafted. “First mace on the server” remains an open question (see Open Question 11).
 - Recipe heads come from [Head Drop](https://modrinth.com/plugin/head-drop). Its 3.1.0 source tags generated heads with plugin-owned persistent data: `headdrop:dropped` as a byte value of `1` (`DROPPED_KEY = "dropped"`). Validate that marker in crafting events rather than matching player-specific display names or lore. Configure `drop.placement: item` so deaths produce recipe-usable item heads; if heads are placed as blocks, Head Drop can preserve the marker through placement and return it when broken when `head.persist_lore_on_placement` is enabled.
 - Craft-once enforcement in `PrepareItemCraftEvent` (deny result) and `CraftItemEvent` (atomically record in the data store; handle shift-click and automated crafting).
-- On successful craft, consume ingredients and start the ritual; do not create the item until the 15-minute timer completes. Show the animation over the crafting table and drop the item there at completion.
+- On successful craft, consume ingredients and start the ritual; do not create the item until the 3-minute timer completes. Show the animation over the crafting table and drop the item there at completion.
 
 ### 3.3 Protection systems
 | Rule | Events / approach |
@@ -137,7 +137,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 **Phase 2.1 status:** The owner confirmed the Paper 26.3/Head Drop version and Head Drop marker/config checks passed locally. The remaining owner-local gameplay checks listed above are explicitly waiting. Phase 4 recipe/output checks are available under Phase 4; Star Mace and Collapsing Star Mace recipe checks are available under Phase 5. No test server is requested or expected.
 
 ### Phase 3 – Ritual System
-- [x] Start the configured 15-minute ritual after a successful craft-once legendary craft, consume ingredients only after the ritual record is saved, and keep the item nonexistent until completion; repeatable exceptions remain immediate
+- [x] Start the configured 3-minute ritual after a successful craft-once legendary craft, consume ingredients only after the ritual record is saved, and keep the item nonexistent until completion; repeatable exceptions remain immediate
 - [x] Show an updating boss bar to the crafter, animate above the crafting location, and drop the completed item there when the timer ends
 - [x] Announce the configured-gradient item name and crafter coordinates globally every 3 minutes, with coordinates formatted as `(X, Y, Z)` and a configurable message template; the audience/message placeholder is now implemented as global broadcast with an editable template (see Open Question 1)
 - [x] Persist ritual item identity, crafter and table locations, start/completion times, reveal count, craft quota reservation, owner, cooldowns, and reclaimable spawn-block markers

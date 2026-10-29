@@ -1,6 +1,6 @@
 # Building and using the Galaxy SMP resource pack
 
-The Blockbench `.bbmodel` files in this folder embed their PNG textures. You do not need to export PNGs manually: the Gradle build extracts them and creates a separate Minecraft 26.3 resource-pack ZIP.
+The Blockbench `.bbmodel` files in this folder embed their PNG textures. Gradle extracts those textures and creates a separate Minecraft 26.3 resource-pack ZIP, including flipbook animation metadata.
 
 ## Build and test locally
 
@@ -30,6 +30,6 @@ Restart the server. Minecraft offers the pack to players, who must accept it to 
 
 ## Blockbench flipbook animations
 
-Every `.bbmodel` under `Textures/` is discovered automatically; there is no hard-coded model allowlist. When a matching Blockbench-exported Java item `.json` exists, that JSON is used as the model geometry and its texture links are resolved to the embedded PNGs. If no exported JSON exists, the build converts the `.bbmodel` geometry to a Minecraft item model. It extracts every embedded PNG, including textures not referenced by the exported model, and also copies loose PNGs and their `.mcmeta` files from this folder into the pack.
+Every `.bbmodel` under `Textures/` is discovered automatically; there is no hard-coded model allowlist. Automatic conversion of `.bbmodel` geometry to model JSON is paused while we check whether conversion is responsible for the rendering issue. The pack still contains all extracted embedded PNGs, loose PNGs, and animation metadata. If a matching Blockbench-exported Java item `.json` is present, the build uses it; without one, textures are packaged but no model JSON or item definition is generated for that model.
 
 Blockbench's Java item `.json` export is the model geometry file. `.mcmeta` is not a model export; it is the separate Minecraft texture-animation metadata file. The build writes `.mcmeta` for tall flipbook sheets using the Blockbench frame time and registers item textures in `assets/minecraft/atlases/blocks.json`, which Minecraft requires to render them on item models. Craft recipes that use player heads require heads carrying Head Drop's `headdrop:dropped` marker; the crafting preview explains when that requirement is not met. Python 3 is required to build the pack; use `-PpythonExecutable=<path>` if the interpreter is not available as `python` on Windows or `python3` elsewhere.

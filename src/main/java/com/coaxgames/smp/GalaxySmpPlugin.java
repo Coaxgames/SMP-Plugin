@@ -32,6 +32,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     public void onEnable() {
         requireHeadDrop();
         saveDefaultConfig();
+        migrateDefaultRitualDuration();
         validatePlayerItemLimits();
         validateItemNameGradients();
         validateRitualSettings();
@@ -76,6 +77,16 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         GalaxyCommand galaxyCommand = new GalaxyCommand(this);
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
+    }
+
+    private void migrateDefaultRitualDuration() {
+        String path = "rituals.duration-seconds";
+        if (getConfig().getLong(path, 180L) != 900L) {
+            return;
+        }
+        getConfig().set(path, 180L);
+        saveConfig();
+        getLogger().info("Updated the default ritual duration from 15 minutes to 3 minutes.");
     }
 
     @Override

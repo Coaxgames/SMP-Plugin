@@ -28,7 +28,7 @@ import org.bukkit.scheduler.BukkitTask;
 public final class RitualManager {
     private static final long TICKS_PER_SECOND = 20L;
     private static final long MILLIS_PER_SECOND = 1_000L;
-    private static final long DEFAULT_DURATION_SECONDS = 15 * 60L;
+    private static final long DEFAULT_DURATION_SECONDS = 3 * 60L;
     private static final long DEFAULT_REVEAL_INTERVAL_SECONDS = 3 * 60L;
 
     private final GalaxySmpPlugin plugin;

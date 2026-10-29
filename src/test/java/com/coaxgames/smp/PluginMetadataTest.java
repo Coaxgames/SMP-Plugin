@@ -23,6 +23,7 @@ class PluginMetadataTest {
             assertNotNull(stream);
             config.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         }
+        assertEquals(180L, config.getLong("rituals.duration-seconds"));
         for (String path : java.util.List.of(
                 "rituals.duration-seconds",
                 "rituals.reveal-interval-seconds",

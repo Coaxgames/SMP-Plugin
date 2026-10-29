@@ -147,81 +147,6 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
     return rewritten
 
 
-def convert_bbmodel(model_path, model, textures_by_index, textures_by_name, model_id):
-    if model.get("meta", {}).get("model_format") != "java_block":
-        fail(f"{model_path.name}: expected a Java Block/Item Blockbench model.")
-    if model.get("animations"):
-        fail(
-            f"{model_path.name}: Java item models cannot play Blockbench geometry "
-            "animations; export static item geometry instead."
-        )
-
-    texture_aliases = {}
-    new_textures = {}
-    for index, texture in textures_by_index.items():
-        alias = f"t{index}"
-        texture_aliases[index] = "#" + alias
-        new_textures[alias] = f"galaxy:item/{model_id}/{texture['filename'][:-4]}"
-    particle_texture = next(
-        (index for index, texture in enumerate(model.get("textures", [])) if texture.get("particle")),
-        None,
-    )
-    if particle_texture is not None:
-        new_textures["particle"] = f"#{particle_texture}"
-
-    elements = []
-    for source in model.get("elements", []):
-        if not source.get("export", True):
-            continue
-        element = {
-            "from": source["from"],
-            "to": source["to"],
-            "faces": {},
-        }
-        for face_name, source_face in source.get("faces", {}).items():
-            texture_index = source_face.get("texture")
-            if texture_index is None:
-                continue
-            texture_alias = texture_aliases.get(texture_index)
-            if texture_alias is None:
-                fail(f"{model_path.name}: face references missing texture index {texture_index}.")
-            face = {
-                "uv": source_face["uv"],
-                "texture": texture_alias,
-            }
-            for key in ("rotation", "cullface", "tintindex"):
-                if key in source_face:
-                    face[key] = source_face[key]
-            element["faces"][face_name] = face
-
-        rotation = source.get("rotation")
-        if rotation:
-            if isinstance(rotation, list) and len(rotation) == 3:
-                element["rotation"] = {
-                    "x": rotation[0],
-                    "y": rotation[1],
-                    "z": rotation[2],
-                    "origin": source.get("origin", [8, 8, 8]),
-                    "rescale": bool(source.get("rescale", False)),
-                }
-            elif isinstance(rotation, dict):
-                element["rotation"] = rotation
-            else:
-                fail(f"{model_path.name}: unsupported element rotation.")
-        if "shade" in source:
-            element["shade"] = source["shade"]
-        elements.append(element)
-
-    return {
-        "format_version": "26.3",
-        "credit": f"Converted from {model_path.name}.",
-        "parent": model.get("parent", "minecraft:item/handheld"),
-        "textures": new_textures,
-        "elements": elements,
-        "display": model.get("display", {}),
-    }
-
-
 def main(source_dir, output_dir):
     source_dir = Path(source_dir)
     output_dir = Path(output_dir)
@@ -300,6 +225,7 @@ def main(source_dir, output_dir):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(metadata_path.read_bytes())
 
+    models_without_exports = []
     for source_path in model_sources:
         model_id = slug(source_path.relative_to(source_dir).as_posix())
         if model_id in models_found:
@@ -310,15 +236,13 @@ def main(source_dir, output_dir):
         textures_by_index, textures_by_name = extract_textures(source_path, source_model, texture_dir)
 
         exported_path = source_path.with_suffix(".json")
-        if exported_path.exists():
-            exported = read_json(exported_path)
-            output_model = rewrite_exported_model(
-                exported_path, exported, textures_by_name, model_id
-            )
-        else:
-            output_model = convert_bbmodel(
-                source_path, source_model, textures_by_index, textures_by_name, model_id
-            )
+        if not exported_path.exists():
+            models_without_exports.append(source_path.relative_to(source_dir).as_posix())
+            continue
+        exported = read_json(exported_path)
+        output_model = rewrite_exported_model(
+            exported_path, exported, textures_by_name, model_id
+        )
 
         model_output = model_dir / f"{model_id}.json"
         item_output = item_dir / f"{model_id}.json"
@@ -340,6 +264,8 @@ def main(source_dir, output_dir):
             encoding="utf-8",
         )
         models_found.add(model_id)
+
+
 
     bbmodel_exports = {
         source.with_suffix(".json").resolve()
@@ -399,10 +325,12 @@ def main(source_dir, output_dir):
                     fail(f"{model_path}: missing referenced texture {texture}.")
 
     print(
-        f"Generated Minecraft {PACK_FORMAT[0]}.{PACK_FORMAT[1]} pack from all "
-        f"{len(model_sources)} Blockbench model(s), plus "
+        f"Generated Minecraft {PACK_FORMAT[0]}.{PACK_FORMAT[1]} pack; extracted textures "
+        f"from all {len(model_sources)} Blockbench model(s); models included: "
         + ", ".join(sorted(models_found))
     )
+    if models_without_exports:
+        print("Skipped geometry conversion (no exported JSON): " + ", ".join(models_without_exports))
 
 
 if __name__ == "__main__":

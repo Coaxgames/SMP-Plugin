@@ -50,7 +50,7 @@ public final class LegendaryCraftListener implements Listener {
         if (item.craftOnce()) {
             ItemStack preview = new ItemStack(Material.BARRIER);
             var meta = preview.getItemMeta();
-            meta.displayName(Component.text("15-minute ritual: ")
+            meta.displayName(Component.text(formatDuration(ritualDurationSeconds()) + " ritual: ")
                     .append(plugin.getLegendaryItems().displayName(item.id())));
             preview.setItemMeta(meta);
             inventory.setResult(preview);
@@ -115,7 +115,8 @@ public final class LegendaryCraftListener implements Listener {
                     return;
                 }
                 consumeIngredients(originalIngredients, event.getInventory(), ingredientSlots);
-                player.sendMessage(Component.text("Your ritual has begun. The item will appear after 15 minutes."));
+                player.sendMessage(Component.text("Your ritual has begun. The item will appear after "
+                        + formatDuration(ritualDurationSeconds()) + "."));
             } catch (IOException | RuntimeException exception) {
                 rollbackFailedRitualStart(
                         ritualUuid, item, exception, event.getInventory(), originalIngredients);
@@ -253,6 +254,23 @@ public final class LegendaryCraftListener implements Listener {
         meta.displayName(Component.text(reason));
         preview.setItemMeta(meta);
         return preview;
+    }
+
+    private long ritualDurationSeconds() {
+        return plugin.getConfig().getLong("rituals.duration-seconds", 180L);
+    }
+
+    private String formatDuration(long durationSeconds) {
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+        if (seconds == 0) {
+            return minutes + (minutes == 1 ? " minute" : " minutes");
+        }
+        if (minutes == 0) {
+            return seconds + (seconds == 1 ? " second" : " seconds");
+        }
+        return minutes + (minutes == 1 ? " minute " : " minutes ")
+                + seconds + (seconds == 1 ? " second" : " seconds");
     }
 
     private boolean isItem(ItemStack stack, String itemId) {
