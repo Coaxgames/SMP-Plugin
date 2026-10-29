@@ -144,6 +144,20 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
             elif isinstance(texture, str) and not texture.startswith("#"):
                 resolved = resolve_texture(texture, textures_by_name, model_path, loose_textures)
                 face["texture"] = resource_location(resolved, model_id)
+    # Blockbench exports untextured faces as "#missing", which renders purple/black.
+    kept_elements = []
+    for element in rewritten.get("elements", []):
+        faces = element.get("faces", {})
+        element["faces"] = {
+            name: face for name, face in faces.items()
+            if not (isinstance(face.get("texture"), str)
+                    and face["texture"].startswith("#")
+                    and face["texture"][1:] not in new_textures)
+        }
+        if element["faces"]:
+            kept_elements.append(element)
+    if "elements" in rewritten:
+        rewritten["elements"] = kept_elements
     return rewritten
 
 
