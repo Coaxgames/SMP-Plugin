@@ -105,6 +105,9 @@ def resolve_texture(name, textures_by_name, model_path, loose_textures=None):
     if loose_textures and key in loose_textures:
         return loose_textures[key]
     basename = slug(Path(name).name)
+    texture = textures_by_name.get(basename)
+    if texture is not None:
+        return texture["filename"][:-4]
     if loose_textures and basename in loose_textures:
         return loose_textures[basename]
     if ":" in name:
