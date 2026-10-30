@@ -130,6 +130,13 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
     }
     for key, value in old_textures.items():
         alias = f"t{key}" if key.isdigit() else key
+        if isinstance(value, dict):
+            value = value.get("sprite")
+        if not isinstance(value, str):
+            fail(
+                f"{model_path.name}: texture {key!r} must be a string or an "
+                "object with a string 'sprite'."
+            )
         if value.startswith("#"):
             new_textures[alias] = aliases.get(value, value)
         else:
