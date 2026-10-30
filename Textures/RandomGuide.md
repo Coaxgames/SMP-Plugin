@@ -17,6 +17,7 @@ The build produces:
 
 The pack uses Minecraft 26.3's item-definition/model format and registers its custom item textures in the blocks atlas. To test it locally, copy the ZIP to the client's `.minecraft/resourcepacks` folder and enable it. Astral Sword, Void Sword, and Collapsing Star Mace items created by the plugin have matching `galaxy:<item_id>` item models. Existing items and vanilla items are not globally overridden.
 
+
 ## Configure server delivery
 
 After a release, download the ZIP and its matching `.zip.sha1` sidecar from the GitHub Release. Use the ZIP's direct HTTPS download URL and the sidecar's plain 40-character hexadecimal digest in `server.properties`:
