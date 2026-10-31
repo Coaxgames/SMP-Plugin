@@ -323,7 +323,12 @@ def build_shield_blocking(model):
         transform = display.get(key)
         if transform:
             rotation = transform.get("rotation", [0, 0, 0])
-            transform["rotation"] = [rotation[0], round(rotation[1] + 180, 4), rotation[2]]
+            # +90 y was the closest pose but pointed at the ground because the blocking arm is raised
+            # about 54 degrees; +36 x tips the face up to horizontal.
+            transform["rotation"] = [round(rotation[0] + 36, 4), round(rotation[1] + 90, 4), rotation[2]]
+            # Slide the shield in toward the body line and out ahead of the hand.
+            translation = transform.get("translation", [0, 0, 0])
+            transform["translation"] = [round(translation[0] - 4, 4), translation[1], round(translation[2] - 3, 4)]
     blocking["display"] = display
     return blocking
 
