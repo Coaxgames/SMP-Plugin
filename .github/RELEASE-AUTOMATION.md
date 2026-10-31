@@ -4,7 +4,7 @@
 - Fork contributors must open a PR themselves; Actions in this repository cannot observe pushes made only in another repository. Their PR builds are run by trusted automation without exposing a write token to the build.
 - Nobody edits the version. For every accepted PR the release workflow reads the version `main` is at, takes the highest of that and the existing tags, adds one to the patch number, builds with it, commits it to `build.gradle` and `plugin.yml` on `main` as `chore: release X.Y.Z`, and tags that commit. Releases are serialized, so PRs merged back to back get distinct versions. If `main` moves while a release is building, the release is still published on the built commit and the next release continues from the tags.
 - The version commit is pushed by a dedicated GitHub App (see below), because the repository's `GITHUB_TOKEN` cannot bypass a branch ruleset. The app token is created only after the build finishes, so no build step can see it. The follow-up build/release run for that commit is detected and skipped.
-- `main` requires two approving reviews; repository admins can bypass that rule for pull requests only. The release workflow also verifies two current approvals or one admin approval for non-admin merges, and fails if a commit reaches `main` without a merged PR.
+- `main` requires two approving reviews from people other than the PR author, and admins are not exempt. The only exception is the repository owner, who is on the ruleset bypass list ("For pull requests only") and can merge a PR without the approvals; the release workflow mirrors that exemption by skipping its approval check when the repository owner performed the merge. For every other merge it re-verifies two current approvals, and it fails if a commit reaches `main` without a merged PR. PRs opened automatically by the workflow are authored by the bot, so any two collaborators can approve them.
 - Contributor branch pushes are handled by a trusted `workflow_run` workflow. The initial push workflow is intentionally read-only; the trusted workflow creates PRs without executing contributor code with write permissions.
 
 ## Required repository settings
@@ -15,7 +15,7 @@
 4. Create a branch ruleset for `main` (**Settings → Rules → Rulesets**) with:
    - Require a pull request before merging: 2 approvals, dismiss stale approvals on new commits.
    - Block force pushes and restrict deletions.
-   - Bypass list: **Repository admins, "For pull requests only"**, and the release App from step 3 with **Always** (it only pushes the `chore: release` version commit). Add no other direct-push bypass.
+   - Bypass list: the release App from step 3 with **Always** (it only pushes the `chore: release` version commit), and optionally the repository owner's user account with **For pull requests only**. Do not add the Repository admin role or any other role, so other admins need the same two approvals.
    - After the first automated PR has reported it, also require the `galaxy/build` status check. The check does not appear in the picker until it has been posted once.
 
 Other workflows use the repository's `GITHUB_TOKEN`; no personal access token or owner username is needed.
