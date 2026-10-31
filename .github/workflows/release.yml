@@ -25,7 +25,6 @@ jobs:
       pull-requests: read
     outputs:
       authorized: ${{ steps.gate.outputs.authorized }}
-      pre_bumped: ${{ steps.gate.outputs.pre_bumped }}
     steps:
       - name: Check owner or merged pull request approvals
         id: gate
@@ -53,7 +52,6 @@ jobs:
             if (mainBranch.commit.sha !== headSha) {
               core.info("A newer main commit is already present; its build run will handle the release.");
               core.setOutput("authorized", "false");
-              core.setOutput("pre_bumped", "false");
               return;
             }
 
@@ -63,6 +61,16 @@ jobs:
                 commit_sha: headSha,
               });
             const pullRequest = associatedPullRequests.find((candidate) => candidate.merged_at);
+            const run = context.payload.workflow_run;
+            if (
+              !pullRequest &&
+              run.actor.login.endsWith("[bot]") &&
+              (run.head_commit?.message ?? "").startsWith("chore: release ")
+            ) {
+              core.info("Automated release version commit; nothing more to release.");
+              core.setOutput("authorized", "false");
+              return;
+            }
             if (!pullRequest) {
               throw new Error(
                 "Direct pushes to main are not allowed for anyone. Push a branch and merge the pull request instead.",
@@ -71,18 +79,6 @@ jobs:
             const actorIsAdmin = await isAdmin(context.payload.workflow_run.actor.login);
 
             core.setOutput("authorized", "true");
-            core.setOutput("pre_bumped", "false");
-
-            const { data: changedFiles } = await github.rest.pulls.listFiles({
-              ...context.repo,
-              pull_number: pullRequest.number,
-              per_page: 100,
-            });
-            const changedPaths = new Set(changedFiles.map((file) => file.filename));
-            const preBumped =
-              changedPaths.has("build.gradle") &&
-              changedPaths.has("src/main/resources/plugin.yml");
-            core.setOutput("pre_bumped", String(preBumped));
             if (actorIsAdmin) return;
 
             const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -150,10 +146,9 @@ jobs:
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
-          PREBUMPED: ${{ needs.authorize.outputs.pre_bumped }}
         run: |
           RELEASE_TAGS="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/tags?per_page=100" --jq '.[].name')"
-          SOURCE_ROOT="$GITHUB_WORKSPACE/source" RELEASE_TAGS="$RELEASE_TAGS" PREBUMPED="$PREBUMPED" \
+          SOURCE_ROOT="$GITHUB_WORKSPACE/source" RELEASE_TAGS="$RELEASE_TAGS" \
             node trusted/scripts/release-version.mjs
 
       - name: Build plugin
@@ -169,12 +164,43 @@ jobs:
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip"
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1"
 
+      - name: Create release app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Commit version to main
+        id: publish-commit
+        working-directory: source
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          RELEASE_SHA="$HEAD_SHA"
+          if ! git diff --quiet -- build.gradle src/main/resources/plugin.yml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add build.gradle src/main/resources/plugin.yml
+            git commit -m "chore: release $VERSION"
+            if git push "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/main; then
+              RELEASE_SHA="$(git rev-parse HEAD)"
+            else
+              echo "::warning::main moved during the release; releasing the built commit without a version commit. The next release continues from the tags."
+            fi
+          fi
+          echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         working-directory: source
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_SHA: ${{ steps.publish-commit.outputs.release_sha }}
         run: |
           gh release create "$VERSION" \
             "build/libs/galaxy-smp-plugin-${VERSION}.jar" \

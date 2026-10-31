@@ -6,7 +6,7 @@ on:
     types: [completed]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   statuses: write
 
@@ -19,55 +19,12 @@ jobs:
       github.event.workflow_run.head_branch != 'main'
     runs-on: ubuntu-latest
     outputs:
-      head_sha: ${{ steps.prepare.outputs.head_sha }}
+      head_sha: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - name: Check out trusted automation
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: trusted
-          persist-credentials: false
-
-      - name: Check out pushed source without credentials
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          path: source
-          persist-credentials: false
-
-      - name: Bump version on pushed branch
-        id: prepare
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-        run: |
-          if [[ ! "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ || "$BRANCH" == "main" ]]; then
-            echo "Unexpected branch name: $BRANCH" >&2
-            exit 1
-          fi
-          RELEASE_TAGS="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/tags?per_page=100" --jq '.[].name')"
-          PREBUMPED=false
-          if git -C source log --format=%s --grep='^chore: bump plugin version to ' -n 1 | grep -q . ||
-            git -C source log --format=%s --grep='^chore: release ' -n 1 | grep -q .; then
-            PREBUMPED=true
-          fi
-          SOURCE_ROOT="$GITHUB_WORKSPACE/source" RELEASE_TAGS="$RELEASE_TAGS" PREBUMPED="$PREBUMPED" \
-            node trusted/scripts/release-version.mjs
-          VERSION="$(sed -n 's/^version=//p' "$GITHUB_OUTPUT")"
-          if ! git -C source diff --quiet -- build.gradle src/main/resources/plugin.yml; then
-            git -C source config user.name "github-actions[bot]"
-            git -C source config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git -C source add build.gradle src/main/resources/plugin.yml
-            git -C source commit -m "chore: bump plugin version to $VERSION"
-            gh auth setup-git
-            git -C source push origin "HEAD:refs/heads/$BRANCH"
-          fi
-          echo "head_sha=$(git -C source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Create or update pull request
         uses: actions/github-script@v7
         env:
-          HEAD_SHA: ${{ steps.prepare.outputs.head_sha }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         with:
           script: |
             const base = context.payload.repository.default_branch;
@@ -87,7 +44,7 @@ jobs:
                 ...context.repo,
                 pull_number: pullRequest.number,
                 title: `Plugin update: ${branch}`,
-                body: "Automated PR for a non-admin branch push. The release version is bumped in this branch.",
+                body: "Automated PR for a branch push. The release version is calculated automatically when this PR is merged.",
               });
             } else {
               const { data } = await github.rest.pulls.create({
@@ -95,7 +52,7 @@ jobs:
                 title: `Plugin update: ${branch}`,
                 head,
                 base,
-                body: "Automated PR for a non-admin branch push. The release version is bumped in this branch.",
+                body: "Automated PR for a branch push. The release version is calculated automatically when this PR is merged.",
               });
               pullRequest = data;
             }

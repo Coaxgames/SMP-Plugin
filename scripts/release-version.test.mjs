@@ -9,16 +9,17 @@ test("increments the current source version when there are no release tags", () 
     assert.equal(nextReleaseVersion("0.1.0", "0.1.0", []), "0.1.1");
 });
 
-test("uses a pre-bumped source version after the previous release", () => {
-    assert.equal(nextReleaseVersion("0.1.1", "0.1.1", ["0.1.0"], true), "0.1.1");
+test("uses the source version as the baseline when there are no release tags", () => {
+    assert.equal(nextReleaseVersion("0.1.1", "0.1.1", []), "0.1.2");
 });
 
-test("uses a pre-bumped source version before the first release", () => {
-    assert.equal(nextReleaseVersion("0.1.1", "0.1.1", [], true), "0.1.1");
+test("increments past the latest tag even when the source is behind it", () => {
+    assert.equal(nextReleaseVersion("0.1.1", "0.1.1", ["0.1.1", "0.1.2"]), "0.1.3");
 });
 
-test("increments the source version when it was not pre-bumped", () => {
-    assert.equal(nextReleaseVersion("0.1.1", "0.1.1", [], false), "0.1.2");
+test("two releases from the same source get distinct versions", () => {
+    const first = nextReleaseVersion("0.1.0", "0.1.0", []);
+    assert.equal(nextReleaseVersion("0.1.0", "0.1.0", [first]), "0.1.2");
 });
 
 test("increments the newest version when the source is not pre-bumped", () => {
