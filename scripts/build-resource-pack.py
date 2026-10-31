@@ -155,6 +155,17 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
             elif isinstance(texture, str) and not texture.startswith("#"):
                 resolved = resolve_texture(texture, textures_by_name, model_path, loose_textures)
                 face["texture"] = resource_location(resolved, model_id)
+            # The client rejects the whole model if a UV lies outside the 0-16 texture space.
+            uv = face.get("uv")
+            if isinstance(uv, list) and len(uv) == 4 and (min(uv) < 0 or max(uv) > 16):
+                shift_u = (min(uv[0], uv[2]) // 16) * 16
+                shift_v = (min(uv[1], uv[3]) // 16) * 16
+                face["uv"] = [
+                    min(16, max(0, round(uv[0] - shift_u, 4))),
+                    min(16, max(0, round(uv[1] - shift_v, 4))),
+                    min(16, max(0, round(uv[2] - shift_u, 4))),
+                    min(16, max(0, round(uv[3] - shift_v, 4))),
+                ]
     # Blockbench exports untextured faces as "#missing", which renders purple/black.
     kept_elements = []
     for element in rewritten.get("elements", []):
@@ -300,6 +311,21 @@ def compensate_drawn_arm(model):
         translation = transform.get("translation")
         if translation:
             transform["translation"] = [translation[0], -translation[2], translation[1]]
+
+
+def build_shield_blocking(model):
+    """Blocking variant: turn the shield 90 degrees about the vertical so its face points forward
+    across the chest, where the game's raised blocking arm carries it. The idle model and first
+    person stay exactly as authored."""
+    blocking = dict(model)
+    display = {key: dict(value) for key, value in model.get("display", {}).items()}
+    for key in ("thirdperson_righthand", "thirdperson_lefthand"):
+        transform = display.get(key)
+        if transform:
+            rotation = transform.get("rotation", [0, 0, 0])
+            transform["rotation"] = [rotation[0], round(rotation[1] + 180, 4), rotation[2]]
+    blocking["display"] = display
+    return blocking
 
 
 def write_boots_equipment(output_dir):
@@ -480,6 +506,11 @@ def main(source_dir, output_dir):
         )
         if model_id.startswith("celestial_bow_pulling_"):
             compensate_drawn_arm(output_model)
+        shield_blocking = None
+        if model_id == "nova_shield" and source_model.get("display"):
+            # The shield's display values are authored in the .bbmodel; its .json export can be stale.
+            output_model["display"] = source_model["display"]
+            shield_blocking = build_shield_blocking(output_model)
 
         model_output = model_dir / f"{model_id}.json"
         item_output = item_dir / f"{model_id}.json"
@@ -495,11 +526,22 @@ def main(source_dir, output_dir):
                         "type": "minecraft:model",
                         "model": f"galaxy:item/{model_id}",
                     }
+                } if shield_blocking is None else {
+                    "model": {
+                        "type": "minecraft:condition",
+                        "property": "minecraft:using_item",
+                        "on_false": {"type": "minecraft:model", "model": f"galaxy:item/{model_id}"},
+                        "on_true": {"type": "minecraft:model", "model": f"galaxy:item/{model_id}_blocking"},
+                    }
                 },
                 indent=2,
             ) + "\n",
             encoding="utf-8",
         )
+        if shield_blocking is not None:
+            (model_dir / f"{model_id}_blocking.json").write_text(
+                json.dumps(shield_blocking, indent=2) + "\n", encoding="utf-8"
+            )
         models_found.add(model_id)
 
 
@@ -551,7 +593,10 @@ def main(source_dir, output_dir):
         item_path = item_dir / f"{model_id}.json"
         model = read_json(model_path)
         item = read_json(item_path)
-        if item.get("model", {}).get("model") != f"galaxy:item/{model_id}":
+        item_model = item.get("model", {})
+        if item_model.get("type") == "minecraft:condition":
+            item_model = item_model.get("on_false", {})
+        if item_model.get("model") != f"galaxy:item/{model_id}":
             fail(f"{item_path}: item definition does not point to its generated model.")
         for texture in model.get("textures", {}).values():
             if not isinstance(texture, str) or texture.startswith("#"):
