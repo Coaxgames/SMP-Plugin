@@ -376,16 +376,18 @@ public final class PhaseFiveAbilityListener implements Listener {
     private void playNovaShieldRescueEffect(Player player) {
         Location center = player.getLocation().add(0.0, player.getHeight() / 2.0, 0.0);
         World world = player.getWorld();
-        world.spawnParticle(Particle.ITEM, center, 16, 0.45, 0.75, 0.45, 0.12,
+        world.spawnParticle(Particle.ITEM, center, 32, 0.45, 0.75, 0.45, 0.12,
                 NOVA_SHIELD_PARTICLE_ITEM);
-        world.spawnParticle(Particle.DUST, center, 32, 0.55, 0.85, 0.55, 0.02,
+        world.spawnParticle(Particle.DUST, center, 64, 0.55, 0.85, 0.55, 0.02,
                 NOVA_SHIELD_BLUE_DUST);
-        world.spawnParticle(Particle.DUST, center, 24, 0.45, 0.75, 0.45, 0.02,
+        world.spawnParticle(Particle.DUST, center, 48, 0.45, 0.75, 0.45, 0.02,
                 NOVA_SHIELD_WHITE_DUST);
         spawnNovaShieldPopDisplay(player);
     }
 
     private void spawnNovaShieldPopDisplay(Player player) {
+        final int animationTicks = 30;
+        final float peakScale = 1.8F;
         Location playerLocation = player.getLocation();
         Vector direction = playerLocation.getDirection().normalize();
         Location origin = player.getEyeLocation().add(direction.multiply(0.9)).add(0.0, -0.35, 0.0);
@@ -404,18 +406,18 @@ public final class PhaseFiveAbilityListener implements Listener {
 
             @Override
             public void run() {
-                if (!display.isValid() || tick >= 12) {
+                if (!display.isValid() || tick >= animationTicks) {
                     display.remove();
                     rescueDisplays.remove(display);
                     cancel();
                     return;
                 }
 
-                float progress = tick / 12.0F;
+                float progress = tick / (float) animationTicks;
                 float scale = progress < 0.25F
-                        ? 0.25F + progress * 5.0F
-                        : 1.5F * (1.0F - (progress - 0.25F) / 0.75F);
-                Location frame = origin.clone().add(0.0, progress * 0.55F, 0.0);
+                        ? 0.25F + progress / 0.25F * (peakScale - 0.25F)
+                        : peakScale * (1.0F - (progress - 0.25F) / 0.75F);
+                Location frame = origin.clone().add(0.0, progress * 0.9F, 0.0);
                 display.teleport(frame);
                 display.setTransformation(new Transformation(
                         new Vector3f(),
