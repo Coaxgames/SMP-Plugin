@@ -97,6 +97,16 @@ public final class PhaseFiveItems {
         for (EnchantmentLevel enchantment : enchantments) {
             result.addUnsafeEnchantment(enchantment.enchantment(), enchantment.level());
         }
+        if ("singularity_boots".equals(id)) {
+            var meta = result.getItemMeta();
+            if (meta == null) {
+                throw new IllegalStateException("Singularity Boots have no item metadata.");
+            }
+            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:singularity_boots")));
+            if (!result.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not apply the Singularity Boots item model.");
+            }
+        }
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(plugin, id), result);
         recipe.shape(shape);
         for (Ingredient ingredient : ingredients) {
@@ -136,6 +146,9 @@ public final class PhaseFiveItems {
         public ItemStack createBaseItem() {
             ItemStack item = baseItem.clone();
             var meta = item.getItemMeta();
+            if (id.equals("celestial_bow")) {
+                meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:celestial_bow")));
+            }
             meta.setUnbreakable(true);
             meta.addItemFlags(
                     org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS,

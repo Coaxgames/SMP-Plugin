@@ -354,6 +354,35 @@ def main(source_dir, output_dir):
                 if not png_path.is_file():
                     fail(f"{model_path}: missing referenced texture {texture}.")
 
+    pulling_ids = [f"celestial_bow_pulling_{index}" for index in range(3)]
+    if "celestial_bow" in models_found and all(model in models_found for model in pulling_ids):
+        def bow_model(model_id):
+            return {"type": "minecraft:model", "model": f"galaxy:item/{model_id}"}
+
+        (item_dir / "celestial_bow.json").write_text(
+            json.dumps(
+                {
+                    "model": {
+                        "type": "minecraft:condition",
+                        "property": "minecraft:using_item",
+                        "on_false": bow_model("celestial_bow"),
+                        "on_true": {
+                            "type": "minecraft:range_dispatch",
+                            "property": "minecraft:use_duration",
+                            "scale": 0.05,
+                            "fallback": bow_model("celestial_bow_pulling_0"),
+                            "entries": [
+                                {"threshold": 0.65, "model": bow_model("celestial_bow_pulling_1")},
+                                {"threshold": 0.9, "model": bow_model("celestial_bow_pulling_2")},
+                            ],
+                        },
+                    }
+                },
+                indent=2,
+            ) + "\n",
+            encoding="utf-8",
+        )
+
     print(
         f"Generated Minecraft {PACK_FORMAT[0]}.{PACK_FORMAT[1]} pack; extracted textures "
         f"from all {len(model_sources)} Blockbench model(s); models included: "
