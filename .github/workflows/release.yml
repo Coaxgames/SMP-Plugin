@@ -26,24 +26,11 @@ jobs:
     outputs:
       authorized: ${{ steps.gate.outputs.authorized }}
     steps:
-      - name: Check owner or merged pull request approvals
+      - name: Check merged pull request approvals
         id: gate
         uses: actions/github-script@v7
         with:
           script: |
-            const isAdmin = async (username) => {
-              try {
-                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                  ...context.repo,
-                  username,
-                });
-                return data.permission === "admin";
-              } catch (error) {
-                if (error.status === 404) return false;
-                throw error;
-              }
-            };
-
             const headSha = context.payload.workflow_run.head_sha;
             const { data: mainBranch } = await github.rest.repos.getBranch({
               ...context.repo,
@@ -76,10 +63,11 @@ jobs:
                 "Direct pushes to main are not allowed for anyone. Push a branch and merge the pull request instead.",
               );
             }
-            const actorIsAdmin = await isAdmin(context.payload.workflow_run.actor.login);
-
-            core.setOutput("authorized", "true");
-            if (actorIsAdmin) return;
+            if (context.payload.workflow_run.actor.login === context.repo.owner) {
+              core.info("Merged by the repository owner; the owner bypass applies.");
+              core.setOutput("authorized", "true");
+              return;
+            }
 
             const reviews = await github.paginate(github.rest.pulls.listReviews, {
               ...context.repo,
@@ -99,16 +87,10 @@ jobs:
               review.state === "APPROVED" &&
               review.commit_id === pullRequest.head.sha
             );
-            let adminApproval = false;
-            for (const [login] of approvals) {
-              if (await isAdmin(login)) {
-                adminApproval = true;
-                break;
-              }
+            if (approvals.length < 2) {
+              throw new Error(`Merged PR #${pullRequest.number} needs 2 current approvals from people other than its author; admins are not exempt.`);
             }
-            if (!adminApproval && approvals.length < 2) {
-              throw new Error(`Merged PR #${pullRequest.number} needs 2 current approvals or 1 admin approval.`);
-            }
+            core.setOutput("authorized", "true");
 
   build-release:
     needs: authorize
