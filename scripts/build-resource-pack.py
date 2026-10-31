@@ -284,36 +284,89 @@ def repair_export_textures(source_model, exported):
 
 
 def compensate_drawn_arm(model):
-    """Use vanilla bow third-person holding values for the drawn-bow models.
+    """Raise the third-person x rotation by 90 degrees for drawn-bow models.
 
-    Vanilla bows use the same third-person display while drawn; the arm pose supplies the aim.
-    Values authored against the idle pose make the drawn bow point upward.
+    Minecraft lifts the arm ~90 degrees while a bow is drawn, which carries the item with it.
+    The x rotation is the outermost one, so the offset adds directly, and the translation
+    (applied in the arm's frame) is turned the same way. First person is left untouched.
     """
-    display = model.setdefault("display", {})
-    display["thirdperson_righthand"] = {
-        "rotation": [-80, -100, -40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9],
-    }
-    display["thirdperson_lefthand"] = {
-        "rotation": [-80, 80, 40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9],
-    }
+    display = model.get("display") or {}
+    for key in ("thirdperson_righthand", "thirdperson_lefthand"):
+        transform = display.get(key)
+        if not transform:
+            continue
+        rotation = transform.get("rotation", [0, 0, 0])
+        transform["rotation"] = [round(rotation[0] + 90, 4), rotation[1], rotation[2]]
+        translation = transform.get("translation")
+        if translation:
+            transform["translation"] = [translation[0], -translation[2], translation[1]]
 
 
-def write_invisible_equipment(output_dir):
-    """Worn armor asset that renders nothing, so custom 3D worn models can replace it."""
+def write_boots_equipment(output_dir):
+    """Worn armor layer so the Singularity Boots render on the feet like normal boots."""
     equipment_dir = output_dir / "assets" / "galaxy" / "equipment"
     texture_dir = output_dir / "assets" / "galaxy" / "textures" / "entity" / "equipment" / "humanoid"
     equipment_dir.mkdir(parents=True, exist_ok=True)
     texture_dir.mkdir(parents=True, exist_ok=True)
-    (equipment_dir / "invisible.json").write_text(
-        json.dumps({"layers": {"humanoid": [{"texture": "galaxy:invisible"}]}}, indent=2) + "\n",
+    (equipment_dir / "singularity_boots.json").write_text(
+        json.dumps({"layers": {"humanoid": [{"texture": "galaxy:singularity_boots"}]}}, indent=2) + "\n",
         encoding="utf-8",
     )
     width, height = 64, 32
-    raw = b"".join(b"\x00" + b"\x00" * (width * 4) for _ in range(height))
+    pixels = [[(0, 0, 0, 0)] * width for _ in range(height)]
+    # Palette sampled from the 3D boots: near-black space body, orange accretion glow, cream highlights.
+    space = [(8, 9, 23, 255), (7, 8, 20, 255), (10, 11, 28, 255), (14, 13, 34, 255)]
+    gunmetal = (44, 40, 52, 255)
+    ember = [(65, 20, 9, 255), (106, 37, 12, 255), (172, 66, 18, 255), (222, 98, 28, 255)]
+    cream = (255, 248, 222, 255)
+    void = (2, 2, 6, 255)
+    boot_top = 26  # boots cover the bottom six rows of each leg column
+    pixels_x = (0, 4, 8, 12)  # side, front, side, back faces of the leg box
+
+    def paint(x0, y0, x1, y1, color_for):
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                pixels[y][x] = color_for(x, y)
+
+    def body(x, y):
+        if y == boot_top:
+            return gunmetal
+        if y == height - 1:
+            return ember[0]
+        return space[(x * 7 + y * 13) % len(space)]
+
+    for x0 in pixels_x:
+        paint(x0, boot_top, x0 + 4, height, body)
+    paint(4, 16, 8, 20, lambda x, y: space[0])
+    paint(8, 16, 12, 20, lambda x, y: ember[0])
+
+    # Orange cuff trim and glowing sole welt.
+    for x0 in pixels_x:
+        for x in range(x0, x0 + 4):
+            pixels[boot_top + 1][x] = ember[1 + (x % 2)]
+            pixels[height - 2][x] = ember[2]
+    # Front toe glow and cream instep stripe.
+    for x in (5, 6):
+        pixels[boot_top + 3][x] = cream
+        pixels[boot_top + 4][x] = ember[3]
+    # Black hole with an accretion ring on both outer sides, as on the model's shin.
+    for x0 in (0, 8):
+        pixels[boot_top + 2][x0 + 1] = ember[3]
+        pixels[boot_top + 2][x0 + 2] = ember[2]
+        pixels[boot_top + 3][x0 + 1] = ember[2]
+        pixels[boot_top + 3][x0 + 2] = void
+        pixels[boot_top + 4][x0 + 1] = void
+        pixels[boot_top + 4][x0 + 2] = ember[3]
+    # Rear heel glow.
+    pixels[boot_top + 4][13] = ember[3]
+    pixels[boot_top + 4][14] = cream
+    raw = b"".join(
+        b"\x00" + b"".join(bytes(pixel) for pixel in row) for row in pixels
+    )
 
     def chunk(kind, data):
-        body = kind + data
-        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+        body_bytes = kind + data
+        return struct.pack(">I", len(data)) + body_bytes + struct.pack(">I", zlib.crc32(body_bytes) & 0xFFFFFFFF)
 
     png = (
         b"\x89PNG\r\n\x1a\n"
@@ -321,7 +374,7 @@ def write_invisible_equipment(output_dir):
         + chunk(b"IDAT", zlib.compress(raw))
         + chunk(b"IEND", b"")
     )
-    (texture_dir / "invisible.png").write_bytes(png)
+    (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
 def main(source_dir, output_dir):
@@ -376,7 +429,7 @@ def main(source_dir, output_dir):
 
     item_dir = output_dir / "assets" / "galaxy" / "items"
     model_dir = output_dir / "assets" / "galaxy" / "models" / "item"
-    standalone_texture_dir = output_dir / "assets" / "galaxy" / "textures" / "source"
+    standalone_texture_dir = output_dir / "assets" / "galaxy" / "textures" / "item" / "source"
     item_dir.mkdir(parents=True, exist_ok=True)
     model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -395,7 +448,7 @@ def main(source_dir, output_dir):
         destination = standalone_texture_dir / safe_relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(image_path.read_bytes())
-        resource_id = "galaxy:source/" + safe_relative.with_suffix("").as_posix()
+        resource_id = "galaxy:item/source/" + safe_relative.with_suffix("").as_posix()
         loose_textures[slug(relative_path.as_posix())] = resource_id
         basename = slug(relative_path.name)
         if basename in loose_textures and loose_textures[basename] != resource_id:
@@ -491,7 +544,7 @@ def main(source_dir, output_dir):
         )
         models_found.add(model_id)
 
-    write_invisible_equipment(output_dir)
+    write_boots_equipment(output_dir)
 
     for model_id in sorted(models_found):
         model_path = model_dir / f"{model_id}.json"

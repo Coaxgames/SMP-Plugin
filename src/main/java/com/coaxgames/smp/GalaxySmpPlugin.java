@@ -12,7 +12,6 @@ import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
 import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
-import com.coaxgames.smp.listener.SingularityBootsDisplayManager;
 import com.coaxgames.smp.ritual.RitualManager;
 import com.coaxgames.smp.storage.LegendaryDataStore;
 import com.coaxgames.smp.util.ConfigNumbers;
@@ -29,7 +28,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private RitualManager ritualManager;
     private PhaseFourDailyEffectManager phaseFourDailyEffects;
     private PhaseFiveAbilityListener phaseFiveAbilityListener;
-    private SingularityBootsDisplayManager singularityBootsDisplayManager;
 
     @Override
     public void onEnable() {
@@ -75,7 +73,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PhaseFiveMaceAbilityListener(this), this);
         phaseFiveAbilityListener = new PhaseFiveAbilityListener(this);
         getServer().getPluginManager().registerEvents(phaseFiveAbilityListener, this);
-        singularityBootsDisplayManager = new SingularityBootsDisplayManager(this);
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
@@ -98,9 +95,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     public void onDisable() {
         if (phaseFiveAbilityListener != null) {
             phaseFiveAbilityListener.shutdown();
-        }
-        if (singularityBootsDisplayManager != null) {
-            singularityBootsDisplayManager.shutdown();
         }
         if (ritualManager != null) {
             ritualManager.shutdown();

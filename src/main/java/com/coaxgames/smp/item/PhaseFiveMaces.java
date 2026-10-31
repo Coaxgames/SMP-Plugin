@@ -46,7 +46,7 @@ public final class PhaseFiveMaces {
             EnchantmentLevel... enchantments
     ) {
         ItemStack item = new ItemStack(Material.MACE);
-        if (id.equals("collapsing_star_mace")) {
+        if (id.equals("star_mace") || id.equals("collapsing_star_mace")) {
             var meta = item.getItemMeta();
             meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
             item.setItemMeta(meta);

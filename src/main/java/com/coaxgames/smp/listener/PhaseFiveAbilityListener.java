@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -78,6 +79,44 @@ public final class PhaseFiveAbilityListener implements Listener {
         items = plugin.getLegendaryItems();
         celestialArrowKey = new NamespacedKey(plugin, "celestial-bow-arrow");
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickRifts, 1L, 1L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickBootClouds, 2L, 2L);
+    }
+
+    private static final Particle.DustOptions[] GALAXY_DUST = {
+        new Particle.DustOptions(org.bukkit.Color.fromRGB(110, 60, 220), 1.4F),
+        new Particle.DustOptions(org.bukkit.Color.fromRGB(230, 90, 30), 1.2F),
+        new Particle.DustOptions(org.bukkit.Color.fromRGB(40, 40, 120), 1.6F),
+    };
+
+    private void galaxyCloud(Location center, int dust, double spread, double height) {
+        World world = center.getWorld();
+        double percent = Math.max(0.0, Math.min(1000.0, number("phase-five.singularity-boots.particle-percent", 100.0)));
+        if (world == null || percent <= 0.0) {
+            return;
+        }
+        // Counts below 1 are applied as a per-call chance so low percentages still show something.
+        double scaled = dust * percent / 100.0;
+        int count = (int) scaled;
+        if (ThreadLocalRandom.current().nextDouble() < scaled - count) {
+            count++;
+        }
+        if (count <= 0) {
+            return;
+        }
+        dust = count;
+        for (Particle.DustOptions options : GALAXY_DUST) {
+            world.spawnParticle(Particle.DUST, center, dust, spread, height, spread, 0.0, options, true);
+        }
+        world.spawnParticle(Particle.END_ROD, center, Math.max(1, dust / 3), spread, height, spread, 0.01, null, true);
+        world.spawnParticle(Particle.PORTAL, center, dust, spread, height, spread, 0.3, null, true);
+    }
+
+    private void tickBootClouds() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!player.isDead() && wears(player, SINGULARITY_BOOTS)) {
+                galaxyCloud(player.getLocation().add(0.0, 0.15, 0.0), 3, 0.35, 0.1);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -271,6 +310,11 @@ public final class PhaseFiveAbilityListener implements Listener {
             World world = impact.getWorld();
             if (world != null) {
                 world.createExplosion(impact, 3.0F, false, false, player);
+                galaxyCloud(impact.clone().add(0.0, 0.5, 0.0), 120, 3.0, 1.2);
+                for (int tick = 5; tick <= 25; tick += 10) {
+                    Bukkit.getScheduler().runTaskLater(plugin,
+                            () -> galaxyCloud(impact.clone().add(0.0, 0.8, 0.0), 80, 3.5, 1.5), tick);
+                }
             }
         });
     }

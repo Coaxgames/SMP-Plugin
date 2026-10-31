@@ -67,6 +67,9 @@ phase-five:
     thorns-damage: 2.0
   singularity-boots:
     explosion-fall-distance: 50
+    # Galaxy cloud particles: 0 disables them, 100 is the default amount, 200 doubles it.
+    # Applies to both the worn effect and the explosion cloud.
+    particle-percent: 100
   nova-shield:
     # Shield disable period is provisional pending balance review.
     disable-seconds: 5

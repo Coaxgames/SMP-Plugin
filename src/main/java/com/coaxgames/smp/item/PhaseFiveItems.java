@@ -103,10 +103,9 @@ public final class PhaseFiveItems {
         }
         modelMeta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
         if ("singularity_boots".equals(id)) {
-            // The worn 3D model is shown by a display entity, so the vanilla boots render nothing.
             var equippable = modelMeta.getEquippable();
             equippable.setSlot(org.bukkit.inventory.EquipmentSlot.FEET);
-            equippable.setModel(NamespacedKey.fromString("galaxy:invisible"));
+            equippable.setModel(NamespacedKey.fromString("galaxy:singularity_boots"));
             modelMeta.setEquippable(equippable);
         }
         if ("cosmic_crown".equals(id)) {
