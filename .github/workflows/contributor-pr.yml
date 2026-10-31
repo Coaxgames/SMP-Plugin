@@ -19,30 +19,9 @@ jobs:
       github.event.workflow_run.head_branch != 'main'
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.actor.outputs.is_admin != 'true' && 'true' || 'false' }}
       head_sha: ${{ steps.prepare.outputs.head_sha }}
     steps:
-      - name: Check actor permission
-        id: actor
-        uses: actions/github-script@v7
-        with:
-          script: |
-            try {
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                ...context.repo,
-                username: context.payload.workflow_run.actor.login,
-              });
-              core.setOutput("is_admin", String(data.permission === "admin"));
-            } catch (error) {
-              if (error.status === 404) {
-                core.setOutput("is_admin", "false");
-                return;
-              }
-              throw error;
-            }
-
       - name: Check out trusted automation
-        if: steps.actor.outputs.is_admin != 'true'
         uses: actions/checkout@v4
         with:
           ref: main
@@ -50,7 +29,6 @@ jobs:
           persist-credentials: false
 
       - name: Check out pushed source without credentials
-        if: steps.actor.outputs.is_admin != 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -58,7 +36,6 @@ jobs:
           persist-credentials: false
 
       - name: Bump version on pushed branch
-        if: steps.actor.outputs.is_admin != 'true'
         id: prepare
         env:
           GH_TOKEN: ${{ github.token }}
@@ -88,7 +65,6 @@ jobs:
           echo "head_sha=$(git -C source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Create or update pull request
-        if: steps.actor.outputs.is_admin != 'true'
         uses: actions/github-script@v7
         env:
           HEAD_SHA: ${{ steps.prepare.outputs.head_sha }}
@@ -133,7 +109,6 @@ jobs:
 
   build:
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -160,7 +135,7 @@ jobs:
 
   report-build:
     needs: [prepare, build]
-    if: always() && needs.prepare.outputs.should_run == 'true'
+    if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       statuses: write

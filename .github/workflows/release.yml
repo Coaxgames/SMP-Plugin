@@ -21,7 +21,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pull-requests: read
     outputs:
       authorized: ${{ steps.gate.outputs.authorized }}
@@ -63,14 +63,15 @@ jobs:
                 commit_sha: headSha,
               });
             const pullRequest = associatedPullRequests.find((candidate) => candidate.merged_at);
-            const actorIsAdmin = await isAdmin(context.payload.workflow_run.actor.login);
-            if (!actorIsAdmin && !pullRequest) {
-              throw new Error("Non-admin pushes to main must come from a merged, approved pull request.");
+            if (!pullRequest) {
+              throw new Error(
+                "Direct pushes to main are not allowed for anyone. Push a branch and merge the pull request instead.",
+              );
             }
+            const actorIsAdmin = await isAdmin(context.payload.workflow_run.actor.login);
 
             core.setOutput("authorized", "true");
             core.setOutput("pre_bumped", "false");
-            if (!pullRequest) return;
 
             const { data: changedFiles } = await github.rest.pulls.listFiles({
               ...context.repo,
@@ -130,9 +131,8 @@ jobs:
       - name: Check out main source
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.workflow_run.head_sha }}
           path: source
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Java 25
@@ -153,10 +153,6 @@ jobs:
           PREBUMPED: ${{ needs.authorize.outputs.pre_bumped }}
         run: |
           RELEASE_TAGS="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/tags?per_page=100" --jq '.[].name')"
-          PREBUMPED="$PREBUMPED"
-          if git -C source log --format=%s --grep='^chore: release ' -n 1 | grep -q .; then
-            PREBUMPED=true
-          fi
           SOURCE_ROOT="$GITHUB_WORKSPACE/source" RELEASE_TAGS="$RELEASE_TAGS" PREBUMPED="$PREBUMPED" \
             node trusted/scripts/release-version.mjs
 
@@ -173,29 +169,12 @@ jobs:
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip"
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1"
 
-      - name: Commit version and push it to main
-        id: publish-commit
-        working-directory: source
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet -- build.gradle src/main/resources/plugin.yml; then
-            git add build.gradle src/main/resources/plugin.yml
-            git commit -m "chore: release $VERSION"
-            gh auth setup-git
-            git push origin HEAD:main
-          fi
-          echo "release_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Create GitHub Release
         working-directory: source
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_SHA: ${{ steps.publish-commit.outputs.release_sha }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           gh release create "$VERSION" \
             "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
