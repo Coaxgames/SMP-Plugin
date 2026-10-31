@@ -33,6 +33,10 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
     }
 
+    public void resetAbilityProgress(UUID playerUuid) {
+        hitCounts.remove(playerUuid);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMaceDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)

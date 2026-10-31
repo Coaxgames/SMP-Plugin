@@ -47,6 +47,7 @@ public final class GalaxyCommand implements TabExecutor {
             switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
                 case "give" -> give(sender, label, args);
                 case "reset" -> reset(sender, label, args);
+                case "reset-abilities" -> resetAbilities(sender, label, args);
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 default -> sendUsage(sender, label);
@@ -69,7 +70,12 @@ public final class GalaxyCommand implements TabExecutor {
             return List.of();
         }
         if (args.length == 1) {
-            return matching(List.of("give", "reset", "list", "locate"), args[0]);
+            return matching(List.of("give", "reset", "reset-abilities", "list", "locate"), args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("reset-abilities")) {
+            List<String> targets = new ArrayList<>(List.of("@s", "@p", "@a"));
+            targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+            return matching(targets, args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             return matching(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1]);
@@ -147,6 +153,44 @@ public final class GalaxyCommand implements TabExecutor {
                 + ". Its permanent crafted-ever record was not changed."));
     }
 
+    private void resetAbilities(CommandSender sender, String label, String[] args) throws IOException {
+        if (args.length != 2) {
+            sender.sendMessage(Component.text("Usage: /" + label + " reset-abilities <player|selector>"));
+            return;
+        }
+
+        List<Player> targets = new ArrayList<>();
+        if (args[1].startsWith("@")) {
+            try {
+                for (var entity : Bukkit.selectEntities(sender, args[1])) {
+                    if (entity instanceof Player player) {
+                        targets.add(player);
+                    }
+                }
+            } catch (IllegalArgumentException exception) {
+                sender.sendMessage(Component.text("Invalid player selector: " + args[1]));
+                return;
+            }
+        } else {
+            Player target = Bukkit.getPlayerExact(args[1]);
+            if (target != null) {
+                targets.add(target);
+            }
+        }
+        if (targets.isEmpty()) {
+            sender.sendMessage(Component.text("No online players matched: " + args[1]));
+            return;
+        }
+
+        int clearedCooldowns = 0;
+        for (Player target : targets) {
+            clearedCooldowns += plugin.resetAbilities(target);
+        }
+        sender.sendMessage(Component.text("Reset ability cooldowns and hit progress for "
+                + targets.size() + " player(s); cleared " + clearedCooldowns
+                + " cooldown(s) and removed shield disable cooldowns."));
+    }
+
     private void list(CommandSender sender) {
         List<LegendaryItem> items = plugin.getLegendaryItems().getAll().stream()
                 .sorted(java.util.Comparator.comparing(LegendaryItem::id))
@@ -212,6 +256,7 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
-                + " give <player> <item> | reset <item> | list | locate <item>"));
+                + " give <player> <item> | reset <item> | reset-abilities <player|selector>"
+                + " | list | locate <item>"));
     }
 }

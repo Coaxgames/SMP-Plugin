@@ -70,6 +70,10 @@ public final class CooldownManager {
         return dataStore.clearCooldownsForItem(itemId);
     }
 
+    public int clearAll(UUID playerUuid) throws IOException {
+        return dataStore.clearCooldownsForPlayer(playerUuid);
+    }
+
     private long readSeconds(String path, long fallback) {
         if (!config.contains(path)) {
             return fallback;

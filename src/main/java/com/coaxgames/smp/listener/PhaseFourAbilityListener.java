@@ -53,6 +53,11 @@ public final class PhaseFourAbilityListener implements Listener {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> applyMassOrbPassive(), 1L, 20L);
     }
 
+    public void resetAbilityProgress(UUID playerUuid) {
+        astralHits.clear(playerUuid);
+        voidHits.clear(playerUuid);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)

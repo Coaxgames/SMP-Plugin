@@ -1,5 +1,5 @@
 name: GalaxySMP
-version: '2.7'
+version: '2.19'
 main: com.coaxgames.smp.GalaxySmpPlugin
 api-version: '26.3'
 description: Galaxy SMP legendary items, recipes, and protection rules.
@@ -8,7 +8,7 @@ depend:
 commands:
   galaxy:
     description: Manage Galaxy SMP legendary items.
-    usage: /galaxy <give|reset|list|locate>
+    usage: /galaxy <give|reset|reset-abilities|list|locate>
     permission: galaxy.admin
 permissions:
   galaxy.admin:

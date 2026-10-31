@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -32,6 +33,7 @@ import org.bukkit.entity.ItemDisplay.ItemDisplayTransform;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.FluidCollisionMode;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -62,6 +64,11 @@ public final class PhaseFiveAbilityListener implements Listener {
     private static final String NOVA_SHIELD = "nova_shield";
     private static final NamespacedKey WORMHOLE_RIFT_MODEL =
             Objects.requireNonNull(NamespacedKey.fromString("galaxy:wormhole_rift"));
+    private static final ItemStack NOVA_SHIELD_PARTICLE_ITEM = createNovaShieldParticleItem();
+    private static final Particle.DustOptions NOVA_SHIELD_BLUE_DUST =
+            new Particle.DustOptions(Color.fromRGB(55, 145, 255), 1.4F);
+    private static final Particle.DustOptions NOVA_SHIELD_WHITE_DUST =
+            new Particle.DustOptions(Color.fromRGB(240, 248, 255), 1.4F);
 
     private final GalaxySmpPlugin plugin;
     private final LegendaryItemRegistry items;
@@ -71,6 +78,7 @@ public final class PhaseFiveAbilityListener implements Listener {
     private final Map<UUID, Integer> crownHitCounts = new HashMap<>();
     private final Map<UUID, Integer> shieldAxeHitCounts = new HashMap<>();
     private final Set<UUID> absorptionUpgradeInProgress = new HashSet<>();
+    private final Set<ItemDisplay> rescueDisplays = new HashSet<>();
     private final List<Rift> rifts = new ArrayList<>();
     private boolean applyingThorns;
 
@@ -357,11 +365,75 @@ public final class PhaseFiveAbilityListener implements Listener {
         event.setCancelled(true);
         player.setHealth(1.0);
         player.setFireTicks(0);
+        playNovaShieldRescueEffect(player);
         player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1.0F, 1.0F);
         player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 900, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 100, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 800, 0, true, true, true));
         player.setAbsorptionAmount(Math.max(player.getAbsorptionAmount(), 4.0));
+    }
+
+    private void playNovaShieldRescueEffect(Player player) {
+        Location center = player.getLocation().add(0.0, player.getHeight() / 2.0, 0.0);
+        World world = player.getWorld();
+        world.spawnParticle(Particle.ITEM, center, 16, 0.45, 0.75, 0.45, 0.12,
+                NOVA_SHIELD_PARTICLE_ITEM);
+        world.spawnParticle(Particle.DUST, center, 32, 0.55, 0.85, 0.55, 0.02,
+                NOVA_SHIELD_BLUE_DUST);
+        world.spawnParticle(Particle.DUST, center, 24, 0.45, 0.75, 0.45, 0.02,
+                NOVA_SHIELD_WHITE_DUST);
+        spawnNovaShieldPopDisplay(player);
+    }
+
+    private void spawnNovaShieldPopDisplay(Player player) {
+        Location playerLocation = player.getLocation();
+        Vector direction = playerLocation.getDirection().normalize();
+        Location origin = player.getEyeLocation().add(direction.multiply(0.9)).add(0.0, -0.35, 0.0);
+        ItemDisplay display = origin.getWorld().spawn(origin, ItemDisplay.class);
+        display.setItemStack(NOVA_SHIELD_PARTICLE_ITEM.clone());
+        display.setItemDisplayTransform(ItemDisplayTransform.FIXED);
+        display.setRotation(playerLocation.getYaw(), 0.0F);
+        display.setGravity(false);
+        display.setInvulnerable(true);
+        display.setSilent(true);
+        display.setPersistent(false);
+        rescueDisplays.add(display);
+
+        new BukkitRunnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                if (!display.isValid() || tick >= 12) {
+                    display.remove();
+                    rescueDisplays.remove(display);
+                    cancel();
+                    return;
+                }
+
+                float progress = tick / 12.0F;
+                float scale = progress < 0.25F
+                        ? 0.25F + progress * 5.0F
+                        : 1.5F * (1.0F - (progress - 0.25F) / 0.75F);
+                Location frame = origin.clone().add(0.0, progress * 0.55F, 0.0);
+                display.teleport(frame);
+                display.setTransformation(new Transformation(
+                        new Vector3f(),
+                        new Quaternionf(),
+                        new Vector3f(scale, scale, scale),
+                        new Quaternionf().rotateY(progress * (float) Math.PI * 2.0F)));
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private static ItemStack createNovaShieldParticleItem() {
+        ItemStack item = new ItemStack(Material.SHIELD);
+        ItemMeta meta = Objects.requireNonNull(item.getItemMeta(),
+                "Nova Shield particle item has no metadata.");
+        meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:nova_shield")));
+        item.setItemMeta(meta);
+        return item;
     }
 
     @EventHandler
@@ -477,10 +549,21 @@ public final class PhaseFiveAbilityListener implements Listener {
     }
 
     public void shutdown() {
+        for (ItemDisplay display : rescueDisplays) {
+            display.remove();
+        }
+        rescueDisplays.clear();
         for (Rift rift : rifts) {
             rift.display.remove();
         }
         rifts.clear();
+    }
+
+    public void resetAbilityProgress(UUID playerUuid) {
+        lungeCounts.remove(playerUuid);
+        riptideCounts.remove(playerUuid);
+        crownHitCounts.remove(playerUuid);
+        shieldAxeHitCounts.remove(playerUuid);
     }
 
     private void createCelestialCloud(World world, Location impact) {

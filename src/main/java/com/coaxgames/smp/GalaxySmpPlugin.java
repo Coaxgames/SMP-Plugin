@@ -7,9 +7,9 @@ import com.coaxgames.smp.item.PhaseFourItems;
 import com.coaxgames.smp.item.PhaseFiveItems;
 import com.coaxgames.smp.item.PhaseFiveMaces;
 import com.coaxgames.smp.listener.LegendaryCraftListener;
+import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
-import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
 import com.coaxgames.smp.ritual.RitualManager;
@@ -19,6 +19,8 @@ import com.coaxgames.smp.util.CooldownManager;
 import com.coaxgames.smp.util.HeadDropVersion;
 import java.io.IOException;
 import java.util.logging.Level;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GalaxySmpPlugin extends JavaPlugin {
@@ -27,6 +29,8 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private CooldownManager cooldownManager;
     private RitualManager ritualManager;
     private PhaseFourDailyEffectManager phaseFourDailyEffects;
+    private PhaseFourAbilityListener phaseFourAbilityListener;
+    private PhaseFiveMaceAbilityListener phaseFiveMaceAbilityListener;
     private PhaseFiveAbilityListener phaseFiveAbilityListener;
 
     @Override
@@ -69,8 +73,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
-        getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
-        getServer().getPluginManager().registerEvents(new PhaseFiveMaceAbilityListener(this), this);
+        phaseFourAbilityListener = new PhaseFourAbilityListener(this);
+        getServer().getPluginManager().registerEvents(phaseFourAbilityListener, this);
+        phaseFiveMaceAbilityListener = new PhaseFiveMaceAbilityListener(this);
+        getServer().getPluginManager().registerEvents(phaseFiveMaceAbilityListener, this);
         phaseFiveAbilityListener = new PhaseFiveAbilityListener(this);
         getServer().getPluginManager().registerEvents(phaseFiveAbilityListener, this);
         if (getCommand("galaxy") == null) {
@@ -131,6 +137,15 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             throw new IllegalStateException("Cooldown manager is not available before plugin startup.");
         }
         return cooldownManager;
+    }
+
+    public int resetAbilities(Player player) throws IOException {
+        int clearedCooldowns = getCooldownManager().clearAll(player.getUniqueId());
+        player.setCooldown(Material.SHIELD, 0);
+        phaseFourAbilityListener.resetAbilityProgress(player.getUniqueId());
+        phaseFiveMaceAbilityListener.resetAbilityProgress(player.getUniqueId());
+        phaseFiveAbilityListener.resetAbilityProgress(player.getUniqueId());
+        return clearedCooldowns;
     }
 
     public RitualManager getRitualManager() {

@@ -315,8 +315,7 @@ def compensate_drawn_arm(model):
 
 def build_shield_blocking(model):
     """Blocking variant: turn the shield 90 degrees about the vertical so its face points forward
-    across the chest, where the game's raised blocking arm carries it. The idle model and first
-    person stay exactly as authored."""
+    across the chest, where the game's raised blocking arm carries it."""
     blocking = dict(model)
     display = {key: dict(value) for key, value in model.get("display", {}).items()}
     for key in ("thirdperson_righthand", "thirdperson_lefthand"):
@@ -329,8 +328,41 @@ def build_shield_blocking(model):
             # Slide the shield in toward the body line and out ahead of the hand.
             translation = transform.get("translation", [0, 0, 0])
             transform["translation"] = [round(translation[0] - 4, 4), translation[1], round(translation[2] - 3, 4)]
+    for key, horizontal_offset in (
+        ("firstperson_righthand", -2),
+        ("firstperson_lefthand", 2),
+    ):
+        transform = display.get(key)
+        if transform:
+            rotation = transform.get("rotation", [0, 0, 0])
+            transform["rotation"] = [
+                0,
+                round(rotation[1] + 90, 4),
+                0,
+            ]
+            translation = transform.get("translation", [0, 0, 0])
+            transform["translation"] = [
+                round(translation[0] + horizontal_offset, 4),
+                round(translation[1] + 1.5, 4),
+                round(translation[2] - 6, 4),
+            ]
     blocking["display"] = display
     return blocking
+
+
+def align_shield_offhand(model):
+    display = {key: dict(value) for key, value in model.get("display", {}).items()}
+    right = display.get("firstperson_righthand")
+    left = display.get("firstperson_lefthand")
+    if right and left:
+        left["rotation"] = list(right.get("rotation", [0, 0, 0]))
+    right = display.get("thirdperson_righthand")
+    left = display.get("thirdperson_lefthand")
+    if right and left:
+        left["scale"] = list(right.get("scale", [1, 1, 1]))
+    aligned = dict(model)
+    aligned["display"] = display
+    return aligned
 
 
 def write_boots_equipment(output_dir):
@@ -514,7 +546,15 @@ def main(source_dir, output_dir):
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.
-            output_model["display"] = source_model["display"]
+            output_model["display"] = {
+                key: dict(value) for key, value in source_model["display"].items()
+            }
+            for key in ("thirdperson_righthand", "thirdperson_lefthand"):
+                transform = output_model["display"].get(key)
+                if transform:
+                    scale = transform.get("scale", [1, 1, 1])
+                    transform["scale"] = [round(axis * 1.15, 4) for axis in scale]
+            output_model = align_shield_offhand(output_model)
             shield_blocking = build_shield_blocking(output_model)
 
         model_output = model_dir / f"{model_id}.json"

@@ -553,6 +553,26 @@ public final class LegendaryDataStore {
         save();
     }
 
+    public synchronized int clearCooldownsForPlayer(UUID playerUuid) throws IOException {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        String path = "cooldowns." + playerUuid;
+        ConfigurationSection cooldowns = data.getConfigurationSection(path);
+        if (cooldowns == null || cooldowns.getKeys(false).isEmpty()) {
+            return 0;
+        }
+
+        int removed = cooldowns.getKeys(false).size();
+        String previousData = data.saveToString();
+        data.set(path, null);
+        try {
+            save();
+        } catch (IOException exception) {
+            restoreSnapshot(previousData, exception);
+            throw exception;
+        }
+        return removed;
+    }
+
     public synchronized boolean startDailyEffect(
             UUID playerUuid,
             String itemId,
