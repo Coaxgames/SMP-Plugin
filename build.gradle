@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.coaxgames.smp'
-version = '2.22.3'
+version = '2.22.7'
 repositories {
     maven {
         url = 'https://repo.papermc.io/repository/maven-public/'
@@ -70,4 +70,45 @@ tasks.register('resourcePackSha1') {
 
 tasks.named('build') {
     dependsOn tasks.named('resourcePackSha1')
+}
+
+tasks.register('copyLocalBuild', Copy) {
+    dependsOn tasks.named('build')
+    from(layout.buildDirectory.dir('libs')) { include "*-${project.version}.jar" }
+    from(layout.buildDirectory.dir('distributions')) { include "*-${project.version}.zip", "*-${project.version}.zip.sha1" }
+    into layout.projectDirectory.dir('local-build')
+    doFirst { delete layout.projectDirectory.dir('local-build') }
+}
+
+tasks.register('bumpVersion') {
+    description = 'Increments the patch version in build.gradle and plugin.yml.'
+    def gradleFile = file('build.gradle')
+    def pluginFile = file('src/main/resources/plugin.yml')
+    doLast {
+        def gradlePattern = ~/(?m)^version\s*=\s*'(\d+)\.(\d+)\.(\d+)'/
+        def pluginPattern = ~/(?m)^version:\s*'(\d+)\.(\d+)\.(\d+)'/
+        def gradleText = gradleFile.getText('UTF-8')
+        def pluginText = pluginFile.getText('UTF-8')
+        def gradleMatch = gradleText =~ gradlePattern
+        def pluginMatch = pluginText =~ pluginPattern
+        if (!gradleMatch.find() || !pluginMatch.find()) {
+            throw new GradleException('Could not find major.minor.patch versions in build.gradle and plugin.yml')
+        }
+        def current = [gradleMatch, pluginMatch].collect { m -> [m.group(1), m.group(2), m.group(3)]*.toInteger() }
+        def highest = current.max { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] ?: a[2] <=> b[2] }
+        def next = "${highest[0]}.${highest[1]}.${highest[2] + 1}"
+        gradleFile.setText(gradleText.replaceFirst(gradlePattern, "version = '${next}'"), 'UTF-8')
+        pluginFile.setText(pluginText.replaceFirst(pluginPattern, "version: '${next}'"), 'UTF-8')
+        println "Version bumped to ${next}"
+    }
+}
+
+// Runs in a fresh Gradle process so the build sees the bumped version.
+tasks.register('buildLocal', Exec) {
+    group = 'build'
+    description = 'Bumps the patch version, builds the plugin jar and resource pack zip, and copies them to local-build/ (git-ignored).'
+    dependsOn tasks.named('bumpVersion')
+    workingDir = projectDir
+    def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'gradlew.bat' : './gradlew'
+    commandLine gradlew, 'copyLocalBuild', '--console=plain'
 }

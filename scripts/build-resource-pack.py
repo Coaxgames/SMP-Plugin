@@ -441,11 +441,43 @@ def write_boots_equipment(output_dir):
 
 
 FIRST_PERSON_OVERRIDES = {
-    "star_mace": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
-    "collapsing_star_mace": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
-    "cosmic_crown": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
-    "singularity_boots": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.8, 0.8, 0.8]},
+    # Off-hand poses (confirmed visible in game).
+    "star_mace": {
+        "rotation": [-122.04, -89, -101],
+        "translation": [1.75, -0.25, 2.75],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "collapsing_star_mace": {
+        "rotation": [-122.04, -89, -101],
+        "translation": [1.75, -0.25, 2.75],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "cosmic_crown": {
+        "rotation": [-180, -149, 180],
+        "translation": [0, 3.75, 0],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "singularity_boots": {
+        "rotation": [0, 82, 0],
+        "translation": [3.5, 3.25, 0],
+        "scale": [0.5, 0.5, 0.5],
+    },
 }
+
+# Main-hand poses use the vanilla handheld layout (the same one the visible spear uses),
+# since the off-hand values above do not show up in the main hand.
+MAIN_HAND_VANILLA = {
+    "rotation": [0, -90, 25],
+    "translation": [1.13, 3.2, 1.13],
+}
+FIRST_PERSON_MAIN_HAND = {
+    model_id: {**MAIN_HAND_VANILLA, "scale": list(transform["scale"])}
+    for model_id, transform in FIRST_PERSON_OVERRIDES.items()
+}
+# The wide mace heads sit behind the camera with the vanilla depth. The Astral Sword, which is
+# visible in the main hand, pushes the item about 10 units along +z, so the maces do the same.
+for _mace in ("star_mace", "collapsing_star_mace"):
+    FIRST_PERSON_MAIN_HAND[_mace]["translation"] = [1.13, 3.2, 10]
 
 
 def main(source_dir, output_dir):
@@ -555,7 +587,9 @@ def main(source_dir, output_dir):
             # The authored first-person values push these models out of view.
             displays = output_model.setdefault("display", {})
             transform = FIRST_PERSON_OVERRIDES[model_id]
-            displays["firstperson_righthand"] = {key: list(value) for key, value in transform.items()}
+            displays["firstperson_righthand"] = {
+                key: list(value) for key, value in FIRST_PERSON_MAIN_HAND[model_id].items()
+            }
             displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):

@@ -3,3 +3,8 @@ gradle/
 oracleJdk-27/
 .vscode/
 .gradle/
+
+# Local build artifacts
+local-build/
+*.jar
+*.zip
