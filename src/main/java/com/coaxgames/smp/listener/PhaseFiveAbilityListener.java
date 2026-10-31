@@ -26,6 +26,8 @@ import org.bukkit.World;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.ItemDisplay.ItemDisplayTransform;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.FluidCollisionMode;
@@ -41,10 +43,14 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRiptideEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public final class PhaseFiveAbilityListener implements Listener {
     private static final String NEBULA_SPEAR = "nebula_spear";
@@ -53,6 +59,8 @@ public final class PhaseFiveAbilityListener implements Listener {
     private static final String COSMIC_CROWN = "cosmic_crown";
     private static final String SINGULARITY_BOOTS = "singularity_boots";
     private static final String NOVA_SHIELD = "nova_shield";
+    private static final NamespacedKey WORMHOLE_RIFT_MODEL =
+            Objects.requireNonNull(NamespacedKey.fromString("galaxy:wormhole_rift"));
 
     private final GalaxySmpPlugin plugin;
     private final LegendaryItemRegistry items;
@@ -116,7 +124,7 @@ public final class PhaseFiveAbilityListener implements Listener {
             riptideCounts.remove(playerId);
             Location location = event.getPlayer().getLocation();
             double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
-            rifts.add(new Rift(playerId, location));
+            rifts.add(new Rift(playerId, location, spawnRiftDisplay(location)));
             for (int point = 0; point < 24; point++) {
                 double angle = 2.0 * Math.PI * point / 24.0;
                 Location marker = location.clone().add(
@@ -349,6 +357,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         while (iterator.hasNext()) {
             Rift rift = iterator.next();
             if (rift.expiresAtMillis <= now) {
+                rift.display.remove();
                 iterator.remove();
                 continue;
             }
@@ -366,6 +375,7 @@ public final class PhaseFiveAbilityListener implements Listener {
                     rift.inside.remove(online.getUniqueId());
                 }
             }
+
             world.spawnParticle(Particle.PORTAL, rift.location, 4, radius / 2, 0.5, radius / 2, 0.02);
             for (Player player : world.getPlayers()) {
                 boolean inRift = player.getLocation().distanceSquared(rift.location) <= radius * radius;
@@ -395,6 +405,38 @@ public final class PhaseFiveAbilityListener implements Listener {
                 }
             }
         }
+    }
+
+    private ItemDisplay spawnRiftDisplay(Location location) {
+        ItemStack modelItem = new ItemStack(Material.PAPER);
+        ItemMeta meta = modelItem.getItemMeta();
+        if (meta == null) {
+            throw new IllegalStateException("Could not create metadata for the Wormhole Rift display.");
+        }
+        meta.setItemModel(WORMHOLE_RIFT_MODEL);
+        if (!modelItem.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not apply the Wormhole Rift item model.");
+        }
+
+        Location displayLocation = location.clone().add(0.0, 1.0, 0.0);
+        ItemDisplay display = location.getWorld().spawn(displayLocation, ItemDisplay.class);
+        display.setItemStack(modelItem);
+        display.setItemDisplayTransform(ItemDisplayTransform.FIXED);
+        display.setRotation(location.getYaw(), 0.0F);
+        display.setTransformation(new Transformation(
+                new Vector3f(),
+                new Quaternionf(),
+                new Vector3f(2.0F, 2.0F, 2.0F),
+                new Quaternionf()));
+        display.setPersistent(false);
+        return display;
+    }
+
+    public void shutdown() {
+        for (Rift rift : rifts) {
+            rift.display.remove();
+        }
+        rifts.clear();
     }
 
     private void createCelestialCloud(World world, Location impact) {
@@ -496,14 +538,16 @@ public final class PhaseFiveAbilityListener implements Listener {
     private static final class Rift {
         private final UUID creator;
         private final Location location;
+        private final ItemDisplay display;
         private final Set<UUID> inside = new HashSet<>();
         private final Set<UUID> affected = new HashSet<>();
         private boolean creatorPassed;
         private long expiresAtMillis = Long.MAX_VALUE;
 
-        private Rift(UUID creator, Location location) {
+        private Rift(UUID creator, Location location, ItemDisplay display) {
             this.creator = creator;
             this.location = location.clone();
+            this.display = display;
             inside.add(creator);
         }
     }

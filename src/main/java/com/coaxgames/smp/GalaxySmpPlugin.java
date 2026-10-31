@@ -27,6 +27,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private CooldownManager cooldownManager;
     private RitualManager ritualManager;
     private PhaseFourDailyEffectManager phaseFourDailyEffects;
+    private PhaseFiveAbilityListener phaseFiveAbilityListener;
 
     @Override
     public void onEnable() {
@@ -70,7 +71,8 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFourAbilityListener(this), this);
         getServer().getPluginManager().registerEvents(new PhaseFiveMaceAbilityListener(this), this);
-        getServer().getPluginManager().registerEvents(new PhaseFiveAbilityListener(this), this);
+        phaseFiveAbilityListener = new PhaseFiveAbilityListener(this);
+        getServer().getPluginManager().registerEvents(phaseFiveAbilityListener, this);
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
@@ -91,6 +93,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (phaseFiveAbilityListener != null) {
+            phaseFiveAbilityListener.shutdown();
+        }
         if (ritualManager != null) {
             ritualManager.shutdown();
         }

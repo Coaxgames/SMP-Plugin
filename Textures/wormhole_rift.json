@@ -1,0 +1,2078 @@
+{
+	"format_version": "26.3",
+	"credit": "Made with Blockbench",
+	"parent": "item/handheld",
+	"ambientocclusion": false,
+	"textures": {
+		"0": {
+			"force_translucent": true,
+			"sprite": "wormhole_rift"
+		},
+		"1": {
+			"force_translucent": true,
+			"sprite": "wormhole_rift_sides"
+		},
+		"particle": "wormhole_rift"
+	},
+	"elements": [
+		{
+			"name": "Rift silhouette 001",
+			"from": [5.76596, 15.875, 5.25],
+			"to": [10.23404, 16, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 0, 8.875, 0.125], "texture": "#0"},
+				"east": {"uv": [0, 0, 5.5, 0.125], "texture": "#1"},
+				"south": {"uv": [7.125, 0, 8.875, 0.125], "texture": "#0"},
+				"west": {"uv": [0, 0, 5.5, 0.125], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 9.48936, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 9.48936, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 002",
+			"from": [6.08511, 15.75, 5.25],
+			"to": [10.23404, 15.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.25, 0.125, 8.875, 0.25], "texture": "#0"},
+				"east": {"uv": [0, 0.125, 5.5, 0.25], "texture": "#1"},
+				"south": {"uv": [7.25, 0.125, 8.875, 0.25], "texture": "#0"},
+				"west": {"uv": [0, 0.125, 5.5, 0.25], "texture": "#1"},
+				"up": {"uv": [6.7234, 0, 9.48936, 5.5], "texture": "#1"},
+				"down": {"uv": [6.7234, 0, 9.48936, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 003",
+			"from": [5.76596, 15.625, 5.25],
+			"to": [10.55319, 15.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 0.25, 9, 0.375], "texture": "#0"},
+				"east": {"uv": [0, 0.25, 5.5, 0.375], "texture": "#1"},
+				"south": {"uv": [7.125, 0.25, 9, 0.375], "texture": "#0"},
+				"west": {"uv": [0, 0.25, 5.5, 0.375], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 9.70213, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 9.70213, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 004",
+			"from": [5.76596, 15.5, 5.25],
+			"to": [10.55319, 15.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 0.375, 9, 0.5], "texture": "#0"},
+				"east": {"uv": [0, 0.375, 5.5, 0.5], "texture": "#1"},
+				"south": {"uv": [7.125, 0.375, 9, 0.5], "texture": "#0"},
+				"west": {"uv": [0, 0.375, 5.5, 0.5], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 9.70213, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 9.70213, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 005",
+			"from": [5.76596, 15.375, 5.25],
+			"to": [10.87234, 15.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 0.5, 9.125, 0.625], "texture": "#0"},
+				"east": {"uv": [0, 0.5, 5.5, 0.625], "texture": "#1"},
+				"south": {"uv": [7.125, 0.5, 9.125, 0.625], "texture": "#0"},
+				"west": {"uv": [0, 0.5, 5.5, 0.625], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 9.91489, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 9.91489, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 006",
+			"from": [5.76596, 15.25, 5.25],
+			"to": [11.19149, 15.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 0.625, 9.25, 0.75], "texture": "#0"},
+				"east": {"uv": [0, 0.625, 5.5, 0.75], "texture": "#1"},
+				"south": {"uv": [7.125, 0.625, 9.25, 0.75], "texture": "#0"},
+				"west": {"uv": [0, 0.625, 5.5, 0.75], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 10.12766, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 10.12766, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 007",
+			"from": [5.44681, 15.125, 5.25],
+			"to": [11.19149, 15.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7, 0.75, 9.25, 0.875], "texture": "#0"},
+				"east": {"uv": [0, 0.75, 5.5, 0.875], "texture": "#1"},
+				"south": {"uv": [7, 0.75, 9.25, 0.875], "texture": "#0"},
+				"west": {"uv": [0, 0.75, 5.5, 0.875], "texture": "#1"},
+				"up": {"uv": [6.29787, 0, 10.12766, 5.5], "texture": "#1"},
+				"down": {"uv": [6.29787, 0, 10.12766, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 008",
+			"from": [5.12766, 15, 5.25],
+			"to": [11.82979, 15.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.875, 0.875, 9.5, 1], "texture": "#0"},
+				"east": {"uv": [0, 0.875, 5.5, 1], "texture": "#1"},
+				"south": {"uv": [6.875, 0.875, 9.5, 1], "texture": "#0"},
+				"west": {"uv": [0, 0.875, 5.5, 1], "texture": "#1"},
+				"up": {"uv": [6.08511, 0, 10.55319, 5.5], "texture": "#1"},
+				"down": {"uv": [6.08511, 0, 10.55319, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 009",
+			"from": [4.80851, 14.875, 5.25],
+			"to": [12.14894, 15, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.75, 1, 9.625, 1.125], "texture": "#0"},
+				"east": {"uv": [0, 1, 5.5, 1.125], "texture": "#1"},
+				"south": {"uv": [6.75, 1, 9.625, 1.125], "texture": "#0"},
+				"west": {"uv": [0, 1, 5.5, 1.125], "texture": "#1"},
+				"up": {"uv": [5.87234, 0, 10.76596, 5.5], "texture": "#1"},
+				"down": {"uv": [5.87234, 0, 10.76596, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 010",
+			"from": [4.48936, 14.75, 5.25],
+			"to": [12.46809, 14.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.625, 1.125, 9.75, 1.25], "texture": "#0"},
+				"east": {"uv": [0, 1.125, 5.5, 1.25], "texture": "#1"},
+				"south": {"uv": [6.625, 1.125, 9.75, 1.25], "texture": "#0"},
+				"west": {"uv": [0, 1.125, 5.5, 1.25], "texture": "#1"},
+				"up": {"uv": [5.65957, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [5.65957, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 011",
+			"from": [4.17021, 14.625, 5.25],
+			"to": [12.78723, 14.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.5, 1.25, 9.875, 1.375], "texture": "#0"},
+				"east": {"uv": [0, 1.25, 5.5, 1.375], "texture": "#1"},
+				"south": {"uv": [6.5, 1.25, 9.875, 1.375], "texture": "#0"},
+				"west": {"uv": [0, 1.25, 5.5, 1.375], "texture": "#1"},
+				"up": {"uv": [5.44681, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [5.44681, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 012",
+			"from": [4.17021, 14.5, 5.25],
+			"to": [13.10638, 14.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.5, 1.375, 10, 1.5], "texture": "#0"},
+				"east": {"uv": [0, 1.375, 5.5, 1.5], "texture": "#1"},
+				"south": {"uv": [6.5, 1.375, 10, 1.5], "texture": "#0"},
+				"west": {"uv": [0, 1.375, 5.5, 1.5], "texture": "#1"},
+				"up": {"uv": [5.44681, 0, 11.40426, 5.5], "texture": "#1"},
+				"down": {"uv": [5.44681, 0, 11.40426, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 013",
+			"from": [4.17021, 14.375, 5.25],
+			"to": [13.10638, 14.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.5, 1.5, 10, 1.625], "texture": "#0"},
+				"east": {"uv": [0, 1.5, 5.5, 1.625], "texture": "#1"},
+				"south": {"uv": [6.5, 1.5, 10, 1.625], "texture": "#0"},
+				"west": {"uv": [0, 1.5, 5.5, 1.625], "texture": "#1"},
+				"up": {"uv": [5.44681, 0, 11.40426, 5.5], "texture": "#1"},
+				"down": {"uv": [5.44681, 0, 11.40426, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 014",
+			"from": [3.85106, 14.25, 5.25],
+			"to": [13.10638, 14.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.375, 1.625, 10, 1.75], "texture": "#0"},
+				"east": {"uv": [0, 1.625, 5.5, 1.75], "texture": "#1"},
+				"south": {"uv": [6.375, 1.625, 10, 1.75], "texture": "#0"},
+				"west": {"uv": [0, 1.625, 5.5, 1.75], "texture": "#1"},
+				"up": {"uv": [5.23404, 0, 11.40426, 5.5], "texture": "#1"},
+				"down": {"uv": [5.23404, 0, 11.40426, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 015",
+			"from": [3.53191, 14.125, 5.25],
+			"to": [13.10638, 14.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.25, 1.75, 10, 1.875], "texture": "#0"},
+				"east": {"uv": [0, 1.75, 5.5, 1.875], "texture": "#1"},
+				"south": {"uv": [6.25, 1.75, 10, 1.875], "texture": "#0"},
+				"west": {"uv": [0, 1.75, 5.5, 1.875], "texture": "#1"},
+				"up": {"uv": [5.02128, 0, 11.40426, 5.5], "texture": "#1"},
+				"down": {"uv": [5.02128, 0, 11.40426, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 016",
+			"from": [3.21277, 14, 5.25],
+			"to": [13.42553, 14.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.125, 1.875, 10.125, 2], "texture": "#0"},
+				"east": {"uv": [0, 1.875, 5.5, 2], "texture": "#1"},
+				"south": {"uv": [6.125, 1.875, 10.125, 2], "texture": "#0"},
+				"west": {"uv": [0, 1.875, 5.5, 2], "texture": "#1"},
+				"up": {"uv": [4.80851, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [4.80851, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 017",
+			"from": [2.89362, 13.875, 5.25],
+			"to": [13.74468, 14, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6, 2, 10.25, 2.125], "texture": "#0"},
+				"east": {"uv": [0, 2, 5.5, 2.125], "texture": "#1"},
+				"south": {"uv": [6, 2, 10.25, 2.125], "texture": "#0"},
+				"west": {"uv": [0, 2, 5.5, 2.125], "texture": "#1"},
+				"up": {"uv": [4.59574, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [4.59574, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 018",
+			"from": [2.89362, 13.75, 5.25],
+			"to": [13.74468, 13.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6, 2.125, 10.25, 2.25], "texture": "#0"},
+				"east": {"uv": [0, 2.125, 5.5, 2.25], "texture": "#1"},
+				"south": {"uv": [6, 2.125, 10.25, 2.25], "texture": "#0"},
+				"west": {"uv": [0, 2.125, 5.5, 2.25], "texture": "#1"},
+				"up": {"uv": [4.59574, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [4.59574, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 019",
+			"from": [2.57447, 13.625, 5.25],
+			"to": [14.06383, 13.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.875, 2.25, 10.375, 2.375], "texture": "#0"},
+				"east": {"uv": [0, 2.25, 5.5, 2.375], "texture": "#1"},
+				"south": {"uv": [5.875, 2.25, 10.375, 2.375], "texture": "#0"},
+				"west": {"uv": [0, 2.25, 5.5, 2.375], "texture": "#1"},
+				"up": {"uv": [4.38298, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [4.38298, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 020",
+			"from": [2.57447, 13.5, 5.25],
+			"to": [14.06383, 13.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.875, 2.375, 10.375, 2.5], "texture": "#0"},
+				"east": {"uv": [0, 2.375, 5.5, 2.5], "texture": "#1"},
+				"south": {"uv": [5.875, 2.375, 10.375, 2.5], "texture": "#0"},
+				"west": {"uv": [0, 2.375, 5.5, 2.5], "texture": "#1"},
+				"up": {"uv": [4.38298, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [4.38298, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 021",
+			"from": [2.57447, 13.375, 5.25],
+			"to": [14.38298, 13.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.875, 2.5, 10.5, 2.625], "texture": "#0"},
+				"east": {"uv": [0, 2.5, 5.5, 2.625], "texture": "#1"},
+				"south": {"uv": [5.875, 2.5, 10.5, 2.625], "texture": "#0"},
+				"west": {"uv": [0, 2.5, 5.5, 2.625], "texture": "#1"},
+				"up": {"uv": [4.38298, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [4.38298, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 022",
+			"from": [2.25532, 13.25, 5.25],
+			"to": [14.70213, 13.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 2.625, 10.625, 2.75], "texture": "#0"},
+				"east": {"uv": [0, 2.625, 5.5, 2.75], "texture": "#1"},
+				"south": {"uv": [5.75, 2.625, 10.625, 2.75], "texture": "#0"},
+				"west": {"uv": [0, 2.625, 5.5, 2.75], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 023",
+			"from": [2.25532, 13.125, 5.25],
+			"to": [14.70213, 13.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 2.75, 10.625, 2.875], "texture": "#0"},
+				"east": {"uv": [0, 2.75, 5.5, 2.875], "texture": "#1"},
+				"south": {"uv": [5.75, 2.75, 10.625, 2.875], "texture": "#0"},
+				"west": {"uv": [0, 2.75, 5.5, 2.875], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 024",
+			"from": [1.93617, 13, 5.25],
+			"to": [15.02128, 13.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 2.875, 10.75, 3], "texture": "#0"},
+				"east": {"uv": [0, 2.875, 5.5, 3], "texture": "#1"},
+				"south": {"uv": [5.625, 2.875, 10.75, 3], "texture": "#0"},
+				"west": {"uv": [0, 2.875, 5.5, 3], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 025",
+			"from": [1.61702, 12.875, 5.25],
+			"to": [15.34043, 13, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 3, 10.875, 3.125], "texture": "#0"},
+				"east": {"uv": [0, 3, 5.5, 3.125], "texture": "#1"},
+				"south": {"uv": [5.5, 3, 10.875, 3.125], "texture": "#0"},
+				"west": {"uv": [0, 3, 5.5, 3.125], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 026",
+			"from": [1.61702, 12.75, 5.25],
+			"to": [15.34043, 12.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 3.125, 10.875, 3.25], "texture": "#0"},
+				"east": {"uv": [0, 3.125, 5.5, 3.25], "texture": "#1"},
+				"south": {"uv": [5.5, 3.125, 10.875, 3.25], "texture": "#0"},
+				"west": {"uv": [0, 3.125, 5.5, 3.25], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 027",
+			"from": [1.61702, 12.625, 5.25],
+			"to": [15.34043, 12.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 3.25, 10.875, 3.375], "texture": "#0"},
+				"east": {"uv": [0, 3.25, 5.5, 3.375], "texture": "#1"},
+				"south": {"uv": [5.5, 3.25, 10.875, 3.375], "texture": "#0"},
+				"west": {"uv": [0, 3.25, 5.5, 3.375], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.89362, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 028",
+			"from": [1.93617, 12.5, 5.25],
+			"to": [15.02128, 12.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 3.375, 10.75, 3.5], "texture": "#0"},
+				"east": {"uv": [0, 3.375, 5.5, 3.5], "texture": "#1"},
+				"south": {"uv": [5.625, 3.375, 10.75, 3.5], "texture": "#0"},
+				"west": {"uv": [0, 3.375, 5.5, 3.5], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 029",
+			"from": [1.93617, 12.375, 5.25],
+			"to": [14.70213, 12.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 3.5, 10.625, 3.625], "texture": "#0"},
+				"east": {"uv": [0, 3.5, 5.5, 3.625], "texture": "#1"},
+				"south": {"uv": [5.625, 3.5, 10.625, 3.625], "texture": "#0"},
+				"west": {"uv": [0, 3.5, 5.5, 3.625], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 030",
+			"from": [1.61702, 12.25, 5.25],
+			"to": [14.70213, 12.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 3.625, 10.625, 3.75], "texture": "#0"},
+				"east": {"uv": [0, 3.625, 5.5, 3.75], "texture": "#1"},
+				"south": {"uv": [5.5, 3.625, 10.625, 3.75], "texture": "#0"},
+				"west": {"uv": [0, 3.625, 5.5, 3.75], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 031",
+			"from": [1.61702, 12.125, 5.25],
+			"to": [14.38298, 12.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 3.75, 10.5, 3.875], "texture": "#0"},
+				"east": {"uv": [0, 3.75, 5.5, 3.875], "texture": "#1"},
+				"south": {"uv": [5.5, 3.75, 10.5, 3.875], "texture": "#0"},
+				"west": {"uv": [0, 3.75, 5.5, 3.875], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 032",
+			"from": [1.29787, 12, 5.25],
+			"to": [14.38298, 12.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 3.875, 10.5, 4], "texture": "#0"},
+				"east": {"uv": [0, 3.875, 5.5, 4], "texture": "#1"},
+				"south": {"uv": [5.375, 3.875, 10.5, 4], "texture": "#0"},
+				"west": {"uv": [0, 3.875, 5.5, 4], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 033",
+			"from": [1.29787, 11.875, 5.25],
+			"to": [14.38298, 12, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 4, 10.5, 4.125], "texture": "#0"},
+				"east": {"uv": [0, 4, 5.5, 4.125], "texture": "#1"},
+				"south": {"uv": [5.375, 4, 10.5, 4.125], "texture": "#0"},
+				"west": {"uv": [0, 4, 5.5, 4.125], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 034",
+			"from": [1.29787, 11.75, 5.25],
+			"to": [14.38298, 11.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 4.125, 10.5, 4.25], "texture": "#0"},
+				"east": {"uv": [0, 4.125, 5.5, 4.25], "texture": "#1"},
+				"south": {"uv": [5.375, 4.125, 10.5, 4.25], "texture": "#0"},
+				"west": {"uv": [0, 4.125, 5.5, 4.25], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 035",
+			"from": [1.29787, 11.625, 5.25],
+			"to": [14.06383, 11.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 4.25, 10.375, 4.375], "texture": "#0"},
+				"east": {"uv": [0, 4.25, 5.5, 4.375], "texture": "#1"},
+				"south": {"uv": [5.375, 4.25, 10.375, 4.375], "texture": "#0"},
+				"west": {"uv": [0, 4.25, 5.5, 4.375], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 036",
+			"from": [0.97872, 11.5, 5.25],
+			"to": [14.06383, 11.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.25, 4.375, 10.375, 4.5], "texture": "#0"},
+				"east": {"uv": [0, 4.375, 5.5, 4.5], "texture": "#1"},
+				"south": {"uv": [5.25, 4.375, 10.375, 4.5], "texture": "#0"},
+				"west": {"uv": [0, 4.375, 5.5, 4.5], "texture": "#1"},
+				"up": {"uv": [3.31915, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.31915, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 037",
+			"from": [0.97872, 11.375, 5.25],
+			"to": [14.06383, 11.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.25, 4.5, 10.375, 4.625], "texture": "#0"},
+				"east": {"uv": [0, 4.5, 5.5, 4.625], "texture": "#1"},
+				"south": {"uv": [5.25, 4.5, 10.375, 4.625], "texture": "#0"},
+				"west": {"uv": [0, 4.5, 5.5, 4.625], "texture": "#1"},
+				"up": {"uv": [3.31915, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.31915, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 038",
+			"from": [0.65957, 11.25, 5.25],
+			"to": [13.74468, 11.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.125, 4.625, 10.25, 4.75], "texture": "#0"},
+				"east": {"uv": [0, 4.625, 5.5, 4.75], "texture": "#1"},
+				"south": {"uv": [5.125, 4.625, 10.25, 4.75], "texture": "#0"},
+				"west": {"uv": [0, 4.625, 5.5, 4.75], "texture": "#1"},
+				"up": {"uv": [3.10638, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [3.10638, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 039",
+			"from": [0.34043, 11.125, 5.25],
+			"to": [13.74468, 11.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 4.75, 10.25, 4.875], "texture": "#0"},
+				"east": {"uv": [0, 4.75, 5.5, 4.875], "texture": "#1"},
+				"south": {"uv": [5, 4.75, 10.25, 4.875], "texture": "#0"},
+				"west": {"uv": [0, 4.75, 5.5, 4.875], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 040",
+			"from": [0.34043, 11, 5.25],
+			"to": [13.74468, 11.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 4.875, 10.25, 5], "texture": "#0"},
+				"east": {"uv": [0, 4.875, 5.5, 5], "texture": "#1"},
+				"south": {"uv": [5, 4.875, 10.25, 5], "texture": "#0"},
+				"west": {"uv": [0, 4.875, 5.5, 5], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 041",
+			"from": [0.34043, 10.875, 5.25],
+			"to": [13.74468, 11, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 5, 10.25, 5.125], "texture": "#0"},
+				"east": {"uv": [0, 5, 5.5, 5.125], "texture": "#1"},
+				"south": {"uv": [5, 5, 10.25, 5.125], "texture": "#0"},
+				"west": {"uv": [0, 5, 5.5, 5.125], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 042",
+			"from": [0.34043, 10.75, 5.25],
+			"to": [13.74468, 10.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 5.125, 10.25, 5.25], "texture": "#0"},
+				"east": {"uv": [0, 5.125, 5.5, 5.25], "texture": "#1"},
+				"south": {"uv": [5, 5.125, 10.25, 5.25], "texture": "#0"},
+				"west": {"uv": [0, 5.125, 5.5, 5.25], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 043",
+			"from": [0.65957, 10.625, 5.25],
+			"to": [14.06383, 10.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.125, 5.25, 10.375, 5.375], "texture": "#0"},
+				"east": {"uv": [0, 5.25, 5.5, 5.375], "texture": "#1"},
+				"south": {"uv": [5.125, 5.25, 10.375, 5.375], "texture": "#0"},
+				"west": {"uv": [0, 5.25, 5.5, 5.375], "texture": "#1"},
+				"up": {"uv": [3.10638, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.10638, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 044",
+			"from": [0.34043, 10.5, 5.25],
+			"to": [14.38298, 10.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 5.375, 10.5, 5.5], "texture": "#0"},
+				"east": {"uv": [0, 5.375, 5.5, 5.5], "texture": "#1"},
+				"south": {"uv": [5, 5.375, 10.5, 5.5], "texture": "#0"},
+				"west": {"uv": [0, 5.375, 5.5, 5.5], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 045",
+			"from": [0.02128, 10.375, 5.25],
+			"to": [14.38298, 10.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 5.5, 10.5, 5.625], "texture": "#0"},
+				"east": {"uv": [0, 5.5, 5.5, 5.625], "texture": "#1"},
+				"south": {"uv": [4.875, 5.5, 10.5, 5.625], "texture": "#0"},
+				"west": {"uv": [0, 5.5, 5.5, 5.625], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 046",
+			"from": [0.02128, 10.25, 5.25],
+			"to": [14.70213, 10.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 5.625, 10.625, 5.75], "texture": "#0"},
+				"east": {"uv": [0, 5.625, 5.5, 5.75], "texture": "#1"},
+				"south": {"uv": [4.875, 5.625, 10.625, 5.75], "texture": "#0"},
+				"west": {"uv": [0, 5.625, 5.5, 5.75], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 047",
+			"from": [-0.29787, 10.125, 5.25],
+			"to": [15.02128, 10.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.75, 5.75, 10.75, 5.875], "texture": "#0"},
+				"east": {"uv": [0, 5.75, 5.5, 5.875], "texture": "#1"},
+				"south": {"uv": [4.75, 5.75, 10.75, 5.875], "texture": "#0"},
+				"west": {"uv": [0, 5.75, 5.5, 5.875], "texture": "#1"},
+				"up": {"uv": [2.46809, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [2.46809, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 048",
+			"from": [0.02128, 10, 5.25],
+			"to": [15.02128, 10.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 5.875, 10.75, 6], "texture": "#0"},
+				"east": {"uv": [0, 5.875, 5.5, 6], "texture": "#1"},
+				"south": {"uv": [4.875, 5.875, 10.75, 6], "texture": "#0"},
+				"west": {"uv": [0, 5.875, 5.5, 6], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 049",
+			"from": [0.02128, 9.875, 5.25],
+			"to": [15.02128, 10, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 6, 10.75, 6.125], "texture": "#0"},
+				"east": {"uv": [0, 6, 5.5, 6.125], "texture": "#1"},
+				"south": {"uv": [4.875, 6, 10.75, 6.125], "texture": "#0"},
+				"west": {"uv": [0, 6, 5.5, 6.125], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 050",
+			"from": [-0.29787, 9.75, 5.25],
+			"to": [15.65957, 9.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.75, 6.125, 11, 6.25], "texture": "#0"},
+				"east": {"uv": [0, 6.125, 5.5, 6.25], "texture": "#1"},
+				"south": {"uv": [4.75, 6.125, 11, 6.25], "texture": "#0"},
+				"west": {"uv": [0, 6.125, 5.5, 6.25], "texture": "#1"},
+				"up": {"uv": [2.46809, 0, 13.10638, 5.5], "texture": "#1"},
+				"down": {"uv": [2.46809, 0, 13.10638, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 051",
+			"from": [-0.29787, 9.625, 5.25],
+			"to": [15.97872, 9.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.75, 6.25, 11.125, 6.375], "texture": "#0"},
+				"east": {"uv": [0, 6.25, 5.5, 6.375], "texture": "#1"},
+				"south": {"uv": [4.75, 6.25, 11.125, 6.375], "texture": "#0"},
+				"west": {"uv": [0, 6.25, 5.5, 6.375], "texture": "#1"},
+				"up": {"uv": [2.46809, 0, 13.31915, 5.5], "texture": "#1"},
+				"down": {"uv": [2.46809, 0, 13.31915, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 052",
+			"from": [-0.61702, 9.5, 5.25],
+			"to": [16.29787, 9.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.625, 6.375, 11.25, 6.5], "texture": "#0"},
+				"east": {"uv": [0, 6.375, 5.5, 6.5], "texture": "#1"},
+				"south": {"uv": [4.625, 6.375, 11.25, 6.5], "texture": "#0"},
+				"west": {"uv": [0, 6.375, 5.5, 6.5], "texture": "#1"},
+				"up": {"uv": [2.25532, 0, 13.53191, 5.5], "texture": "#1"},
+				"down": {"uv": [2.25532, 0, 13.53191, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 053",
+			"from": [-0.93617, 9.375, 5.25],
+			"to": [16.61702, 9.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 6.5, 11.375, 6.625], "texture": "#0"},
+				"east": {"uv": [0, 6.5, 5.5, 6.625], "texture": "#1"},
+				"south": {"uv": [4.5, 6.5, 11.375, 6.625], "texture": "#0"},
+				"west": {"uv": [0, 6.5, 5.5, 6.625], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 13.74468, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 13.74468, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 054",
+			"from": [-0.93617, 9.25, 5.25],
+			"to": [16.93617, 9.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 6.625, 11.5, 6.75], "texture": "#0"},
+				"east": {"uv": [0, 6.625, 5.5, 6.75], "texture": "#1"},
+				"south": {"uv": [4.5, 6.625, 11.5, 6.75], "texture": "#0"},
+				"west": {"uv": [0, 6.625, 5.5, 6.75], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 055",
+			"from": [-0.93617, 9.125, 5.25],
+			"to": [16.93617, 9.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 6.75, 11.5, 6.875], "texture": "#0"},
+				"east": {"uv": [0, 6.75, 5.5, 6.875], "texture": "#1"},
+				"south": {"uv": [4.5, 6.75, 11.5, 6.875], "texture": "#0"},
+				"west": {"uv": [0, 6.75, 5.5, 6.875], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 056",
+			"from": [-1.25532, 9, 5.25],
+			"to": [17.25532, 9.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.375, 6.875, 11.625, 7], "texture": "#0"},
+				"east": {"uv": [0, 6.875, 5.5, 7], "texture": "#1"},
+				"south": {"uv": [4.375, 6.875, 11.625, 7], "texture": "#0"},
+				"west": {"uv": [0, 6.875, 5.5, 7], "texture": "#1"},
+				"up": {"uv": [1.82979, 0, 14.17021, 5.5], "texture": "#1"},
+				"down": {"uv": [1.82979, 0, 14.17021, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 057",
+			"from": [-1.25532, 8.875, 5.25],
+			"to": [17.57447, 9, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.375, 7, 11.75, 7.125], "texture": "#0"},
+				"east": {"uv": [0, 7, 5.5, 7.125], "texture": "#1"},
+				"south": {"uv": [4.375, 7, 11.75, 7.125], "texture": "#0"},
+				"west": {"uv": [0, 7, 5.5, 7.125], "texture": "#1"},
+				"up": {"uv": [1.82979, 0, 14.38298, 5.5], "texture": "#1"},
+				"down": {"uv": [1.82979, 0, 14.38298, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 058",
+			"from": [-1.57447, 8.75, 5.25],
+			"to": [17.89362, 8.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.25, 7.125, 11.875, 7.25], "texture": "#0"},
+				"east": {"uv": [0, 7.125, 5.5, 7.25], "texture": "#1"},
+				"south": {"uv": [4.25, 7.125, 11.875, 7.25], "texture": "#0"},
+				"west": {"uv": [0, 7.125, 5.5, 7.25], "texture": "#1"},
+				"up": {"uv": [1.61702, 0, 14.59574, 5.5], "texture": "#1"},
+				"down": {"uv": [1.61702, 0, 14.59574, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 059",
+			"from": [-1.89362, 8.625, 5.25],
+			"to": [18.21277, 8.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.125, 7.25, 12, 7.375], "texture": "#0"},
+				"east": {"uv": [0, 7.25, 5.5, 7.375], "texture": "#1"},
+				"south": {"uv": [4.125, 7.25, 12, 7.375], "texture": "#0"},
+				"west": {"uv": [0, 7.25, 5.5, 7.375], "texture": "#1"},
+				"up": {"uv": [1.40426, 0, 14.80851, 5.5], "texture": "#1"},
+				"down": {"uv": [1.40426, 0, 14.80851, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 060",
+			"from": [-1.89362, 8.5, 5.25],
+			"to": [18.53191, 8.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.125, 7.375, 12.125, 7.5], "texture": "#0"},
+				"east": {"uv": [0, 7.375, 5.5, 7.5], "texture": "#1"},
+				"south": {"uv": [4.125, 7.375, 12.125, 7.5], "texture": "#0"},
+				"west": {"uv": [0, 7.375, 5.5, 7.5], "texture": "#1"},
+				"up": {"uv": [1.40426, 0, 15.02128, 5.5], "texture": "#1"},
+				"down": {"uv": [1.40426, 0, 15.02128, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 061",
+			"from": [-2.21277, 8.375, 5.25],
+			"to": [18.85106, 8.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 7.5, 12.25, 7.625], "texture": "#0"},
+				"east": {"uv": [0, 7.5, 5.5, 7.625], "texture": "#1"},
+				"south": {"uv": [4, 7.5, 12.25, 7.625], "texture": "#0"},
+				"west": {"uv": [0, 7.5, 5.5, 7.625], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 062",
+			"from": [-2.21277, 8.25, 5.25],
+			"to": [18.85106, 8.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 7.625, 12.25, 7.75], "texture": "#0"},
+				"east": {"uv": [0, 7.625, 5.5, 7.75], "texture": "#1"},
+				"south": {"uv": [4, 7.625, 12.25, 7.75], "texture": "#0"},
+				"west": {"uv": [0, 7.625, 5.5, 7.75], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 063",
+			"from": [-2.21277, 8.125, 5.25],
+			"to": [18.85106, 8.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 7.75, 12.25, 7.875], "texture": "#0"},
+				"east": {"uv": [0, 7.75, 5.5, 7.875], "texture": "#1"},
+				"south": {"uv": [4, 7.75, 12.25, 7.875], "texture": "#0"},
+				"west": {"uv": [0, 7.75, 5.5, 7.875], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 064",
+			"from": [-1.89362, 8, 5.25],
+			"to": [18.85106, 8.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.125, 7.875, 12.25, 8], "texture": "#0"},
+				"east": {"uv": [0, 7.875, 5.5, 8], "texture": "#1"},
+				"south": {"uv": [4.125, 7.875, 12.25, 8], "texture": "#0"},
+				"west": {"uv": [0, 7.875, 5.5, 8], "texture": "#1"},
+				"up": {"uv": [1.40426, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.40426, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 065",
+			"from": [-2.21277, 7.875, 5.25],
+			"to": [18.85106, 8, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 8, 12.25, 8.125], "texture": "#0"},
+				"east": {"uv": [0, 8, 5.5, 8.125], "texture": "#1"},
+				"south": {"uv": [4, 8, 12.25, 8.125], "texture": "#0"},
+				"west": {"uv": [0, 8, 5.5, 8.125], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 066",
+			"from": [-2.21277, 7.75, 5.25],
+			"to": [18.85106, 7.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 8.125, 12.25, 8.25], "texture": "#0"},
+				"east": {"uv": [0, 8.125, 5.5, 8.25], "texture": "#1"},
+				"south": {"uv": [4, 8.125, 12.25, 8.25], "texture": "#0"},
+				"west": {"uv": [0, 8.125, 5.5, 8.25], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 067",
+			"from": [-2.21277, 7.625, 5.25],
+			"to": [19.17021, 7.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 8.25, 12.375, 8.375], "texture": "#0"},
+				"east": {"uv": [0, 8.25, 5.5, 8.375], "texture": "#1"},
+				"south": {"uv": [4, 8.25, 12.375, 8.375], "texture": "#0"},
+				"west": {"uv": [0, 8.25, 5.5, 8.375], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 068",
+			"from": [-2.21277, 7.5, 5.25],
+			"to": [19.17021, 7.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 8.375, 12.375, 8.5], "texture": "#0"},
+				"east": {"uv": [0, 8.375, 5.5, 8.5], "texture": "#1"},
+				"south": {"uv": [4, 8.375, 12.375, 8.5], "texture": "#0"},
+				"west": {"uv": [0, 8.375, 5.5, 8.5], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 069",
+			"from": [-2.21277, 7.375, 5.25],
+			"to": [19.17021, 7.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4, 8.5, 12.375, 8.625], "texture": "#0"},
+				"east": {"uv": [0, 8.5, 5.5, 8.625], "texture": "#1"},
+				"south": {"uv": [4, 8.5, 12.375, 8.625], "texture": "#0"},
+				"west": {"uv": [0, 8.5, 5.5, 8.625], "texture": "#1"},
+				"up": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.19149, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 070",
+			"from": [-1.89362, 7.25, 5.25],
+			"to": [19.17021, 7.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.125, 8.625, 12.375, 8.75], "texture": "#0"},
+				"east": {"uv": [0, 8.625, 5.5, 8.75], "texture": "#1"},
+				"south": {"uv": [4.125, 8.625, 12.375, 8.75], "texture": "#0"},
+				"west": {"uv": [0, 8.625, 5.5, 8.75], "texture": "#1"},
+				"up": {"uv": [1.40426, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.40426, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 071",
+			"from": [-1.57447, 7.125, 5.25],
+			"to": [19.17021, 7.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.25, 8.75, 12.375, 8.875], "texture": "#0"},
+				"east": {"uv": [0, 8.75, 5.5, 8.875], "texture": "#1"},
+				"south": {"uv": [4.25, 8.75, 12.375, 8.875], "texture": "#0"},
+				"west": {"uv": [0, 8.75, 5.5, 8.875], "texture": "#1"},
+				"up": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 072",
+			"from": [-1.57447, 7, 5.25],
+			"to": [19.17021, 7.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.25, 8.875, 12.375, 9], "texture": "#0"},
+				"east": {"uv": [0, 8.875, 5.5, 9], "texture": "#1"},
+				"south": {"uv": [4.25, 8.875, 12.375, 9], "texture": "#0"},
+				"west": {"uv": [0, 8.875, 5.5, 9], "texture": "#1"},
+				"up": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 073",
+			"from": [-1.57447, 6.875, 5.25],
+			"to": [19.17021, 7, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.25, 9, 12.375, 9.125], "texture": "#0"},
+				"east": {"uv": [0, 9, 5.5, 9.125], "texture": "#1"},
+				"south": {"uv": [4.25, 9, 12.375, 9.125], "texture": "#0"},
+				"west": {"uv": [0, 9, 5.5, 9.125], "texture": "#1"},
+				"up": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.61702, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 074",
+			"from": [-1.25532, 6.75, 5.25],
+			"to": [19.17021, 6.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.375, 9.125, 12.375, 9.25], "texture": "#0"},
+				"east": {"uv": [0, 9.125, 5.5, 9.25], "texture": "#1"},
+				"south": {"uv": [4.375, 9.125, 12.375, 9.25], "texture": "#0"},
+				"west": {"uv": [0, 9.125, 5.5, 9.25], "texture": "#1"},
+				"up": {"uv": [1.82979, 0, 15.44681, 5.5], "texture": "#1"},
+				"down": {"uv": [1.82979, 0, 15.44681, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 075",
+			"from": [-1.25532, 6.625, 5.25],
+			"to": [18.85106, 6.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.375, 9.25, 12.25, 9.375], "texture": "#0"},
+				"east": {"uv": [0, 9.25, 5.5, 9.375], "texture": "#1"},
+				"south": {"uv": [4.375, 9.25, 12.25, 9.375], "texture": "#0"},
+				"west": {"uv": [0, 9.25, 5.5, 9.375], "texture": "#1"},
+				"up": {"uv": [1.82979, 0, 15.23404, 5.5], "texture": "#1"},
+				"down": {"uv": [1.82979, 0, 15.23404, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 076",
+			"from": [-0.93617, 6.5, 5.25],
+			"to": [18.53191, 6.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 9.375, 12.125, 9.5], "texture": "#0"},
+				"east": {"uv": [0, 9.375, 5.5, 9.5], "texture": "#1"},
+				"south": {"uv": [4.5, 9.375, 12.125, 9.5], "texture": "#0"},
+				"west": {"uv": [0, 9.375, 5.5, 9.5], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 15.02128, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 15.02128, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 077",
+			"from": [-0.93617, 6.375, 5.25],
+			"to": [18.21277, 6.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 9.5, 12, 9.625], "texture": "#0"},
+				"east": {"uv": [0, 9.5, 5.5, 9.625], "texture": "#1"},
+				"south": {"uv": [4.5, 9.5, 12, 9.625], "texture": "#0"},
+				"west": {"uv": [0, 9.5, 5.5, 9.625], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 14.80851, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 14.80851, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 078",
+			"from": [-0.61702, 6.25, 5.25],
+			"to": [17.89362, 6.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.625, 9.625, 11.875, 9.75], "texture": "#0"},
+				"east": {"uv": [0, 9.625, 5.5, 9.75], "texture": "#1"},
+				"south": {"uv": [4.625, 9.625, 11.875, 9.75], "texture": "#0"},
+				"west": {"uv": [0, 9.625, 5.5, 9.75], "texture": "#1"},
+				"up": {"uv": [2.25532, 0, 14.59574, 5.5], "texture": "#1"},
+				"down": {"uv": [2.25532, 0, 14.59574, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 079",
+			"from": [-0.93617, 6.125, 5.25],
+			"to": [17.57447, 6.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 9.75, 11.75, 9.875], "texture": "#0"},
+				"east": {"uv": [0, 9.75, 5.5, 9.875], "texture": "#1"},
+				"south": {"uv": [4.5, 9.75, 11.75, 9.875], "texture": "#0"},
+				"west": {"uv": [0, 9.75, 5.5, 9.875], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 14.38298, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 14.38298, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 080",
+			"from": [-0.93617, 6, 5.25],
+			"to": [17.25532, 6.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 9.875, 11.625, 10], "texture": "#0"},
+				"east": {"uv": [0, 9.875, 5.5, 10], "texture": "#1"},
+				"south": {"uv": [4.5, 9.875, 11.625, 10], "texture": "#0"},
+				"west": {"uv": [0, 9.875, 5.5, 10], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 14.17021, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 14.17021, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 081",
+			"from": [-0.93617, 5.875, 5.25],
+			"to": [16.93617, 6, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.5, 10, 11.5, 10.125], "texture": "#0"},
+				"east": {"uv": [0, 10, 5.5, 10.125], "texture": "#1"},
+				"south": {"uv": [4.5, 10, 11.5, 10.125], "texture": "#0"},
+				"west": {"uv": [0, 10, 5.5, 10.125], "texture": "#1"},
+				"up": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"},
+				"down": {"uv": [2.04255, 0, 13.95745, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 082",
+			"from": [-0.61702, 5.75, 5.25],
+			"to": [16.61702, 5.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.625, 10.125, 11.375, 10.25], "texture": "#0"},
+				"east": {"uv": [0, 10.125, 5.5, 10.25], "texture": "#1"},
+				"south": {"uv": [4.625, 10.125, 11.375, 10.25], "texture": "#0"},
+				"west": {"uv": [0, 10.125, 5.5, 10.25], "texture": "#1"},
+				"up": {"uv": [2.25532, 0, 13.74468, 5.5], "texture": "#1"},
+				"down": {"uv": [2.25532, 0, 13.74468, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 083",
+			"from": [-0.61702, 5.625, 5.25],
+			"to": [16.29787, 5.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.625, 10.25, 11.25, 10.375], "texture": "#0"},
+				"east": {"uv": [0, 10.25, 5.5, 10.375], "texture": "#1"},
+				"south": {"uv": [4.625, 10.25, 11.25, 10.375], "texture": "#0"},
+				"west": {"uv": [0, 10.25, 5.5, 10.375], "texture": "#1"},
+				"up": {"uv": [2.25532, 0, 13.53191, 5.5], "texture": "#1"},
+				"down": {"uv": [2.25532, 0, 13.53191, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 084",
+			"from": [-0.29787, 5.5, 5.25],
+			"to": [15.97872, 5.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.75, 10.375, 11.125, 10.5], "texture": "#0"},
+				"east": {"uv": [0, 10.375, 5.5, 10.5], "texture": "#1"},
+				"south": {"uv": [4.75, 10.375, 11.125, 10.5], "texture": "#0"},
+				"west": {"uv": [0, 10.375, 5.5, 10.5], "texture": "#1"},
+				"up": {"uv": [2.46809, 0, 13.31915, 5.5], "texture": "#1"},
+				"down": {"uv": [2.46809, 0, 13.31915, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 085",
+			"from": [0.02128, 5.375, 5.25],
+			"to": [15.97872, 5.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 10.5, 11.125, 10.625], "texture": "#0"},
+				"east": {"uv": [0, 10.5, 5.5, 10.625], "texture": "#1"},
+				"south": {"uv": [4.875, 10.5, 11.125, 10.625], "texture": "#0"},
+				"west": {"uv": [0, 10.5, 5.5, 10.625], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 086",
+			"from": [0.02128, 5.25, 5.25],
+			"to": [15.97872, 5.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 10.625, 11.125, 10.75], "texture": "#0"},
+				"east": {"uv": [0, 10.625, 5.5, 10.75], "texture": "#1"},
+				"south": {"uv": [4.875, 10.625, 11.125, 10.75], "texture": "#0"},
+				"west": {"uv": [0, 10.625, 5.5, 10.75], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 087",
+			"from": [0.02128, 5.125, 5.25],
+			"to": [15.97872, 5.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 10.75, 11.125, 10.875], "texture": "#0"},
+				"east": {"uv": [0, 10.75, 5.5, 10.875], "texture": "#1"},
+				"south": {"uv": [4.875, 10.75, 11.125, 10.875], "texture": "#0"},
+				"west": {"uv": [0, 10.75, 5.5, 10.875], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 13.31915, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 088",
+			"from": [0.02128, 5, 5.25],
+			"to": [15.65957, 5.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [4.875, 10.875, 11, 11], "texture": "#0"},
+				"east": {"uv": [0, 10.875, 5.5, 11], "texture": "#1"},
+				"south": {"uv": [4.875, 10.875, 11, 11], "texture": "#0"},
+				"west": {"uv": [0, 10.875, 5.5, 11], "texture": "#1"},
+				"up": {"uv": [2.68085, 0, 13.10638, 5.5], "texture": "#1"},
+				"down": {"uv": [2.68085, 0, 13.10638, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 089",
+			"from": [0.34043, 4.875, 5.25],
+			"to": [15.65957, 5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5, 11, 11, 11.125], "texture": "#0"},
+				"east": {"uv": [0, 11, 5.5, 11.125], "texture": "#1"},
+				"south": {"uv": [5, 11, 11, 11.125], "texture": "#0"},
+				"west": {"uv": [0, 11, 5.5, 11.125], "texture": "#1"},
+				"up": {"uv": [2.89362, 0, 13.10638, 5.5], "texture": "#1"},
+				"down": {"uv": [2.89362, 0, 13.10638, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 090",
+			"from": [0.65957, 4.75, 5.25],
+			"to": [15.34043, 4.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.125, 11.125, 10.875, 11.25], "texture": "#0"},
+				"east": {"uv": [0, 11.125, 5.5, 11.25], "texture": "#1"},
+				"south": {"uv": [5.125, 11.125, 10.875, 11.25], "texture": "#0"},
+				"west": {"uv": [0, 11.125, 5.5, 11.25], "texture": "#1"},
+				"up": {"uv": [3.10638, 0, 12.89362, 5.5], "texture": "#1"},
+				"down": {"uv": [3.10638, 0, 12.89362, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 091",
+			"from": [0.97872, 4.625, 5.25],
+			"to": [15.02128, 4.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.25, 11.25, 10.75, 11.375], "texture": "#0"},
+				"east": {"uv": [0, 11.25, 5.5, 11.375], "texture": "#1"},
+				"south": {"uv": [5.25, 11.25, 10.75, 11.375], "texture": "#0"},
+				"west": {"uv": [0, 11.25, 5.5, 11.375], "texture": "#1"},
+				"up": {"uv": [3.31915, 0, 12.68085, 5.5], "texture": "#1"},
+				"down": {"uv": [3.31915, 0, 12.68085, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 092",
+			"from": [0.97872, 4.5, 5.25],
+			"to": [14.70213, 4.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.25, 11.375, 10.625, 11.5], "texture": "#0"},
+				"east": {"uv": [0, 11.375, 5.5, 11.5], "texture": "#1"},
+				"south": {"uv": [5.25, 11.375, 10.625, 11.5], "texture": "#0"},
+				"west": {"uv": [0, 11.375, 5.5, 11.5], "texture": "#1"},
+				"up": {"uv": [3.31915, 0, 12.46809, 5.5], "texture": "#1"},
+				"down": {"uv": [3.31915, 0, 12.46809, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 093",
+			"from": [1.29787, 4.375, 5.25],
+			"to": [14.38298, 4.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 11.5, 10.5, 11.625], "texture": "#0"},
+				"east": {"uv": [0, 11.5, 5.5, 11.625], "texture": "#1"},
+				"south": {"uv": [5.375, 11.5, 10.5, 11.625], "texture": "#0"},
+				"west": {"uv": [0, 11.5, 5.5, 11.625], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 094",
+			"from": [1.29787, 4.25, 5.25],
+			"to": [14.38298, 4.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.375, 11.625, 10.5, 11.75], "texture": "#0"},
+				"east": {"uv": [0, 11.625, 5.5, 11.75], "texture": "#1"},
+				"south": {"uv": [5.375, 11.625, 10.5, 11.75], "texture": "#0"},
+				"west": {"uv": [0, 11.625, 5.5, 11.75], "texture": "#1"},
+				"up": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.53191, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 095",
+			"from": [1.61702, 4.125, 5.25],
+			"to": [14.38298, 4.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 11.75, 10.5, 11.875], "texture": "#0"},
+				"east": {"uv": [0, 11.75, 5.5, 11.875], "texture": "#1"},
+				"south": {"uv": [5.5, 11.75, 10.5, 11.875], "texture": "#0"},
+				"west": {"uv": [0, 11.75, 5.5, 11.875], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 096",
+			"from": [1.61702, 4, 5.25],
+			"to": [14.38298, 4.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 11.875, 10.5, 12], "texture": "#0"},
+				"east": {"uv": [0, 11.875, 5.5, 12], "texture": "#1"},
+				"south": {"uv": [5.5, 11.875, 10.5, 12], "texture": "#0"},
+				"west": {"uv": [0, 11.875, 5.5, 12], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.25532, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 097",
+			"from": [1.61702, 3.875, 5.25],
+			"to": [14.06383, 4, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 12, 10.375, 12.125], "texture": "#0"},
+				"east": {"uv": [0, 12, 5.5, 12.125], "texture": "#1"},
+				"south": {"uv": [5.5, 12, 10.375, 12.125], "texture": "#0"},
+				"west": {"uv": [0, 12, 5.5, 12.125], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 098",
+			"from": [1.61702, 3.75, 5.25],
+			"to": [14.06383, 3.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 12.125, 10.375, 12.25], "texture": "#0"},
+				"east": {"uv": [0, 12.125, 5.5, 12.25], "texture": "#1"},
+				"south": {"uv": [5.5, 12.125, 10.375, 12.25], "texture": "#0"},
+				"west": {"uv": [0, 12.125, 5.5, 12.25], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 12.04255, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 12.04255, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 099",
+			"from": [1.93617, 3.625, 5.25],
+			"to": [13.74468, 3.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 12.25, 10.25, 12.375], "texture": "#0"},
+				"east": {"uv": [0, 12.25, 5.5, 12.375], "texture": "#1"},
+				"south": {"uv": [5.625, 12.25, 10.25, 12.375], "texture": "#0"},
+				"west": {"uv": [0, 12.25, 5.5, 12.375], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.82979, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.82979, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 100",
+			"from": [1.93617, 3.5, 5.25],
+			"to": [13.42553, 3.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 12.375, 10.125, 12.5], "texture": "#0"},
+				"east": {"uv": [0, 12.375, 5.5, 12.5], "texture": "#1"},
+				"south": {"uv": [5.625, 12.375, 10.125, 12.5], "texture": "#0"},
+				"west": {"uv": [0, 12.375, 5.5, 12.5], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 101",
+			"from": [1.93617, 3.375, 5.25],
+			"to": [13.42553, 3.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 12.5, 10.125, 12.625], "texture": "#0"},
+				"east": {"uv": [0, 12.5, 5.5, 12.625], "texture": "#1"},
+				"south": {"uv": [5.625, 12.5, 10.125, 12.625], "texture": "#0"},
+				"west": {"uv": [0, 12.5, 5.5, 12.625], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 102",
+			"from": [1.61702, 3.25, 5.25],
+			"to": [13.42553, 3.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.5, 12.625, 10.125, 12.75], "texture": "#0"},
+				"east": {"uv": [0, 12.625, 5.5, 12.75], "texture": "#1"},
+				"south": {"uv": [5.5, 12.625, 10.125, 12.75], "texture": "#0"},
+				"west": {"uv": [0, 12.625, 5.5, 12.75], "texture": "#1"},
+				"up": {"uv": [3.74468, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [3.74468, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 103",
+			"from": [1.93617, 3.125, 5.25],
+			"to": [13.42553, 3.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 12.75, 10.125, 12.875], "texture": "#0"},
+				"east": {"uv": [0, 12.75, 5.5, 12.875], "texture": "#1"},
+				"south": {"uv": [5.625, 12.75, 10.125, 12.875], "texture": "#0"},
+				"west": {"uv": [0, 12.75, 5.5, 12.875], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 104",
+			"from": [1.93617, 3, 5.25],
+			"to": [13.42553, 3.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 12.875, 10.125, 13], "texture": "#0"},
+				"east": {"uv": [0, 12.875, 5.5, 13], "texture": "#1"},
+				"south": {"uv": [5.625, 12.875, 10.125, 13], "texture": "#0"},
+				"west": {"uv": [0, 12.875, 5.5, 13], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.61702, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 105",
+			"from": [1.93617, 2.875, 5.25],
+			"to": [13.10638, 3, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.625, 13, 10, 13.125], "texture": "#0"},
+				"east": {"uv": [0, 13, 5.5, 13.125], "texture": "#1"},
+				"south": {"uv": [5.625, 13, 10, 13.125], "texture": "#0"},
+				"west": {"uv": [0, 13, 5.5, 13.125], "texture": "#1"},
+				"up": {"uv": [3.95745, 0, 11.40426, 5.5], "texture": "#1"},
+				"down": {"uv": [3.95745, 0, 11.40426, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 106",
+			"from": [2.25532, 2.75, 5.25],
+			"to": [12.78723, 2.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 13.125, 9.875, 13.25], "texture": "#0"},
+				"east": {"uv": [0, 13.125, 5.5, 13.25], "texture": "#1"},
+				"south": {"uv": [5.75, 13.125, 9.875, 13.25], "texture": "#0"},
+				"west": {"uv": [0, 13.125, 5.5, 13.25], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 107",
+			"from": [2.25532, 2.625, 5.25],
+			"to": [12.78723, 2.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 13.25, 9.875, 13.375], "texture": "#0"},
+				"east": {"uv": [0, 13.25, 5.5, 13.375], "texture": "#1"},
+				"south": {"uv": [5.75, 13.25, 9.875, 13.375], "texture": "#0"},
+				"west": {"uv": [0, 13.25, 5.5, 13.375], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 108",
+			"from": [2.25532, 2.5, 5.25],
+			"to": [12.78723, 2.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 13.375, 9.875, 13.5], "texture": "#0"},
+				"east": {"uv": [0, 13.375, 5.5, 13.5], "texture": "#1"},
+				"south": {"uv": [5.75, 13.375, 9.875, 13.5], "texture": "#0"},
+				"west": {"uv": [0, 13.375, 5.5, 13.5], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 109",
+			"from": [2.25532, 2.375, 5.25],
+			"to": [12.78723, 2.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 13.5, 9.875, 13.625], "texture": "#0"},
+				"east": {"uv": [0, 13.5, 5.5, 13.625], "texture": "#1"},
+				"south": {"uv": [5.75, 13.5, 9.875, 13.625], "texture": "#0"},
+				"west": {"uv": [0, 13.5, 5.5, 13.625], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 110",
+			"from": [2.25532, 2.25, 5.25],
+			"to": [12.78723, 2.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.75, 13.625, 9.875, 13.75], "texture": "#0"},
+				"east": {"uv": [0, 13.625, 5.5, 13.75], "texture": "#1"},
+				"south": {"uv": [5.75, 13.625, 9.875, 13.75], "texture": "#0"},
+				"west": {"uv": [0, 13.625, 5.5, 13.75], "texture": "#1"},
+				"up": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.17021, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 111",
+			"from": [2.57447, 2.125, 5.25],
+			"to": [12.46809, 2.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [5.875, 13.75, 9.75, 13.875], "texture": "#0"},
+				"east": {"uv": [0, 13.75, 5.5, 13.875], "texture": "#1"},
+				"south": {"uv": [5.875, 13.75, 9.75, 13.875], "texture": "#0"},
+				"west": {"uv": [0, 13.75, 5.5, 13.875], "texture": "#1"},
+				"up": {"uv": [4.38298, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [4.38298, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 112",
+			"from": [2.89362, 2, 5.25],
+			"to": [12.78723, 2.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6, 13.875, 9.875, 14], "texture": "#0"},
+				"east": {"uv": [0, 13.875, 5.5, 14], "texture": "#1"},
+				"south": {"uv": [6, 13.875, 9.875, 14], "texture": "#0"},
+				"west": {"uv": [0, 13.875, 5.5, 14], "texture": "#1"},
+				"up": {"uv": [4.59574, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.59574, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 113",
+			"from": [3.21277, 1.875, 5.25],
+			"to": [12.78723, 2, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.125, 14, 9.875, 14.125], "texture": "#0"},
+				"east": {"uv": [0, 14, 5.5, 14.125], "texture": "#1"},
+				"south": {"uv": [6.125, 14, 9.875, 14.125], "texture": "#0"},
+				"west": {"uv": [0, 14, 5.5, 14.125], "texture": "#1"},
+				"up": {"uv": [4.80851, 0, 11.19149, 5.5], "texture": "#1"},
+				"down": {"uv": [4.80851, 0, 11.19149, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 114",
+			"from": [3.53191, 1.75, 5.25],
+			"to": [12.46809, 1.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.25, 14.125, 9.75, 14.25], "texture": "#0"},
+				"east": {"uv": [0, 14.125, 5.5, 14.25], "texture": "#1"},
+				"south": {"uv": [6.25, 14.125, 9.75, 14.25], "texture": "#0"},
+				"west": {"uv": [0, 14.125, 5.5, 14.25], "texture": "#1"},
+				"up": {"uv": [5.02128, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [5.02128, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 115",
+			"from": [3.53191, 1.625, 5.25],
+			"to": [12.46809, 1.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.25, 14.25, 9.75, 14.375], "texture": "#0"},
+				"east": {"uv": [0, 14.25, 5.5, 14.375], "texture": "#1"},
+				"south": {"uv": [6.25, 14.25, 9.75, 14.375], "texture": "#0"},
+				"west": {"uv": [0, 14.25, 5.5, 14.375], "texture": "#1"},
+				"up": {"uv": [5.02128, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [5.02128, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 116",
+			"from": [3.85106, 1.5, 5.25],
+			"to": [12.46809, 1.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.375, 14.375, 9.75, 14.5], "texture": "#0"},
+				"east": {"uv": [0, 14.375, 5.5, 14.5], "texture": "#1"},
+				"south": {"uv": [6.375, 14.375, 9.75, 14.5], "texture": "#0"},
+				"west": {"uv": [0, 14.375, 5.5, 14.5], "texture": "#1"},
+				"up": {"uv": [5.23404, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [5.23404, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 117",
+			"from": [3.85106, 1.375, 5.25],
+			"to": [12.46809, 1.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.375, 14.5, 9.75, 14.625], "texture": "#0"},
+				"east": {"uv": [0, 14.5, 5.5, 14.625], "texture": "#1"},
+				"south": {"uv": [6.375, 14.5, 9.75, 14.625], "texture": "#0"},
+				"west": {"uv": [0, 14.5, 5.5, 14.625], "texture": "#1"},
+				"up": {"uv": [5.23404, 0, 10.97872, 5.5], "texture": "#1"},
+				"down": {"uv": [5.23404, 0, 10.97872, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 118",
+			"from": [4.17021, 1.25, 5.25],
+			"to": [12.14894, 1.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.5, 14.625, 9.625, 14.75], "texture": "#0"},
+				"east": {"uv": [0, 14.625, 5.5, 14.75], "texture": "#1"},
+				"south": {"uv": [6.5, 14.625, 9.625, 14.75], "texture": "#0"},
+				"west": {"uv": [0, 14.625, 5.5, 14.75], "texture": "#1"},
+				"up": {"uv": [5.44681, 0, 10.76596, 5.5], "texture": "#1"},
+				"down": {"uv": [5.44681, 0, 10.76596, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 119",
+			"from": [4.48936, 1.125, 5.25],
+			"to": [11.82979, 1.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.625, 14.75, 9.5, 14.875], "texture": "#0"},
+				"east": {"uv": [0, 14.75, 5.5, 14.875], "texture": "#1"},
+				"south": {"uv": [6.625, 14.75, 9.5, 14.875], "texture": "#0"},
+				"west": {"uv": [0, 14.75, 5.5, 14.875], "texture": "#1"},
+				"up": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"},
+				"down": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 120",
+			"from": [4.48936, 1, 5.25],
+			"to": [11.82979, 1.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.625, 14.875, 9.5, 15], "texture": "#0"},
+				"east": {"uv": [0, 14.875, 5.5, 15], "texture": "#1"},
+				"south": {"uv": [6.625, 14.875, 9.5, 15], "texture": "#0"},
+				"west": {"uv": [0, 14.875, 5.5, 15], "texture": "#1"},
+				"up": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"},
+				"down": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 121",
+			"from": [4.48936, 0.875, 5.25],
+			"to": [11.82979, 1, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.625, 15, 9.5, 15.125], "texture": "#0"},
+				"east": {"uv": [0, 15, 5.5, 15.125], "texture": "#1"},
+				"south": {"uv": [6.625, 15, 9.5, 15.125], "texture": "#0"},
+				"west": {"uv": [0, 15, 5.5, 15.125], "texture": "#1"},
+				"up": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"},
+				"down": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 122",
+			"from": [4.48936, 0.75, 5.25],
+			"to": [11.82979, 0.875, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.625, 15.125, 9.5, 15.25], "texture": "#0"},
+				"east": {"uv": [0, 15.125, 5.5, 15.25], "texture": "#1"},
+				"south": {"uv": [6.625, 15.125, 9.5, 15.25], "texture": "#0"},
+				"west": {"uv": [0, 15.125, 5.5, 15.25], "texture": "#1"},
+				"up": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"},
+				"down": {"uv": [5.65957, 0, 10.55319, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 123",
+			"from": [4.80851, 0.625, 5.25],
+			"to": [11.51064, 0.75, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.75, 15.25, 9.375, 15.375], "texture": "#0"},
+				"east": {"uv": [0, 15.25, 5.5, 15.375], "texture": "#1"},
+				"south": {"uv": [6.75, 15.25, 9.375, 15.375], "texture": "#0"},
+				"west": {"uv": [0, 15.25, 5.5, 15.375], "texture": "#1"},
+				"up": {"uv": [5.87234, 0, 10.34043, 5.5], "texture": "#1"},
+				"down": {"uv": [5.87234, 0, 10.34043, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 124",
+			"from": [4.80851, 0.5, 5.25],
+			"to": [11.19149, 0.625, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.75, 15.375, 9.25, 15.5], "texture": "#0"},
+				"east": {"uv": [0, 15.375, 5.5, 15.5], "texture": "#1"},
+				"south": {"uv": [6.75, 15.375, 9.25, 15.5], "texture": "#0"},
+				"west": {"uv": [0, 15.375, 5.5, 15.5], "texture": "#1"},
+				"up": {"uv": [5.87234, 0, 10.12766, 5.5], "texture": "#1"},
+				"down": {"uv": [5.87234, 0, 10.12766, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 125",
+			"from": [5.12766, 0.375, 5.25],
+			"to": [10.87234, 0.5, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.875, 15.5, 9.125, 15.625], "texture": "#0"},
+				"east": {"uv": [0, 15.5, 5.5, 15.625], "texture": "#1"},
+				"south": {"uv": [6.875, 15.5, 9.125, 15.625], "texture": "#0"},
+				"west": {"uv": [0, 15.5, 5.5, 15.625], "texture": "#1"},
+				"up": {"uv": [6.08511, 0, 9.91489, 5.5], "texture": "#1"},
+				"down": {"uv": [6.08511, 0, 9.91489, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 126",
+			"from": [5.12766, 0.25, 5.25],
+			"to": [10.55319, 0.375, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [6.875, 15.625, 9, 15.75], "texture": "#0"},
+				"east": {"uv": [0, 15.625, 5.5, 15.75], "texture": "#1"},
+				"south": {"uv": [6.875, 15.625, 9, 15.75], "texture": "#0"},
+				"west": {"uv": [0, 15.625, 5.5, 15.75], "texture": "#1"},
+				"up": {"uv": [6.08511, 0, 9.70213, 5.5], "texture": "#1"},
+				"down": {"uv": [6.08511, 0, 9.70213, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 127",
+			"from": [5.44681, 0.125, 5.25],
+			"to": [10.55319, 0.25, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7, 15.75, 9, 15.875], "texture": "#0"},
+				"east": {"uv": [0, 15.75, 5.5, 15.875], "texture": "#1"},
+				"south": {"uv": [7, 15.75, 9, 15.875], "texture": "#0"},
+				"west": {"uv": [0, 15.75, 5.5, 15.875], "texture": "#1"},
+				"up": {"uv": [6.29787, 0, 9.70213, 5.5], "texture": "#1"},
+				"down": {"uv": [6.29787, 0, 9.70213, 5.5], "texture": "#1"}
+			}
+		},
+		{
+			"name": "Rift silhouette 128",
+			"from": [5.76596, 0, 5.25],
+			"to": [10.23404, 0.125, 6.75],
+			"light_emission": 15,
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [7.125, 15.875, 8.875, 16], "texture": "#0"},
+				"east": {"uv": [0, 15.875, 5.5, 16], "texture": "#1"},
+				"south": {"uv": [7.125, 15.875, 8.875, 16], "texture": "#0"},
+				"west": {"uv": [0, 15.875, 5.5, 16], "texture": "#1"},
+				"up": {"uv": [6.51064, 0, 9.48936, 5.5], "texture": "#1"},
+				"down": {"uv": [6.51064, 0, 9.48936, 5.5], "texture": "#1"}
+			}
+		}
+	],
+	"gui_light": "front",
+	"groups": [
+		{
+			"name": "rift",
+			"origin": [8, 8, 8],
+			"scope": 0,
+			"color": 0,
+			"children": [
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62,
+				63,
+				64,
+				65,
+				66,
+				67,
+				68,
+				69,
+				70,
+				71,
+				72,
+				73,
+				74,
+				75,
+				76,
+				77,
+				78,
+				79,
+				80,
+				81,
+				82,
+				83,
+				84,
+				85,
+				86,
+				87,
+				88,
+				89,
+				90,
+				91,
+				92,
+				93,
+				94,
+				95,
+				96,
+				97,
+				98,
+				99,
+				100,
+				101,
+				102,
+				103,
+				104,
+				105,
+				106,
+				107,
+				108,
+				109,
+				110,
+				111,
+				112,
+				113,
+				114,
+				115,
+				116,
+				117,
+				118,
+				119,
+				120,
+				121,
+				122,
+				123,
+				124,
+				125,
+				126,
+				127
+			]
+		}
+	]
+}
