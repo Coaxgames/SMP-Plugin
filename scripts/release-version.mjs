@@ -20,7 +20,7 @@ function formatVersion(version) {
     return version.join(".");
 }
 
-export function nextReleaseVersion(gradleVersion, pluginVersion, tags, preBumped = false) {
+export function nextReleaseVersion(gradleVersion, pluginVersion, tags) {
     const currentVersions = [gradleVersion, pluginVersion].map(parseVersion);
     if (currentVersions.some((version) => version === null)) {
         throw new Error("Gradle and plugin.yml versions must use major.minor.patch format.");
@@ -31,10 +31,6 @@ export function nextReleaseVersion(gradleVersion, pluginVersion, tags, preBumped
     const latestReleased = releasedVersions.length === 0
         ? null
         : releasedVersions.sort(compareVersions).at(-1);
-
-    if (preBumped && (latestReleased === null || compareVersions(sourceVersion, latestReleased) > 0)) {
-        return formatVersion(sourceVersion);
-    }
 
     const baseVersion = latestReleased !== null && compareVersions(latestReleased, sourceVersion) > 0
         ? latestReleased
@@ -57,8 +53,7 @@ export function updateReleaseVersion(root, tags) {
         throw new Error("Could not find the Gradle and plugin.yml version declarations.");
     }
 
-    const preBumped = process.env.PREBUMPED === "true";
-    const version = nextReleaseVersion(gradleMatch[1], pluginMatch[1], tags, preBumped);
+    const version = nextReleaseVersion(gradleMatch[1], pluginMatch[1], tags);
     writeFileSync(gradlePath, gradle.replace(gradlePattern, `version = '${version}'`));
     writeFileSync(pluginPath, plugin.replace(pluginPattern, `version: '${version}'`));
     return version;
