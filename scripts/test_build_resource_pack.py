@@ -54,6 +54,27 @@ class RewriteExportedModelTests(unittest.TestCase):
                 Path("nebula_spear.json"), exported, {}, "nebula_spear"
             )
 
+    def test_rewrites_parented_generated_item_model(self):
+        exported = {
+            "parent": "minecraft:item/generated",
+            "textures": {"layer0": "ability_spark"},
+        }
+        textures_by_name = {}
+        loose_textures = {"ability_spark": "galaxy:source/ability_spark"}
+
+        rewritten = rewrite_exported_model(
+            Path("ability_spark.json"),
+            exported,
+            textures_by_name,
+            "ability_spark",
+            loose_textures,
+        )
+
+        self.assertEqual(rewritten["parent"], "minecraft:item/generated")
+        self.assertEqual(
+            rewritten["textures"], {"layer0": "galaxy:source/ability_spark"}
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

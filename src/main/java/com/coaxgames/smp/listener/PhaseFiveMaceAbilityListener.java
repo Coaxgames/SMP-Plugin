@@ -9,6 +9,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,10 +19,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 
 public final class PhaseFiveMaceAbilityListener implements Listener {
     private static final String STAR_MACE = "star_mace";
     private static final String COLLAPSING_STAR_MACE = "collapsing_star_mace";
+    private static final ItemStack SPARK_PARTICLE_ITEM = createSparkParticleItem();
 
     private final GalaxySmpPlugin plugin;
     private final Map<UUID, Map<String, Integer>> hitCounts = new HashMap<>();
@@ -107,7 +111,9 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             }
             for (int spark = 0; spark < sparkCount; spark++) {
                 var location = target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0);
-                target.getWorld().spawnParticle(Particle.EXPLOSION, location, 1);
+                target.getWorld().spawnParticle(
+                        Particle.ITEM, location, 1, 0.0, 0.0, 0.0, 0.0,
+                        SPARK_PARTICLE_ITEM);
                 double radiusSquared = radius * radius;
                 for (var entity : target.getWorld().getNearbyEntities(location, radius, radius, radius)) {
                     if (!(entity instanceof LivingEntity living)
@@ -119,6 +125,14 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
                 }
             }
         });
+    }
+
+    private static ItemStack createSparkParticleItem() {
+        ItemStack item = new ItemStack(Material.PAPER);
+        var meta = item.getItemMeta();
+        meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:ability_spark")));
+        item.setItemMeta(meta);
+        return item;
     }
 
     private double nonNegativeConfig(String path, double fallback) {

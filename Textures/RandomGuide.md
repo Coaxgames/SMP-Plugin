@@ -31,6 +31,8 @@ Restart the server. Minecraft offers the pack to players, who must accept it to 
 
 ## Blockbench flipbook animations
 
+Standalone PNGs and matching `.png.mcmeta` files are copied into the resource pack and registered in the blocks atlas. Parent-based item models (such as `minecraft:item/generated`) can reference standalone textures; `ability_spark.json` uses this for the Collapsing Star Mace's animated ability particle.
+
 Every `.bbmodel` under `Textures/` is discovered automatically; there is no hard-coded model allowlist. Automatic conversion of `.bbmodel` geometry to model JSON is paused while we check whether conversion is responsible for the rendering issue. The pack still contains all extracted embedded PNGs, loose PNGs, and animation metadata. If a matching Blockbench-exported Java item `.json` is present, the build uses it; without one, textures are packaged but no model JSON or item definition is generated for that model.
 
 Blockbench's Java item `.json` export is the model geometry file. `.mcmeta` is not a model export; it is the separate Minecraft texture-animation metadata file. The build writes `.mcmeta` for tall flipbook sheets using the Blockbench frame time and registers item textures in `assets/minecraft/atlases/blocks.json`, which Minecraft requires to render them on item models. Craft recipes that use player heads require heads carrying Head Drop's `headdrop:dropped` marker; the crafting preview explains when that requirement is not met. Python 3 is required to build the pack; use `-PpythonExecutable=<path>` if the interpreter is not available as `python` on Windows or `python3` elsewhere.

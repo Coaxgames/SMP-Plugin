@@ -206,8 +206,13 @@ def main(source_dir, output_dir):
                 "sources": [
                     {
                         "type": "minecraft:directory",
-                        "source": "item",
+                        "source": "galaxy:item",
                         "prefix": "item/",
+                    },
+                    {
+                        "type": "minecraft:directory",
+                        "source": "galaxy:source",
+                        "prefix": "source/",
                     }
                 ]
             },
@@ -302,10 +307,11 @@ def main(source_dir, output_dir):
         if model_id in models_found:
             fail(f"More than one source file maps to item model id {model_id!r}.")
         exported = read_json(exported_path)
-        if not isinstance(exported.get("elements"), list) or not isinstance(
-            exported.get("textures"), dict
-        ):
-            fail(f"{exported_path.name}: JSON file is not an exported item model.")
+        if not (
+            isinstance(exported.get("elements"), list)
+            or isinstance(exported.get("parent"), str)
+        ) or not isinstance(exported.get("textures"), dict):
+            fail(f"{exported_path.name}: JSON file is not a supported item model.")
         output_model = rewrite_exported_model(
             exported_path, exported, {}, model_id, loose_textures
         )
