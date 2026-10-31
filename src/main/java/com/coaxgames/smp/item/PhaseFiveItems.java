@@ -97,15 +97,27 @@ public final class PhaseFiveItems {
         for (EnchantmentLevel enchantment : enchantments) {
             result.addUnsafeEnchantment(enchantment.enchantment(), enchantment.level());
         }
+        var modelMeta = result.getItemMeta();
+        if (modelMeta == null) {
+            throw new IllegalStateException(id + " has no item metadata.");
+        }
+        modelMeta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
         if ("singularity_boots".equals(id)) {
-            var meta = result.getItemMeta();
-            if (meta == null) {
-                throw new IllegalStateException("Singularity Boots have no item metadata.");
-            }
-            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:singularity_boots")));
-            if (!result.setItemMeta(meta)) {
-                throw new IllegalStateException("Could not apply the Singularity Boots item model.");
-            }
+            // The worn 3D model is shown by a display entity, so the vanilla boots render nothing.
+            var equippable = modelMeta.getEquippable();
+            equippable.setSlot(org.bukkit.inventory.EquipmentSlot.FEET);
+            equippable.setModel(NamespacedKey.fromString("galaxy:invisible"));
+            modelMeta.setEquippable(equippable);
+        }
+        if ("cosmic_crown".equals(id)) {
+            // Without an armor asset the helmet renders its own 3D item model (head display) when worn.
+            var equippable = modelMeta.getEquippable();
+            equippable.setSlot(org.bukkit.inventory.EquipmentSlot.HEAD);
+            equippable.setModel(null);
+            modelMeta.setEquippable(equippable);
+        }
+        if (!result.setItemMeta(modelMeta)) {
+            throw new IllegalStateException("Could not apply the " + id + " item model.");
         }
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(plugin, id), result);
         recipe.shape(shape);

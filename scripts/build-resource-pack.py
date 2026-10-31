@@ -4,6 +4,7 @@ import re
 import shutil
 import struct
 import sys
+import zlib
 from pathlib import Path
 
 
@@ -171,6 +172,158 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
     return rewritten
 
 
+def convert_bbmodel_elements(source_model, exported):
+    """Rebuild a Java item model from the .bbmodel when its exported JSON is stale."""
+    textures = source_model.get("textures", [])
+    rebuilt = dict(exported)
+    rebuilt.pop("groups", None)
+    rebuilt["textures"] = {
+        slug(texture["name"]): Path(texture["name"]).with_suffix("").as_posix()
+        for texture in textures
+    }
+    particle = (exported.get("textures") or {}).get("particle")
+    if isinstance(particle, str):
+        rebuilt["textures"]["particle"] = particle
+    elif textures:
+        rebuilt["textures"]["particle"] = next(iter(rebuilt["textures"].values()))
+    elements = []
+    for source in source_model.get("elements", []):
+        if source.get("type", "cube") != "cube":
+            continue
+        element = {"name": source.get("name", ""), "from": source["from"], "to": source["to"]}
+        angles = source.get("rotation") or [0, 0, 0]
+        origin = source.get("origin", [8, 8, 8])
+        active = [axis for axis, value in zip("xyz", angles) if value]
+        if len(active) == 1:
+            axis = active[0]
+            element["rotation"] = {
+                "angle": angles["xyz".index(axis)], "axis": axis, "origin": origin,
+            }
+        elif active:
+            element["rotation"] = {
+                "x": angles[0], "y": angles[1], "z": angles[2], "origin": origin,
+            }
+        faces = {}
+        for name, face in source.get("faces", {}).items():
+            index = face.get("texture")
+            if not isinstance(index, int) or not 0 <= index < len(textures):
+                continue
+            output = {"uv": face.get("uv", [0, 0, 16, 16]), "texture": "#" + slug(textures[index]["name"])}
+            if face.get("rotation"):
+                output["rotation"] = face["rotation"]
+            faces[name] = output
+        if faces:
+            element["faces"] = faces
+            elements.append(element)
+    rebuilt["elements"] = elements
+    if source_model.get("display"):
+        rebuilt["display"] = source_model["display"]
+    return rebuilt
+
+
+def repair_export_textures(source_model, exported):
+    """Rebuild face textures from the .bbmodel when Blockbench's Java export lost them.
+
+    The export collapses textures sharing an id and can omit the textures block entirely.
+    """
+    source_cubes = [e for e in source_model.get("elements", []) if e.get("type", "cube") == "cube"]
+    if source_cubes and len(source_cubes) != len(exported.get("elements", [])):
+        return convert_bbmodel_elements(source_model, exported)
+    source_textures = source_model.get("textures", [])
+    ids = [texture.get("id") for texture in source_textures]
+    old_textures = exported.get("textures") or {}
+    referenced = {
+        face.get("texture", "")[1:]
+        for element in exported.get("elements", [])
+        for face in element.get("faces", {}).values()
+        if isinstance(face.get("texture"), str) and face["texture"].startswith("#")
+    }
+    if len(ids) == len(set(ids)) and referenced <= set(old_textures):
+        return exported
+
+    def element_key(element):
+        return (element.get("name"), tuple(element.get("from", ())), tuple(element.get("to", ())))
+
+    pending = {}
+    for element in source_model.get("elements", []):
+        pending.setdefault(element_key(element), []).append(element)
+
+    def texture_key(index):
+        return slug(source_textures[index]["name"])
+
+    used = set()
+    repaired = dict(exported)
+    repaired_elements = []
+    for element in exported.get("elements", []):
+        element = dict(element)
+        candidates = pending.get(element_key(element))
+        source_element = candidates.pop(0) if candidates else None
+        faces = {}
+        for name, face in element.get("faces", {}).items():
+            face = dict(face)
+            index = (source_element or {}).get("faces", {}).get(name, {}).get("texture")
+            if isinstance(index, int) and 0 <= index < len(source_textures):
+                face["texture"] = "#" + texture_key(index)
+                used.add(index)
+            faces[name] = face
+        element["faces"] = faces
+        repaired_elements.append(element)
+    repaired["elements"] = repaired_elements
+
+    textures = {
+        texture_key(index): Path(source_textures[index]["name"]).with_suffix("").as_posix()
+        for index in sorted(used)
+    }
+    particle = old_textures.get("particle")
+    if isinstance(particle, str):
+        textures["particle"] = particle
+    elif textures:
+        textures["particle"] = next(iter(textures.values()))
+    repaired["textures"] = textures
+    return repaired
+
+
+def compensate_drawn_arm(model):
+    """Use vanilla bow third-person holding values for the drawn-bow models.
+
+    Vanilla bows use the same third-person display while drawn; the arm pose supplies the aim.
+    Values authored against the idle pose make the drawn bow point upward.
+    """
+    display = model.setdefault("display", {})
+    display["thirdperson_righthand"] = {
+        "rotation": [-80, -100, -40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9],
+    }
+    display["thirdperson_lefthand"] = {
+        "rotation": [-80, 80, 40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9],
+    }
+
+
+def write_invisible_equipment(output_dir):
+    """Worn armor asset that renders nothing, so custom 3D worn models can replace it."""
+    equipment_dir = output_dir / "assets" / "galaxy" / "equipment"
+    texture_dir = output_dir / "assets" / "galaxy" / "textures" / "entity" / "equipment" / "humanoid"
+    equipment_dir.mkdir(parents=True, exist_ok=True)
+    texture_dir.mkdir(parents=True, exist_ok=True)
+    (equipment_dir / "invisible.json").write_text(
+        json.dumps({"layers": {"humanoid": [{"texture": "galaxy:invisible"}]}}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    width, height = 64, 32
+    raw = b"".join(b"\x00" + b"\x00" * (width * 4) for _ in range(height))
+
+    def chunk(kind, data):
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw))
+        + chunk(b"IEND", b"")
+    )
+    (texture_dir / "invisible.png").write_bytes(png)
+
+
 def main(source_dir, output_dir):
     source_dir = Path(source_dir)
     output_dir = Path(output_dir)
@@ -268,10 +421,12 @@ def main(source_dir, output_dir):
         if not exported_path.exists():
             models_without_exports.append(source_path.relative_to(source_dir).as_posix())
             continue
-        exported = read_json(exported_path)
+        exported = repair_export_textures(source_model, read_json(exported_path))
         output_model = rewrite_exported_model(
             exported_path, exported, textures_by_name, model_id
         )
+        if model_id.startswith("celestial_bow_pulling_"):
+            compensate_drawn_arm(output_model)
 
         model_output = model_dir / f"{model_id}.json"
         item_output = item_dir / f"{model_id}.json"
@@ -335,6 +490,8 @@ def main(source_dir, output_dir):
             encoding="utf-8",
         )
         models_found.add(model_id)
+
+    write_invisible_equipment(output_dir)
 
     for model_id in sorted(models_found):
         model_path = model_dir / f"{model_id}.json"

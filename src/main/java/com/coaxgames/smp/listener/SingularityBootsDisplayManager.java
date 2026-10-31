@@ -19,16 +19,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public final class SingularityBootsDisplayManager {
     private static final String ITEM_ID = "singularity_boots";
-    private static final double DISPLAY_HEIGHT = 0.28;
+    // The worn model's fixed display is 0.5 scale (a 0.33 block pair of boots); 1.6x brings it to foot size.
+    private static final float DISPLAY_SCALE = 1.6F;
+    private static final double DISPLAY_HEIGHT = 0.4;
     private static final NamespacedKey WORN_MODEL =
             Objects.requireNonNull(NamespacedKey.fromString("galaxy:singularity_boots_worn"));
 
     private final GalaxySmpPlugin plugin;
     private final Map<UUID, ItemDisplay> displays = new HashMap<>();
-    private final Set<UUID> maskedBoots = new HashSet<>();
 
     public SingularityBootsDisplayManager(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -40,18 +44,15 @@ public final class SingularityBootsDisplayManager {
             UUID playerId = player.getUniqueId();
             if (!isWearingSingularityBoots(player)) {
                 removeDisplay(playerId);
-                restoreBoots(player);
                 continue;
             }
 
             ItemDisplay display = displays.get(playerId);
-            boolean respawned = display == null || !display.isValid() || display.getWorld() != player.getWorld();
-            if (respawned) {
+            if (display == null || !display.isValid() || display.getWorld() != player.getWorld()) {
                 removeDisplay(playerId);
                 display = spawnDisplay(player);
                 displays.put(playerId, display);
             }
-            maskBoots(player, respawned);
             moveDisplay(player, display);
         }
 
@@ -60,7 +61,6 @@ public final class SingularityBootsDisplayManager {
             Map.Entry<UUID, ItemDisplay> entry = iterator.next();
             if (Bukkit.getPlayer(entry.getKey()) == null) {
                 entry.getValue().remove();
-                maskedBoots.remove(entry.getKey());
                 iterator.remove();
             }
         }
@@ -92,11 +92,14 @@ public final class SingularityBootsDisplayManager {
         ItemDisplay display = player.getWorld().spawn(displayLocation, ItemDisplay.class);
         display.setItemStack(modelItem);
         display.setItemDisplayTransform(ItemDisplayTransform.FIXED);
+        display.setTransformation(new Transformation(
+                new Vector3f(), new Quaternionf(), new Vector3f(DISPLAY_SCALE), new Quaternionf()));
         display.setRotation(player.getLocation().getYaw(), 0.0F);
         display.setPersistent(false);
         display.setGravity(false);
         display.setInvulnerable(true);
         display.setSilent(true);
+        display.setTeleportDuration(1);
         return display;
     }
 
@@ -117,30 +120,6 @@ public final class SingularityBootsDisplayManager {
         return location;
     }
 
-    private void maskBoots(Player player, boolean refresh) {
-        boolean newlyMasked = maskedBoots.add(player.getUniqueId());
-        if (newlyMasked || refresh) {
-            sendBootsToViewers(player, new ItemStack(Material.AIR));
-        }
-    }
-
-    private void restoreBoots(Player player) {
-        if (maskedBoots.remove(player.getUniqueId())) {
-            sendBootsToViewers(player, bootsOrAir(player));
-        }
-    }
-
-    private ItemStack bootsOrAir(Player player) {
-        ItemStack boots = player.getInventory().getBoots();
-        return boots == null ? new ItemStack(Material.AIR) : boots.clone();
-    }
-
-    private void sendBootsToViewers(Player wearer, ItemStack boots) {
-        for (Player viewer : Bukkit.getOnlinePlayers()) {
-            viewer.sendEquipmentChange(wearer, EquipmentSlot.FEET, boots);
-        }
-    }
-
     private void removeDisplay(UUID playerId) {
         ItemDisplay display = displays.remove(playerId);
         if (display != null) {
@@ -149,14 +128,9 @@ public final class SingularityBootsDisplayManager {
     }
 
     public void shutdown() {
-        for (Map.Entry<UUID, ItemDisplay> entry : displays.entrySet()) {
-            entry.getValue().remove();
-            Player player = Bukkit.getPlayer(entry.getKey());
-            if (player != null && maskedBoots.remove(entry.getKey())) {
-                sendBootsToViewers(player, bootsOrAir(player));
-            }
+        for (ItemDisplay display : displays.values()) {
+            display.remove();
         }
         displays.clear();
-        maskedBoots.clear();
     }
 }

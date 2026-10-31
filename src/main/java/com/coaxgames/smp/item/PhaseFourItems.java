@@ -66,11 +66,14 @@ public final class PhaseFourItems {
             Ingredient... ingredients
     ) {
         ItemStack item = new ItemStack(material, amount);
+        var meta = item.getItemMeta();
         if (maxStackSize != null) {
-            var meta = item.getItemMeta();
             meta.setMaxStackSize(maxStackSize);
-            item.setItemMeta(meta);
         }
+        if (id.equals("kuiper_ball") || id.equals("mass_orb") || id.equals("galaxy_string")) {
+            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
+        }
+        item.setItemMeta(meta);
         return definition(plugin, id, item, shape, false, false, hasPerPlayerCarryLimit, ingredients);
     }
 

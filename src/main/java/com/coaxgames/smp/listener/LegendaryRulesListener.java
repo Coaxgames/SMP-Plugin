@@ -264,6 +264,39 @@ public final class LegendaryRulesListener implements Listener {
             }
         }
         enforceCarryingCaps(player);
+        refreshItemModels(player.getInventory());
+    }
+
+    // Items created before a model was assigned keep stale metadata, so backfill the expected item model.
+    private void refreshItemModels(Inventory inventory) {
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (stack == null || stack.getType().isAir()) {
+                continue;
+            }
+            items.identify(stack).ifPresent(definition -> {
+                var expected = definition.createBaseItem().getItemMeta();
+                var meta = stack.getItemMeta();
+                if (expected == null || meta == null || !expected.hasItemModel()) {
+                    return;
+                }
+                boolean changed = false;
+                if (!expected.getItemModel().equals(meta.hasItemModel() ? meta.getItemModel() : null)) {
+                    meta.setItemModel(expected.getItemModel());
+                    changed = true;
+                }
+                if (expected.hasEquippable()
+                        && (!meta.hasEquippable()
+                        || !java.util.Objects.equals(
+                                expected.getEquippable().getModel(), meta.getEquippable().getModel()))) {
+                    meta.setEquippable(expected.getEquippable());
+                    changed = true;
+                }
+                if (changed) {
+                    stack.setItemMeta(meta);
+                }
+            });
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
