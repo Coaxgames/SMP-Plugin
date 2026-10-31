@@ -440,6 +440,14 @@ def write_boots_equipment(output_dir):
     (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
+FIRST_PERSON_OVERRIDES = {
+    "star_mace": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
+    "collapsing_star_mace": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
+    "cosmic_crown": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.9, 0.9, 0.9]},
+    "singularity_boots": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.8, 0.8, 0.8]},
+}
+
+
 def main(source_dir, output_dir):
     source_dir = Path(source_dir)
     output_dir = Path(output_dir)
@@ -543,6 +551,12 @@ def main(source_dir, output_dir):
         )
         if model_id.startswith("celestial_bow_pulling_"):
             compensate_drawn_arm(output_model)
+        if model_id in FIRST_PERSON_OVERRIDES:
+            # The authored first-person values push these models out of view.
+            displays = output_model.setdefault("display", {})
+            transform = FIRST_PERSON_OVERRIDES[model_id]
+            displays["firstperson_righthand"] = {key: list(value) for key, value in transform.items()}
+            displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.

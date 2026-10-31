@@ -1,6 +1,6 @@
 {
 	"format_version": "26.3",
-	"credit": "Collapsing star mace",
+	"credit": "Made with Blockbench",
 	"parent": "minecraft:item/handheld",
 	"textures": {
 		"7": "fire_animation (1)",
@@ -791,8 +791,8 @@
 			"scale": [0.85, 0.85, 0.85]
 		},
 		"firstperson_righthand": {
-			"rotation": [-122.04, -72.58, -108.65],
-			"translation": [1.13, 0.95, 11.13],
+			"rotation": [-122.04, -89, -101],
+			"translation": [1.75, -0.25, 2.75],
 			"scale": [0.9, 0.9, 0.9]
 		},
 		"firstperson_lefthand": {
