@@ -25,6 +25,7 @@ jobs:
       pull-requests: read
     outputs:
       authorized: ${{ steps.gate.outputs.authorized }}
+      recover_version: ${{ steps.gate.outputs.recover_version }}
     steps:
       - name: Check merged pull request approvals
         id: gate
@@ -54,8 +55,19 @@ jobs:
               run.actor.login.endsWith("[bot]") &&
               (run.head_commit?.message ?? "").startsWith("chore: release ")
             ) {
-              core.info("Automated release version commit; nothing more to release.");
-              core.setOutput("authorized", "false");
+              const releaseVersion = run.head_commit.message.split("\n")[0].slice("chore: release ".length).trim();
+              const { data: releases } = await github.rest.repos.listReleases({
+                ...context.repo,
+                per_page: 30,
+              });
+              if (releases.some((release) => release.tag_name === releaseVersion && !release.draft)) {
+                core.info("Automated release version commit; the release is already published.");
+                core.setOutput("authorized", "false");
+                return;
+              }
+              core.warning(`Release ${releaseVersion} was never published; finishing it.`);
+              core.setOutput("recover_version", releaseVersion);
+              core.setOutput("authorized", "true");
               return;
             }
             if (!pullRequest) {
@@ -128,7 +140,12 @@ jobs:
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
+          RECOVER_VERSION: ${{ needs.authorize.outputs.recover_version }}
         run: |
+          if [ -n "$RECOVER_VERSION" ]; then
+            echo "version=$RECOVER_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           RELEASE_TAGS="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/tags?per_page=100" --jq '.[].name')"
           SOURCE_ROOT="$GITHUB_WORKSPACE/source" RELEASE_TAGS="$RELEASE_TAGS" \
             node trusted/scripts/release-version.mjs
@@ -184,10 +201,25 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           RELEASE_SHA: ${{ steps.publish-commit.outputs.release_sha }}
         run: |
-          gh release create "$VERSION" \
-            "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
-            "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip" \
-            "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1" \
-            --title "$VERSION" \
-            --generate-notes \
-            --target "$RELEASE_SHA"
+          for attempt in 1 2 3 4; do
+            # A 500 can leave a draft behind or publish anyway; clear drafts and check before retrying.
+            gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30" \
+              --jq ".[] | select(.draft and .tag_name == \"${VERSION}\") | .id" |
+              while read -r id; do gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}" || true; done
+            if gh release create "$VERSION" \
+              "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
+              "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip" \
+              "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1" \
+              --title "$VERSION" \
+              --generate-notes \
+              --target "$RELEASE_SHA"; then
+              exit 0
+            fi
+            if gh release view "$VERSION" --json isDraft --jq '.isDraft' 2>/dev/null | grep -q false; then
+              echo "Release $VERSION was published despite the error."
+              exit 0
+            fi
+            echo "::warning::Release attempt $attempt failed; retrying."
+            sleep $((attempt * 15))
+          done
+          exit 1
