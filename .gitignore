@@ -5,3 +5,8 @@ scripts/
 .vscode/
 .gradle/
 build.gradlesettings.gradle
+
+# Local build artifacts
+local-build/
+*.jar
+*.zip
