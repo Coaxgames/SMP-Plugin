@@ -4,3 +4,4 @@ oracleJdk-27/
 scripts/
 .vscode/
 .gradle/
+build.gradlesettings.gradle
