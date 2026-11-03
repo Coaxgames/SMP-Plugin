@@ -15,7 +15,7 @@ The build produces:
 - `build/distributions/galaxy-smp-resource-pack-<version>.zip`
 - `build/distributions/galaxy-smp-resource-pack-<version>.zip.sha1`
 
-The pack uses Minecraft 26.3's item-definition/model format and registers its custom item textures in the blocks atlas. To test it locally, copy the ZIP to the client's `.minecraft/resourcepacks` folder and enable it. Astral Sword, Void Sword, and Collapsing Star Mace items created by the plugin have matching `galaxy:<item_id>` item models. Existing items and vanilla items are not globally overridden.
+The pack uses Minecraft 26.3's item-definition/model format and registers its custom item textures in the blocks atlas. To test it locally, copy the ZIP to the client's `.minecraft/resourcepacks` folder and enable it. Astral Sword, Void Sword, Lunar Leggings, and Collapsing Star Mace items created by the plugin have matching `galaxy:<item_id>` item models. Existing items and vanilla items are not globally overridden.
 
 
 ## Configure server delivery
@@ -34,6 +34,8 @@ Restart the server. Minecraft offers the pack to players, who must accept it to 
 Standalone PNGs and matching `.png.mcmeta` files are copied into the resource pack and registered in the blocks atlas. Parent-based item models (such as `minecraft:item/generated`) can reference standalone textures; `ability_spark.json` uses this for the Collapsing Star Mace's animated ability particle. The Singularity Boots use this pattern for their animated inventory icon, while `singularity_boots_worn.bbmodel` and its exported JSON build a separate worn-model item definition for the plugin's tracked `ItemDisplay`.
 
 The worn model display tracks players who have the Singularity Boots equipped. Its fixed item transform is scaled in the exported JSON, and the renderer positions it at the wearer's feet. Vanilla armor rendering is hidden for viewers while the custom display is active; the actual boots item and its armor effects remain equipped. This is a server-side visual workaround, not native custom armor geometry.
+
+Lunar Leggings use an animated inventory texture and a native humanoid-leggings equipment layer. Files under `pack_assets/` are copied into the generated pack at the same relative paths; the leggings item selects `minecraft:lunar_leggings` as its equipment asset.
 
 Every `.bbmodel` under `Textures/` is discovered automatically; there is no hard-coded model allowlist. Automatic conversion of `.bbmodel` geometry to model JSON is paused while we check whether conversion is responsible for the rendering issue. The pack still contains all extracted embedded PNGs, loose PNGs, and animation metadata. If a matching Blockbench-exported Java item `.json` is present, the build uses it; without one, textures are packaged but no model JSON or item definition is generated for that model.
 

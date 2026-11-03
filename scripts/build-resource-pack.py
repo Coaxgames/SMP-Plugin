@@ -31,6 +31,18 @@ def read_json(path):
         fail(f"Could not read JSON model {path}: {error}")
 
 
+def copy_pack_assets(source_dir, output_dir):
+    pack_assets_dir = source_dir / "pack_assets"
+    if not pack_assets_dir.is_dir():
+        return
+    for asset_path in sorted(pack_assets_dir.rglob("*")):
+        if not asset_path.is_file():
+            continue
+        destination = output_dir / asset_path.relative_to(pack_assets_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(asset_path.read_bytes())
+
+
 def extract_textures(model_path, model, texture_dir):
     textures_by_index = {}
     textures_by_name = {}
@@ -440,6 +452,46 @@ def write_boots_equipment(output_dir):
     (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
+FIRST_PERSON_OVERRIDES = {
+    # Off-hand poses (confirmed visible in game).
+    "star_mace": {
+        "rotation": [-122.04, -89, -101],
+        "translation": [1.75, -0.25, 2.75],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "collapsing_star_mace": {
+        "rotation": [-122.04, -89, -101],
+        "translation": [1.75, -0.25, 2.75],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "cosmic_crown": {
+        "rotation": [-180, -149, 180],
+        "translation": [0, 3.75, 0],
+        "scale": [0.9, 0.9, 0.9],
+    },
+    "singularity_boots": {
+        "rotation": [0, 82, 0],
+        "translation": [3.5, 3.25, 0],
+        "scale": [0.5, 0.5, 0.5],
+    },
+}
+
+# Main-hand poses use the vanilla handheld layout (the same one the visible spear uses),
+# since the off-hand values above do not show up in the main hand.
+MAIN_HAND_VANILLA = {
+    "rotation": [0, -90, 25],
+    "translation": [1.13, 3.2, 1.13],
+}
+FIRST_PERSON_MAIN_HAND = {
+    model_id: {**MAIN_HAND_VANILLA, "scale": list(transform["scale"])}
+    for model_id, transform in FIRST_PERSON_OVERRIDES.items()
+}
+# The wide mace heads sit behind the camera with the vanilla depth. The Astral Sword, which is
+# visible in the main hand, pushes the item about 10 units along +z, so the maces do the same.
+for _mace in ("star_mace", "collapsing_star_mace"):
+    FIRST_PERSON_MAIN_HAND[_mace]["translation"] = [1.13, 3.2, 10]
+
+
 def main(source_dir, output_dir):
     source_dir = Path(source_dir)
     output_dir = Path(output_dir)
@@ -452,6 +504,8 @@ def main(source_dir, output_dir):
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
+    pack_assets_dir = source_dir / "pack_assets"
+    copy_pack_assets(source_dir, output_dir)
 
     (output_dir / "pack.mcmeta").write_text(
         json.dumps(
@@ -497,12 +551,17 @@ def main(source_dir, output_dir):
     model_dir.mkdir(parents=True, exist_ok=True)
 
     models_found = set()
-    model_sources = sorted(source_dir.rglob("*.bbmodel"))
+    model_sources = sorted(
+        path for path in source_dir.rglob("*.bbmodel")
+        if pack_assets_dir not in path.parents
+    )
     if not model_sources:
         fail(f"No Blockbench models found in {source_dir}.")
 
     loose_textures = {}
     for image_path in sorted(source_dir.rglob("*.png")):
+        if pack_assets_dir in image_path.parents:
+            continue
         relative_path = image_path.relative_to(source_dir)
         safe_relative = Path(
             *[slug(part) + image_path.suffix.lower() if part == relative_path.name
@@ -518,6 +577,8 @@ def main(source_dir, output_dir):
             fail(f"Loose texture basename is ambiguous: {relative_path.name}")
         loose_textures[basename] = resource_id
     for metadata_path in sorted(source_dir.rglob("*.png.mcmeta")):
+        if pack_assets_dir in metadata_path.parents:
+            continue
         relative_path = metadata_path.relative_to(source_dir)
         destination = standalone_texture_dir / relative_path
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -543,6 +604,14 @@ def main(source_dir, output_dir):
         )
         if model_id.startswith("celestial_bow_pulling_"):
             compensate_drawn_arm(output_model)
+        if model_id in FIRST_PERSON_OVERRIDES:
+            # The authored first-person values push these models out of view.
+            displays = output_model.setdefault("display", {})
+            transform = FIRST_PERSON_OVERRIDES[model_id]
+            displays["firstperson_righthand"] = {
+                key: list(value) for key, value in FIRST_PERSON_MAIN_HAND[model_id].items()
+            }
+            displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.
@@ -596,6 +665,8 @@ def main(source_dir, output_dir):
         for source in model_sources
     }
     for exported_path in sorted(source_dir.rglob("*.json")):
+        if pack_assets_dir in exported_path.parents:
+            continue
         if exported_path.resolve() in bbmodel_exports:
             continue
         model_id = slug(exported_path.relative_to(source_dir).as_posix())

@@ -1,6 +1,6 @@
 {
 	"format_version": "26.3",
-	"credit": "Star mace",
+	"credit": "Made with Blockbench",
 	"parent": "minecraft:item/handheld",
 	"textures": {
 		"4": "supernova_animation",
@@ -874,8 +874,8 @@
 			"scale": [1.16, 1.16, 1.15273]
 		},
 		"firstperson_righthand": {
-			"rotation": [-110.91, -42.71, -93.96],
-			"translation": [1.63, 4.95, 11.38],
+			"rotation": [-111, -89, -93.96],
+			"translation": [0.25, 4.75, 5],
 			"scale": [0.9, 0.9, 0.9]
 		},
 		"firstperson_lefthand": {
