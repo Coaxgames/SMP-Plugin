@@ -2,8 +2,7 @@ name: Contributor push signal
 
 on:
   push:
-    branches-ignore:
-      - main
+    branches: [UnStable]
 
 permissions:
   contents: read

@@ -16,7 +16,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.path, '.github/workflows/contributor-push.yml') &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
-      github.event.workflow_run.head_branch != 'main'
+      github.event.workflow_run.head_branch == 'UnStable'
     runs-on: ubuntu-latest
     outputs:
       head_sha: ${{ github.event.workflow_run.head_sha }}
@@ -28,7 +28,7 @@ jobs:
         with:
           script: |
             const base = context.payload.repository.default_branch;
-            const branch = context.payload.workflow_run.head_branch;
+            const branch = "UnStable";
             const head = `${context.repo.owner}:${branch}`;
             const existing = await github.rest.pulls.list({
               ...context.repo,
@@ -43,16 +43,16 @@ jobs:
               await github.rest.pulls.update({
                 ...context.repo,
                 pull_number: pullRequest.number,
-                title: `Plugin update: ${branch}`,
-                body: "Automated PR for a branch push. The release version is calculated automatically when this PR is merged.",
+                title: "UnStable updates",
+                body: "Automated pull request from the shared UnStable branch to main. Further pushes to UnStable update this PR; the release version is calculated automatically when it is merged.",
               });
             } else {
               const { data } = await github.rest.pulls.create({
                 ...context.repo,
-                title: `Plugin update: ${branch}`,
+                title: "UnStable updates",
                 head,
                 base,
-                body: "Automated PR for a branch push. The release version is calculated automatically when this PR is merged.",
+                body: "Automated pull request from the shared UnStable branch to main. Further pushes to UnStable update this PR; the release version is calculated automatically when it is merged.",
               });
               pullRequest = data;
             }

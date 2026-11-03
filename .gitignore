@@ -1,5 +1,6 @@
 build/
 gradle/
 oracleJdk-27/
+scripts/
 .vscode/
 .gradle/
