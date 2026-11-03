@@ -1,4 +1,4 @@
-import base64
+﻿import base64
 import json
 import re
 import shutil
@@ -193,117 +193,6 @@ def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loo
     if "elements" in rewritten:
         rewritten["elements"] = kept_elements
     return rewritten
-
-
-def convert_bbmodel_elements(source_model, exported):
-    """Rebuild a Java item model from the .bbmodel when its exported JSON is stale."""
-    textures = source_model.get("textures", [])
-    rebuilt = dict(exported)
-    rebuilt.pop("groups", None)
-    rebuilt["textures"] = {
-        slug(texture["name"]): Path(texture["name"]).with_suffix("").as_posix()
-        for texture in textures
-    }
-    particle = (exported.get("textures") or {}).get("particle")
-    if isinstance(particle, str):
-        rebuilt["textures"]["particle"] = particle
-    elif textures:
-        rebuilt["textures"]["particle"] = next(iter(rebuilt["textures"].values()))
-    elements = []
-    for source in source_model.get("elements", []):
-        if source.get("type", "cube") != "cube":
-            continue
-        element = {"name": source.get("name", ""), "from": source["from"], "to": source["to"]}
-        angles = source.get("rotation") or [0, 0, 0]
-        origin = source.get("origin", [8, 8, 8])
-        active = [axis for axis, value in zip("xyz", angles) if value]
-        if len(active) == 1:
-            axis = active[0]
-            element["rotation"] = {
-                "angle": angles["xyz".index(axis)], "axis": axis, "origin": origin,
-            }
-        elif active:
-            element["rotation"] = {
-                "x": angles[0], "y": angles[1], "z": angles[2], "origin": origin,
-            }
-        faces = {}
-        for name, face in source.get("faces", {}).items():
-            index = face.get("texture")
-            if not isinstance(index, int) or not 0 <= index < len(textures):
-                continue
-            output = {"uv": face.get("uv", [0, 0, 16, 16]), "texture": "#" + slug(textures[index]["name"])}
-            if face.get("rotation"):
-                output["rotation"] = face["rotation"]
-            faces[name] = output
-        if faces:
-            element["faces"] = faces
-            elements.append(element)
-    rebuilt["elements"] = elements
-    if source_model.get("display"):
-        rebuilt["display"] = source_model["display"]
-    return rebuilt
-
-
-def repair_export_textures(source_model, exported):
-    """Rebuild face textures from the .bbmodel when Blockbench's Java export lost them.
-
-    The export collapses textures sharing an id and can omit the textures block entirely.
-    """
-    source_cubes = [e for e in source_model.get("elements", []) if e.get("type", "cube") == "cube"]
-    if source_cubes and len(source_cubes) != len(exported.get("elements", [])):
-        return convert_bbmodel_elements(source_model, exported)
-    source_textures = source_model.get("textures", [])
-    ids = [texture.get("id") for texture in source_textures]
-    old_textures = exported.get("textures") or {}
-    referenced = {
-        face.get("texture", "")[1:]
-        for element in exported.get("elements", [])
-        for face in element.get("faces", {}).values()
-        if isinstance(face.get("texture"), str) and face["texture"].startswith("#")
-    }
-    if len(ids) == len(set(ids)) and referenced <= set(old_textures):
-        return exported
-
-    def element_key(element):
-        return (element.get("name"), tuple(element.get("from", ())), tuple(element.get("to", ())))
-
-    pending = {}
-    for element in source_model.get("elements", []):
-        pending.setdefault(element_key(element), []).append(element)
-
-    def texture_key(index):
-        return slug(source_textures[index]["name"])
-
-    used = set()
-    repaired = dict(exported)
-    repaired_elements = []
-    for element in exported.get("elements", []):
-        element = dict(element)
-        candidates = pending.get(element_key(element))
-        source_element = candidates.pop(0) if candidates else None
-        faces = {}
-        for name, face in element.get("faces", {}).items():
-            face = dict(face)
-            index = (source_element or {}).get("faces", {}).get(name, {}).get("texture")
-            if isinstance(index, int) and 0 <= index < len(source_textures):
-                face["texture"] = "#" + texture_key(index)
-                used.add(index)
-            faces[name] = face
-        element["faces"] = faces
-        repaired_elements.append(element)
-    repaired["elements"] = repaired_elements
-
-    textures = {
-        texture_key(index): Path(source_textures[index]["name"]).with_suffix("").as_posix()
-        for index in sorted(used)
-    }
-    particle = old_textures.get("particle")
-    if isinstance(particle, str):
-        textures["particle"] = particle
-    elif textures:
-        textures["particle"] = next(iter(textures.values()))
-    repaired["textures"] = textures
-    return repaired
 
 
 def compensate_drawn_arm(model):
@@ -598,7 +487,16 @@ def main(source_dir, output_dir):
         if not exported_path.exists():
             models_without_exports.append(source_path.relative_to(source_dir).as_posix())
             continue
-        exported = repair_export_textures(source_model, read_json(exported_path))
+        exported = read_json(exported_path)
+        undefined = {
+            face["texture"][1:]
+            for element in exported.get("elements", [])
+            for face in element.get("faces", {}).values()
+            if isinstance(face.get("texture"), str) and face["texture"].startswith("#")
+            and face["texture"][1:] not in (exported.get("textures") or {})
+        }
+        if undefined:
+            fail(f"{exported_path.name}: faces reference undefined textures {sorted(undefined)}; re-export it from Blockbench.")
         output_model = rewrite_exported_model(
             exported_path, exported, textures_by_name, model_id
         )
