@@ -227,3 +227,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 - 2026-10-25: Clarified Nebula Spear uses the native Lunge behavior on the existing Galaxy SMP + Head Drop server; no additional plugin integration is required. Phase 5 still needs to implement and verify successful-lunge counting against the target Paper API.
 - 2026-10-25: Corrected the mace rule: each custom mace type has its own permanent server-wide one-craft allowance, and kept the “first mace on the server” interpretation open for the server owner.
 - 2026-10-25: Implemented the Phase 2 rules engine, made Head Drop 3.1.0+ a required dependency, and added Phase 2.1 automated/server integration test checklists.
+
+
+
+added line for Extra push

@@ -2,6 +2,13 @@
 	"format_version": "26.3",
 	"credit": "Made with Blockbench",
 	"parent": "minecraft:item/handheld",
+	"textures": {
+		"singularity_boots_base": "C::animated textures/singularity_boots_base",
+		"singularity_boots_glow": "C::animated textures/singularity_boots_glow",
+		"singularity_boots_gunmetal": "C::animated textures/singularity_boots_gunmetal",
+		"singularity_boots_obsidian": "C::animated textures/singularity_boots_obsidian",
+		"singularity_boots_blackhole": "C::animated textures/singularity_boots_blackhole"
+	},
 	"elements": [
 		{
 			"name": "Left Sole",
