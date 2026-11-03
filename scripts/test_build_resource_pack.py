@@ -1,6 +1,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 SCRIPT_PATH = Path(__file__).with_name("build-resource-pack.py")
 SPEC = importlib.util.spec_from_file_location("build_resource_pack", SCRIPT_PATH)
@@ -9,6 +10,7 @@ SPEC.loader.exec_module(MODULE)
 rewrite_exported_model = MODULE.rewrite_exported_model
 build_shield_blocking = MODULE.build_shield_blocking
 align_shield_offhand = MODULE.align_shield_offhand
+copy_pack_assets = MODULE.copy_pack_assets
 
 
 class RewriteExportedModelTests(unittest.TestCase):
@@ -76,6 +78,24 @@ class RewriteExportedModelTests(unittest.TestCase):
         self.assertEqual(
             rewritten["textures"], {"layer0": "galaxy:source/ability_spark"}
         )
+
+
+class CopyPackAssetsTests(unittest.TestCase):
+    def test_copies_pack_assets_to_matching_relative_paths(self):
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "Textures"
+            asset = source / "pack_assets" / "assets" / "minecraft" / "equipment" / "lunar_leggings.json"
+            asset.parent.mkdir(parents=True)
+            asset.write_text('{"layers": {}}', encoding="utf-8")
+            output = root / "output"
+            copy_pack_assets(source, output)
+            self.assertEqual(
+                (output / "assets" / "minecraft" / "equipment" / "lunar_leggings.json").read_text(
+                    encoding="utf-8"
+                ),
+                '{"layers": {}}',
+            )
 
 
 class BuildShieldBlockingTests(unittest.TestCase):

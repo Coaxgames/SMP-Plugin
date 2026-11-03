@@ -86,9 +86,16 @@ public final class PhaseFourItems {
             EnchantmentLevel... enchantments
     ) {
         ItemStack item = new ItemStack(material);
-        if (id.equals("astral_sword") || id.equals("void_sword")) {
+        if (id.equals("astral_sword") || id.equals("void_sword") || id.equals("lunar_leggings")) {
             var meta = item.getItemMeta();
             meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
+            if (id.equals("lunar_leggings")) {
+                var equippable = meta.getEquippable();
+                equippable.setSlot(org.bukkit.inventory.EquipmentSlot.LEGS);
+                equippable.setModel(Objects.requireNonNull(
+                        NamespacedKey.fromString("minecraft:lunar_leggings")));
+                meta.setEquippable(equippable);
+            }
             item.setItemMeta(meta);
         }
         for (EnchantmentLevel enchantment : enchantments) {

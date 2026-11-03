@@ -31,6 +31,18 @@ def read_json(path):
         fail(f"Could not read JSON model {path}: {error}")
 
 
+def copy_pack_assets(source_dir, output_dir):
+    pack_assets_dir = source_dir / "pack_assets"
+    if not pack_assets_dir.is_dir():
+        return
+    for asset_path in sorted(pack_assets_dir.rglob("*")):
+        if not asset_path.is_file():
+            continue
+        destination = output_dir / asset_path.relative_to(pack_assets_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(asset_path.read_bytes())
+
+
 def extract_textures(model_path, model, texture_dir):
     textures_by_index = {}
     textures_by_name = {}
@@ -492,6 +504,8 @@ def main(source_dir, output_dir):
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
+    pack_assets_dir = source_dir / "pack_assets"
+    copy_pack_assets(source_dir, output_dir)
 
     (output_dir / "pack.mcmeta").write_text(
         json.dumps(
@@ -537,12 +551,17 @@ def main(source_dir, output_dir):
     model_dir.mkdir(parents=True, exist_ok=True)
 
     models_found = set()
-    model_sources = sorted(source_dir.rglob("*.bbmodel"))
+    model_sources = sorted(
+        path for path in source_dir.rglob("*.bbmodel")
+        if pack_assets_dir not in path.parents
+    )
     if not model_sources:
         fail(f"No Blockbench models found in {source_dir}.")
 
     loose_textures = {}
     for image_path in sorted(source_dir.rglob("*.png")):
+        if pack_assets_dir in image_path.parents:
+            continue
         relative_path = image_path.relative_to(source_dir)
         safe_relative = Path(
             *[slug(part) + image_path.suffix.lower() if part == relative_path.name
@@ -558,6 +577,8 @@ def main(source_dir, output_dir):
             fail(f"Loose texture basename is ambiguous: {relative_path.name}")
         loose_textures[basename] = resource_id
     for metadata_path in sorted(source_dir.rglob("*.png.mcmeta")):
+        if pack_assets_dir in metadata_path.parents:
+            continue
         relative_path = metadata_path.relative_to(source_dir)
         destination = standalone_texture_dir / relative_path
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -644,6 +665,8 @@ def main(source_dir, output_dir):
         for source in model_sources
     }
     for exported_path in sorted(source_dir.rglob("*.json")):
+        if pack_assets_dir in exported_path.parents:
+            continue
         if exported_path.resolve() in bbmodel_exports:
             continue
         model_id = slug(exported_path.relative_to(source_dir).as_posix())
