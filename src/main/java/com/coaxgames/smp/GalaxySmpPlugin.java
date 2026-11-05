@@ -26,6 +26,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class GalaxySmpPlugin extends JavaPlugin {
     private LegendaryItemRegistry legendaryItems;
     private LegendaryDataStore dataStore;
+    private ReclaimableItemService reclaimableItems;
+
+    public ReclaimableItemService getReclaimableItems() {
+        return reclaimableItems;
+    }
     private CooldownManager cooldownManager;
     private RitualManager ritualManager;
     private PhaseFourDailyEffectManager phaseFourDailyEffects;
@@ -55,7 +60,8 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        new ReclaimableItemService(this).rebuildSpawnBlockMarkers();
+        reclaimableItems = new ReclaimableItemService(this);
+        reclaimableItems.rebuildSpawnBlockMarkers();
         cooldownManager = new CooldownManager(getConfig(), dataStore, legendaryItems);
         ritualManager = new RitualManager(this);
         ritualManager.resume();
