@@ -110,6 +110,30 @@ def extract_textures(model_path, model, texture_dir):
     return textures_by_index, textures_by_name
 
 
+def find_item_owner(texture_name, item_ids):
+    """Return the item a loose texture/animation name belongs to, preferring the longest item name."""
+    matches = [
+        item_id for item_id in item_ids
+        if texture_name == item_id
+        or texture_name.startswith(item_id + "_")
+        or item_id.endswith("_" + texture_name)
+    ]
+    return max(matches, key=len) if matches else None
+
+
+def apply_loose_animation(texture_path, loose):
+    """Merge a hand-written Textures/<name>.png.mcmeta into the item's own extracted texture."""
+    animation = loose.get("animation") if isinstance(loose, dict) else None
+    if not isinstance(animation, dict):
+        return
+    target = texture_path.with_suffix(".png.mcmeta")
+    merged = {}
+    if target.exists():
+        merged = read_json(target).get("animation", {})
+    merged.update(animation)
+    target.write_text(json.dumps({"animation": merged}, indent=2) + "\n", encoding="utf-8")
+
+
 def resolve_texture(name, textures_by_name, model_path, loose_textures=None):
     key = slug(name)
     texture = textures_by_name.get(key)
@@ -420,11 +444,6 @@ def main(source_dir, output_dir):
                         "type": "minecraft:directory",
                         "source": "galaxy:item",
                         "prefix": "item/",
-                    },
-                    {
-                        "type": "minecraft:directory",
-                        "source": "galaxy:source",
-                        "prefix": "source/",
                     }
                 ]
             },
@@ -435,7 +454,6 @@ def main(source_dir, output_dir):
 
     item_dir = output_dir / "assets" / "galaxy" / "items"
     model_dir = output_dir / "assets" / "galaxy" / "models" / "item"
-    standalone_texture_dir = output_dir / "assets" / "galaxy" / "textures" / "item" / "source"
     item_dir.mkdir(parents=True, exist_ok=True)
     model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -447,31 +465,50 @@ def main(source_dir, output_dir):
     if not model_sources:
         fail(f"No Blockbench models found in {source_dir}.")
 
+    item_ids = {
+        slug(path.relative_to(source_dir).as_posix())
+        for pattern in ("*.bbmodel", "*.json")
+        for path in source_dir.rglob(pattern)
+        if pack_assets_dir not in path.parents
+    }
     loose_textures = {}
+    loose_images = set()
     for image_path in sorted(source_dir.rglob("*.png")):
         if pack_assets_dir in image_path.parents:
             continue
         relative_path = image_path.relative_to(source_dir)
-        safe_relative = Path(
-            *[slug(part) + image_path.suffix.lower() if part == relative_path.name
-              else slug(part) for part in relative_path.parts]
+        texture_key = slug(relative_path.as_posix())
+        owner_id = find_item_owner(texture_key.rsplit("/", 1)[-1], item_ids)
+        if owner_id is None:
+            print(f"warning: {relative_path.as_posix()} matches no item name and was not packed.")
+            continue
+        loose_images.add(texture_key)
+        texture_name = texture_key.rsplit("/", 1)[-1]
+        destination = (
+            output_dir / "assets" / "galaxy" / "textures" / "item" / owner_id / f"{texture_name}.png"
         )
-        destination = standalone_texture_dir / safe_relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(image_path.read_bytes())
-        resource_id = "galaxy:item/source/" + safe_relative.with_suffix("").as_posix()
-        loose_textures[slug(relative_path.as_posix())] = resource_id
-        basename = slug(relative_path.name)
-        if basename in loose_textures and loose_textures[basename] != resource_id:
-            fail(f"Loose texture basename is ambiguous: {relative_path.name}")
-        loose_textures[basename] = resource_id
+        resource_id = f"galaxy:item/{owner_id}/{texture_name}"
+        loose_textures[texture_key] = resource_id
+        loose_textures[texture_name] = resource_id
+    loose_animations = {}
     for metadata_path in sorted(source_dir.rglob("*.png.mcmeta")):
         if pack_assets_dir in metadata_path.parents:
             continue
         relative_path = metadata_path.relative_to(source_dir)
-        destination = standalone_texture_dir / relative_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(metadata_path.read_bytes())
+        texture_key = slug(relative_path.as_posix()[: -len(".mcmeta")])
+        loose_animations[texture_key] = read_json(metadata_path)
+        if texture_key in loose_images:
+            # Animation for a loose texture sits beside that texture in the owning item's folder.
+            texture_name = texture_key.rsplit("/", 1)[-1]
+            owner_id = find_item_owner(texture_name, item_ids)
+            destination = (
+                output_dir / "assets" / "galaxy" / "textures" / "item" / owner_id
+                / f"{texture_name}.png.mcmeta"
+            )
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(metadata_path.read_bytes())
 
     models_without_exports = []
     for source_path in model_sources:
@@ -482,6 +519,10 @@ def main(source_dir, output_dir):
         texture_dir = output_dir / "assets" / "galaxy" / "textures" / "item" / model_id
         texture_dir.mkdir(parents=True, exist_ok=True)
         textures_by_index, textures_by_name = extract_textures(source_path, source_model, texture_dir)
+        for texture_key, texture_info in textures_by_name.items():
+            loose = loose_animations.get(texture_key)
+            if loose is not None:
+                apply_loose_animation(texture_dir / texture_info["filename"], loose)
 
         exported_path = source_path.with_suffix(".json")
         if not exported_path.exists():

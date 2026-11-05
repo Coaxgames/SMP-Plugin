@@ -98,6 +98,24 @@ class CopyPackAssetsTests(unittest.TestCase):
             )
 
 
+class ApplyLooseAnimationTests(unittest.TestCase):
+    def test_hand_written_animation_overrides_only_the_given_keys(self):
+        with TemporaryDirectory() as temporary_directory:
+            texture = Path(temporary_directory) / "rift.png"
+            texture.with_suffix(".png.mcmeta").write_text(
+                '{"animation": {"width": 16, "height": 16, "frametime": 1, "frames": [0, 1]}}',
+                encoding="utf-8",
+            )
+            MODULE.apply_loose_animation(
+                texture, {"animation": {"frametime": 2, "interpolate": True}}
+            )
+            merged = MODULE.read_json(texture.with_suffix(".png.mcmeta"))["animation"]
+            self.assertEqual(
+                merged,
+                {"width": 16, "height": 16, "frametime": 2, "frames": [0, 1], "interpolate": True},
+            )
+
+
 class BuildShieldBlockingTests(unittest.TestCase):
     def test_idle_first_person_offhand_matches_main_hand_angle(self):
         model = {
