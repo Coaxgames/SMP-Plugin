@@ -85,6 +85,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         GalaxyCommand galaxyCommand = new GalaxyCommand(this);
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
+        new com.coaxgames.smp.pack.ResourcePackService(this).start();
     }
 
     private void migrateDefaultRitualDuration() {
