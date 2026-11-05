@@ -20,9 +20,9 @@
 	"elements": [
 		{
 			"name": "Pommel cap",
-			"from": [7.55, 0.3, 7.55],
-			"to": [8.45, 0.72, 8.45],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0.51, 8]},
+			"from": [7.5, 0, 7.5],
+			"to": [8.4, 0.42, 8.4],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -34,10 +34,10 @@
 		},
 		{
 			"name": "Pommel star",
-			"from": [7.72, 0.42, 7.4],
-			"to": [8.28, 0.92, 7.55],
+			"from": [7.67, 0.12, 7.35],
+			"to": [8.23, 0.62, 7.5],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0.67, 7.475]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.425]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -49,9 +49,9 @@
 		},
 		{
 			"name": "Grip lower ferrule",
-			"from": [7.5, 0.82, 7.5],
-			"to": [8.5, 1.05, 8.5],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0.935, 8]},
+			"from": [7.45, 0.52, 7.45],
+			"to": [8.45, 0.75, 8.45],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -63,9 +63,9 @@
 		},
 		{
 			"name": "Grip upper ferrule",
-			"from": [7.5, 3.55, 7.5],
-			"to": [8.5, 3.78, 8.5],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3.665, 8]},
+			"from": [7.45, 3.25, 7.45],
+			"to": [8.45, 3.48, 8.45],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -77,9 +77,9 @@
 		},
 		{
 			"name": "Woven padded grip",
-			"from": [7.6, 1.05, 7.6],
-			"to": [8.4, 3.52, 8.4],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 2.285, 8]},
+			"from": [7.55, 0.75, 7.55],
+			"to": [8.35, 3.22, 8.35],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#4"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#4"},
@@ -91,9 +91,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 01",
-			"from": [7.54, 1.12, 7.54],
-			"to": [8.46, 1.24, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 1.18, 8]},
+			"from": [7.49, 0.82, 7.49],
+			"to": [8.41, 0.94, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -105,9 +105,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 02",
-			"from": [7.54, 1.58, 7.54],
-			"to": [8.46, 1.7, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 1.64, 8]},
+			"from": [7.49, 1.28, 7.49],
+			"to": [8.41, 1.4, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -119,9 +119,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 03",
-			"from": [7.54, 2.04, 7.54],
-			"to": [8.46, 2.16, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 2.1, 8]},
+			"from": [7.49, 1.74, 7.49],
+			"to": [8.41, 1.86, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -133,9 +133,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 04",
-			"from": [7.54, 2.5, 7.54],
-			"to": [8.46, 2.62, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 2.56, 8]},
+			"from": [7.49, 2.2, 7.49],
+			"to": [8.41, 2.32, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -147,9 +147,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 05",
-			"from": [7.54, 2.96, 7.54],
-			"to": [8.46, 3.08, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3.02, 8]},
+			"from": [7.49, 2.66, 7.49],
+			"to": [8.41, 2.78, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -161,9 +161,9 @@
 		},
 		{
 			"name": "Raised alloy grip wrap 06",
-			"from": [7.54, 3.42, 7.54],
-			"to": [8.46, 3.54, 8.46],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3.48, 8]},
+			"from": [7.49, 3.12, 7.49],
+			"to": [8.41, 3.24, 8.41],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -175,9 +175,9 @@
 		},
 		{
 			"name": "Shaft core",
-			"from": [7.77, 3.78, 7.77],
-			"to": [8.23, 11.38, 8.23],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 7.58, 8]},
+			"from": [7.72, 3.48, 7.72],
+			"to": [8.18, 11.08, 8.18],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#5"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#5"},
@@ -189,10 +189,10 @@
 		},
 		{
 			"name": "Left shaft inlay",
-			"from": [7.7, 4, 7.69],
-			"to": [7.76, 10.95, 7.76],
+			"from": [7.65, 3.7, 7.64],
+			"to": [7.71, 10.65, 7.71],
 			"light_emission": 1,
-			"rotation": {"angle": 0, "axis": "y", "origin": [7.73, 7.475, 7.725]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.68, 0, 7.675]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -204,10 +204,10 @@
 		},
 		{
 			"name": "Right shaft inlay",
-			"from": [8.24, 4, 7.69],
-			"to": [8.3, 10.95, 7.76],
+			"from": [8.19, 3.7, 7.64],
+			"to": [8.25, 10.65, 7.71],
 			"light_emission": 1,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8.27, 7.475, 7.725]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [8.22, 0, 7.675]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -219,9 +219,9 @@
 		},
 		{
 			"name": "Shaft foot collar",
-			"from": [7.52, 3.72, 7.52],
-			"to": [8.48, 3.95, 8.48],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3.835, 8]},
+			"from": [7.47, 3.42, 7.47],
+			"to": [8.43, 3.65, 8.43],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -233,9 +233,9 @@
 		},
 		{
 			"name": "Shaft head collar",
-			"from": [7.48, 10.98, 7.48],
-			"to": [8.52, 11.22, 8.52],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 11.1, 8]},
+			"from": [7.43, 10.68, 7.43],
+			"to": [8.47, 10.92, 8.47],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -247,9 +247,9 @@
 		},
 		{
 			"name": "Guard bar",
-			"from": [6.65, 11.2, 7.58],
-			"to": [9.35, 11.58, 8.42],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 11.39, 8]},
+			"from": [6.6, 10.9, 7.53],
+			"to": [9.3, 11.28, 8.37],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -261,10 +261,10 @@
 		},
 		{
 			"name": "Guard center gem",
-			"from": [7.68, 11.16, 7.35],
-			"to": [8.32, 11.76, 7.6],
+			"from": [7.63, 10.86, 7.3],
+			"to": [8.27, 11.46, 7.55],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 11.46, 7.475]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.425]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -276,10 +276,10 @@
 		},
 		{
 			"name": "Left guard cap",
-			"from": [6.48, 11.13, 7.52],
-			"to": [6.82, 11.66, 8.48],
+			"from": [6.43, 10.83, 7.47],
+			"to": [6.77, 11.36, 8.43],
 			"light_emission": 1,
-			"rotation": {"angle": 0, "axis": "y", "origin": [6.65, 11.395, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [6.6, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -291,10 +291,10 @@
 		},
 		{
 			"name": "Right guard cap",
-			"from": [9.18, 11.13, 7.52],
-			"to": [9.52, 11.66, 8.48],
+			"from": [9.13, 10.83, 7.47],
+			"to": [9.47, 11.36, 8.43],
 			"light_emission": 1,
-			"rotation": {"angle": 0, "axis": "y", "origin": [9.35, 11.395, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [9.3, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -306,9 +306,9 @@
 		},
 		{
 			"name": "Blade socket",
-			"from": [7.52, 11.55, 7.52],
-			"to": [8.48, 12.24, 8.48],
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 11.895, 8]},
+			"from": [7.47, 11.25, 7.47],
+			"to": [8.43, 11.94, 8.43],
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -320,10 +320,10 @@
 		},
 		{
 			"name": "Bright star at blade base",
-			"from": [7.57, 11.87, 7.37],
-			"to": [8.43, 12.72, 7.62],
+			"from": [7.52, 11.57, 7.32],
+			"to": [8.38, 12.42, 7.57],
 			"light_emission": 3,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.295, 7.495]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.445]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -335,10 +335,10 @@
 		},
 		{
 			"name": "Star flare",
-			"from": [7.28, 12.12, 7.55],
-			"to": [8.72, 12.38, 8.45],
+			"from": [7.23, 11.82, 7.5],
+			"to": [8.67, 12.08, 8.4],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.25, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -350,10 +350,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 01",
-			"from": [7.68776, 12.25, 7.88],
-			"to": [8.31224, 12.35417, 8.12],
+			"from": [7.63776, 11.95, 7.83],
+			"to": [8.26224, 12.05417, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.30208, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 64, 1.77778], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -365,10 +365,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 02",
-			"from": [7.62327, 12.35417, 7.88],
-			"to": [8.37673, 12.45833, 8.12],
+			"from": [7.57327, 12.05417, 7.83],
+			"to": [8.32673, 12.15833, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.40625, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 1.77778, 64, 3.55556], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -380,10 +380,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 03",
-			"from": [7.55879, 12.45833, 7.88],
-			"to": [8.44121, 12.5625, 8.12],
+			"from": [7.50879, 12.15833, 7.83],
+			"to": [8.39121, 12.2625, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.51042, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 3.55556, 64, 5.33333], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -395,10 +395,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 04",
-			"from": [7.49431, 12.5625, 7.88],
-			"to": [8.50569, 12.66667, 8.12],
+			"from": [7.44431, 12.2625, 7.83],
+			"to": [8.45569, 12.36667, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.61458, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 5.33333, 64, 7.11111], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -410,10 +410,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 05",
-			"from": [7.42982, 12.66667, 7.88],
-			"to": [8.57018, 12.77083, 8.12],
+			"from": [7.37982, 12.36667, 7.83],
+			"to": [8.52018, 12.47083, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.71875, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 7.11111, 64, 8.88889], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -425,10 +425,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 06",
-			"from": [7.36534, 12.77083, 7.88],
-			"to": [8.63466, 12.875, 8.12],
+			"from": [7.31534, 12.47083, 7.83],
+			"to": [8.58466, 12.575, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.82292, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 8.88889, 64, 10.66667], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -440,10 +440,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 07",
-			"from": [7.30085, 12.875, 7.88],
-			"to": [8.69915, 12.97917, 8.12],
+			"from": [7.25085, 12.575, 7.83],
+			"to": [8.64915, 12.67917, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 12.92708, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 10.66667, 64, 12.44444], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -455,10 +455,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 08",
-			"from": [7.23637, 12.97917, 7.88],
-			"to": [8.76363, 13.08333, 8.12],
+			"from": [7.18637, 12.67917, 7.83],
+			"to": [8.71363, 12.78333, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.03125, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 12.44444, 64, 14.22222], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -470,10 +470,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 09",
-			"from": [7.17188, 13.08333, 7.88],
-			"to": [8.82812, 13.1875, 8.12],
+			"from": [7.12188, 12.78333, 7.83],
+			"to": [8.77812, 12.8875, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.13542, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 14.22222, 64, 16], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -485,10 +485,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 10",
-			"from": [7.1074, 13.1875, 7.88],
-			"to": [8.8926, 13.29167, 8.12],
+			"from": [7.0574, 12.8875, 7.83],
+			"to": [8.8426, 12.99167, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.23958, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 16, 64, 17.77778], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -500,10 +500,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 11",
-			"from": [7.08387, 13.29167, 7.88],
-			"to": [8.91613, 13.39583, 8.12],
+			"from": [7.03387, 12.99167, 7.83],
+			"to": [8.86613, 13.09583, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.34375, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 17.77778, 64, 19.55556], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -515,10 +515,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 12",
-			"from": [7.11698, 13.39583, 7.88],
-			"to": [8.88302, 13.5, 8.12],
+			"from": [7.06698, 13.09583, 7.83],
+			"to": [8.83302, 13.2, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.44792, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 19.55556, 64, 21.33333], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -530,10 +530,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 13",
-			"from": [7.15019, 13.5, 7.88],
-			"to": [8.84981, 13.60417, 8.12],
+			"from": [7.10019, 13.2, 7.83],
+			"to": [8.79981, 13.30417, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.55208, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 21.33333, 64, 23.11111], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -545,10 +545,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 14",
-			"from": [7.18352, 13.60417, 7.88],
-			"to": [8.81648, 13.70833, 8.12],
+			"from": [7.13352, 13.30417, 7.83],
+			"to": [8.76648, 13.40833, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.65625, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 23.11111, 64, 24.88889], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -560,10 +560,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 15",
-			"from": [7.21696, 13.70833, 7.88],
-			"to": [8.78304, 13.8125, 8.12],
+			"from": [7.16696, 13.40833, 7.83],
+			"to": [8.73304, 13.5125, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.76042, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 24.88889, 64, 26.66667], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -575,10 +575,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 16",
-			"from": [7.25053, 13.8125, 7.88],
-			"to": [8.74947, 13.91667, 8.12],
+			"from": [7.20053, 13.5125, 7.83],
+			"to": [8.69947, 13.61667, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.86458, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 26.66667, 64, 28.44444], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -590,10 +590,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 17",
-			"from": [7.28423, 13.91667, 7.88],
-			"to": [8.71577, 14.02083, 8.12],
+			"from": [7.23423, 13.61667, 7.83],
+			"to": [8.66577, 13.72083, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.96875, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 28.44444, 64, 30.22222], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -605,10 +605,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 18",
-			"from": [7.31807, 14.02083, 7.88],
-			"to": [8.68193, 14.125, 8.12],
+			"from": [7.26807, 13.72083, 7.83],
+			"to": [8.63193, 13.825, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.07292, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 30.22222, 64, 32], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -620,10 +620,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 19",
-			"from": [7.35206, 14.125, 7.88],
-			"to": [8.64794, 14.22917, 8.12],
+			"from": [7.30206, 13.825, 7.83],
+			"to": [8.59794, 13.92917, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.17708, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 32, 64, 33.77778], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -635,10 +635,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 20",
-			"from": [7.3862, 14.22917, 7.88],
-			"to": [8.6138, 14.33333, 8.12],
+			"from": [7.3362, 13.92917, 7.83],
+			"to": [8.5638, 14.03333, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.28125, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 33.77778, 64, 35.55556], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -650,10 +650,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 21",
-			"from": [7.42051, 14.33333, 7.88],
-			"to": [8.57949, 14.4375, 8.12],
+			"from": [7.37051, 14.03333, 7.83],
+			"to": [8.52949, 14.1375, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.38542, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 35.55556, 64, 37.33333], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -665,10 +665,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 22",
-			"from": [7.455, 14.4375, 7.88],
-			"to": [8.545, 14.54167, 8.12],
+			"from": [7.405, 14.1375, 7.83],
+			"to": [8.495, 14.24167, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.48958, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 37.33333, 64, 39.11111], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -680,10 +680,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 23",
-			"from": [7.48968, 14.54167, 7.88],
-			"to": [8.51032, 14.64583, 8.12],
+			"from": [7.43968, 14.24167, 7.83],
+			"to": [8.46032, 14.34583, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.59375, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 39.11111, 64, 40.88889], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -695,10 +695,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 24",
-			"from": [7.52456, 14.64583, 7.88],
-			"to": [8.47544, 14.75, 8.12],
+			"from": [7.47456, 14.34583, 7.83],
+			"to": [8.42544, 14.45, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.69792, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 40.88889, 64, 42.66667], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -710,10 +710,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 25",
-			"from": [7.55967, 14.75, 7.88],
-			"to": [8.44033, 14.85417, 8.12],
+			"from": [7.50967, 14.45, 7.83],
+			"to": [8.39033, 14.55417, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.80208, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 42.66667, 64, 44.44444], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -725,10 +725,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 26",
-			"from": [7.59502, 14.85417, 7.88],
-			"to": [8.40498, 14.95833, 8.12],
+			"from": [7.54502, 14.55417, 7.83],
+			"to": [8.35498, 14.65833, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 14.90625, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 44.44444, 64, 46.22222], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -740,10 +740,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 27",
-			"from": [7.63064, 14.95833, 7.88],
-			"to": [8.36936, 15.0625, 8.12],
+			"from": [7.58064, 14.65833, 7.83],
+			"to": [8.31936, 14.7625, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.01042, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 46.22222, 64, 48], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -755,10 +755,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 28",
-			"from": [7.66657, 15.0625, 7.88],
-			"to": [8.33343, 15.16667, 8.12],
+			"from": [7.61657, 14.7625, 7.83],
+			"to": [8.28343, 14.86667, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.11458, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 48, 64, 49.77778], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -770,10 +770,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 29",
-			"from": [7.70284, 15.16667, 7.88],
-			"to": [8.29716, 15.27083, 8.12],
+			"from": [7.65284, 14.86667, 7.83],
+			"to": [8.24716, 14.97083, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.21875, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 49.77778, 64, 51.55556], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -785,10 +785,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 30",
-			"from": [7.73949, 15.27083, 7.88],
-			"to": [8.26051, 15.375, 8.12],
+			"from": [7.68949, 14.97083, 7.83],
+			"to": [8.21051, 15.075, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.32292, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 51.55556, 64, 53.33333], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -800,10 +800,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 31",
-			"from": [7.77661, 15.375, 7.88],
-			"to": [8.22339, 15.47917, 8.12],
+			"from": [7.72661, 15.075, 7.83],
+			"to": [8.17339, 15.17917, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.42708, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 53.33333, 64, 55.11111], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -815,10 +815,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 32",
-			"from": [7.81426, 15.47917, 7.88],
-			"to": [8.18574, 15.58333, 8.12],
+			"from": [7.76426, 15.17917, 7.83],
+			"to": [8.13574, 15.28333, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.53125, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 55.11111, 64, 56.88889], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -830,10 +830,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 33",
-			"from": [7.85261, 15.58333, 7.88],
-			"to": [8.14739, 15.6875, 8.12],
+			"from": [7.80261, 15.28333, 7.83],
+			"to": [8.09739, 15.3875, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.63542, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 56.88889, 64, 58.66667], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -845,10 +845,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 34",
-			"from": [7.89185, 15.6875, 7.88],
-			"to": [8.10815, 15.79167, 8.12],
+			"from": [7.84185, 15.3875, 7.83],
+			"to": [8.05815, 15.49167, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.73958, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 58.66667, 64, 60.44444], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -860,10 +860,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 35",
-			"from": [7.9324, 15.79167, 7.88],
-			"to": [8.0676, 15.89583, 8.12],
+			"from": [7.8824, 15.49167, 7.83],
+			"to": [8.0176, 15.59583, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.84375, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 60.44444, 64, 62.22222], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -875,10 +875,10 @@
 		},
 		{
 			"name": "Continuous nebula blade 36",
-			"from": [7.9725, 15.89583, 7.88],
-			"to": [8.0275, 16, 8.12],
+			"from": [7.9225, 15.59583, 7.83],
+			"to": [7.9775, 15.7, 8.07],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 15.94792, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 62.22222, 64, 64], "texture": "#3"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -890,10 +890,10 @@
 		},
 		{
 			"name": "Animated nebula vein",
-			"from": [7.82, 12.48, 7.835],
-			"to": [8.18, 15.45, 7.885],
+			"from": [7.77, 12.18, 7.785],
+			"to": [8.13, 15.15, 7.835],
 			"light_emission": 3,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.98, 7.86]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 7.81]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 64], "texture": "#1"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -905,10 +905,10 @@
 		},
 		{
 			"name": "Animated nebula vein",
-			"from": [7.82, 12.48, 8.1],
-			"to": [8.18, 15.45, 8.15],
+			"from": [7.77, 12.18, 8.05],
+			"to": [8.13, 15.15, 8.1],
 			"light_emission": 3,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8, 13.98, 8.125]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [7.95, 0, 8.075]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 64], "texture": "#1"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#0"},
@@ -920,10 +920,10 @@
 		},
 		{
 			"name": "Left orbit accent",
-			"from": [6.92, 12.05, 7.38],
-			"to": [7.17, 12.44, 8.62],
+			"from": [6.87, 11.75, 7.33],
+			"to": [7.12, 12.14, 8.57],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [7.045, 12.245, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [6.995, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -935,10 +935,10 @@
 		},
 		{
 			"name": "Right orbit accent",
-			"from": [8.83, 12.05, 7.38],
-			"to": [9.08, 12.44, 8.62],
+			"from": [8.78, 11.75, 7.33],
+			"to": [9.03, 12.14, 8.57],
 			"light_emission": 2,
-			"rotation": {"angle": 0, "axis": "y", "origin": [8.955, 12.245, 8]},
+			"rotation": {"x": 0, "y": 90, "z": 0, "origin": [8.905, 0, 7.95]},
 			"faces": {
 				"north": {"uv": [0, 0, 16, 16], "texture": "#2"},
 				"east": {"uv": [0, 0, 16, 16], "texture": "#2"},
@@ -952,27 +952,36 @@
 	"gui_light": "front",
 	"display": {
 		"thirdperson_righthand": {
-			"rotation": [16.75, -90, 0],
-			"translation": [0, 2, 2.75],
-			"scale": [1.87, 1.87, 1.3]
+			"translation": [0, 4, 2.75],
+			"scale": [1.9, 1.9, 1.3]
 		},
 		"thirdperson_lefthand": {
-			"rotation": [0.75, 90, 0],
-			"translation": [0, 0, 1.25],
-			"scale": [1.96, 1.9, 1.96]
+			"translation": [0, 4, 2.75],
+			"scale": [1.9, 1.9, 1.3]
 		},
 		"firstperson_righthand": {
-			"rotation": [0, -90, 25],
+			"rotation": [-25, 0, 0],
 			"translation": [1.13, 3.2, 1.13],
 			"scale": [0.96, 0.91, 0.96]
 		},
 		"firstperson_lefthand": {
-			"rotation": [0, 90, -25],
+			"rotation": [-25, 0, 0],
 			"translation": [1.13, 3.2, 1.13],
 			"scale": [1.04, 0.98, 0.94]
 		},
+		"ground": {
+			"rotation": [-51, 0, 0],
+			"translation": [0, 2, 0]
+		},
 		"gui": {
-			"rotation": [0, 0, -47.25]
+			"rotation": [90, 65, -90]
+		},
+		"fixed": {
+			"rotation": [-90, 60, 90]
+		},
+		"on_shelf": {
+			"rotation": [0, 90, 0],
+			"translation": [0, 0, -0.75]
 		}
 	},
 	"groups": [
