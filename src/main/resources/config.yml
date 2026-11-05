@@ -1,5 +1,22 @@
 example-message: "Hello, world!"
 
+# Sends the newest GitHub release's resource pack (ZIP + SHA-1 sidecar) to players automatically.
+# Leave resource-pack and resource-pack-sha1 blank in server.properties when this is enabled.
+resource-pack:
+  enabled: true
+  repository: "Coaxgames/SMP-Plugin"
+  check-interval-minutes: 10
+  required: true
+  prompt: "Galaxy SMP needs its resource pack to show custom items."
+
+# When a newer GitHub release exists, the plugin downloads its jar into the server's update folder,
+# announces a countdown, then runs restart-command (the host's /restart; a leading slash is optional).
+update:
+  enabled: true
+  check-interval-minutes: 30
+  restart-delay-minutes: 10
+  restart-command: "restart"
+
 cooldowns:
   default-seconds: 0
   star_mace: 30

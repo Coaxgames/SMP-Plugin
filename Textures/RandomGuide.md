@@ -20,14 +20,9 @@ The pack uses Minecraft 26.3's item-definition/model format and registers its cu
 
 ## Configure server delivery
 
-After a release, download the ZIP and its matching `.zip.sha1` sidecar from the GitHub Release. Use the ZIP's direct HTTPS download URL and the sidecar's plain 40-character hexadecimal digest in `server.properties`:
+The plugin sends the pack by itself. On startup, and every `resource-pack.check-interval-minutes` (default 10), it reads the newest GitHub Release, downloads the `galaxy-smp-resource-pack-<version>.zip.sha1` sidecar, and sends the matching ZIP to players on join. When a new release changes the SHA-1, it re-sends the pack to everyone online. The pack is required by default, so players who decline are disconnected. Nothing needs restarting for a new pack; only a new plugin jar does.
 
-```properties
-resource-pack=https://github.com/Coaxgames/SMP-Plugin/releases/download/<version>/galaxy-smp-resource-pack-<version>.zip
-resource-pack-sha1=<sha1-from-the-sidecar>
-```
-
-Restart the server. Minecraft offers the pack to players, who must accept it to see the custom models. The release asset is not automatically hosted or configured on a running Minecraft server.
+Leave `resource-pack` and `resource-pack-sha1` blank in `server.properties` so the server does not send a second, older pack. Settings live under `resource-pack:` in the plugin's `config.yml` (`enabled`, `repository`, `check-interval-minutes`, `required`, `prompt`). The server needs outbound HTTPS access to `api.github.com` and `github.com`, and the repository must stay public.
 
 ## Blockbench flipbook animations
 
