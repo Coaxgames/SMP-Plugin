@@ -9,6 +9,14 @@ resource-pack:
   required: true
   prompt: "Galaxy SMP needs its resource pack to show custom items."
 
+# When a newer GitHub release exists, the plugin downloads its jar into the server's update folder,
+# announces a countdown, then runs restart-command (the host's /restart; a leading slash is optional).
+update:
+  enabled: true
+  check-interval-minutes: 30
+  restart-delay-minutes: 10
+  restart-command: "restart"
+
 cooldowns:
   default-seconds: 0
   star_mace: 30

@@ -32,7 +32,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private PhaseFourAbilityListener phaseFourAbilityListener;
     private PhaseFiveMaceAbilityListener phaseFiveMaceAbilityListener;
     private PhaseFiveAbilityListener phaseFiveAbilityListener;
-
+    private com.coaxgames.smp.pack.PluginUpdateService pluginUpdates;
     @Override
     public void onEnable() {
         requireHeadDrop();
@@ -86,6 +86,8 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
         new com.coaxgames.smp.pack.ResourcePackService(this).start();
+        pluginUpdates = new com.coaxgames.smp.pack.PluginUpdateService(this);
+        pluginUpdates.start();
     }
 
     private void migrateDefaultRitualDuration() {
@@ -100,6 +102,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (pluginUpdates != null) {
+            pluginUpdates.shutdown();
+        }
         if (phaseFiveAbilityListener != null) {
             phaseFiveAbilityListener.shutdown();
         }
