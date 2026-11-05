@@ -33,7 +33,11 @@ public final class ReclaimableItemService {
         String itemId = plugin.getLegendaryItems().identify(stack).map(definition -> definition.id()).orElse(null);
         UUID itemUuid = plugin.getLegendaryItems().getUniqueId(stack).orElse(null);
         if (itemId == null || itemUuid == null || plugin.getDataStore().getTrackedItem(itemUuid) == null) {
-            plugin.getLogger().severe("Cannot recover untracked or unidentified legendary drop; leaving it in the world.");
+            org.bukkit.Location at = entity.getLocation();
+            plugin.getLogger().severe("Cannot recover untracked legendary drop " + (itemId == null ? "(unidentified)" : itemId)
+                    + " uuid=" + (itemUuid == null ? "none" : itemUuid)
+                    + " at " + at.getWorld().getName() + " " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
+                    + "; leaving it in the world.");
             return false;
         }
 

@@ -399,8 +399,9 @@ FIRST_PERSON_MAIN_HAND = {
     model_id: {**MAIN_HAND_VANILLA, "scale": list(transform["scale"])}
     for model_id, transform in FIRST_PERSON_OVERRIDES.items()
 }
-# The wide mace heads sit behind the camera with the vanilla depth. The Astral Sword, which is
-# visible in the main hand, pushes the item about 10 units along +z, so the maces do the same.
+FIRST_PERSON_MAIN_HAND_ONLY = {"astral_sword": [0.9, 0.9, 0.9]}
+# The wide mace heads sit behind the camera with the vanilla depth, so the maces push the item
+# about 10 units along +z.
 for _mace in ("star_mace", "collapsing_star_mace"):
     FIRST_PERSON_MAIN_HAND[_mace]["translation"] = [1.13, 3.2, 10]
 
@@ -551,6 +552,12 @@ def main(source_dir, output_dir):
                 key: list(value) for key, value in FIRST_PERSON_MAIN_HAND[model_id].items()
             }
             displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
+        if model_id in FIRST_PERSON_MAIN_HAND_ONLY:
+            # The authored 10-unit z push puts the blade behind the camera in the main hand.
+            output_model.setdefault("display", {})["firstperson_righthand"] = {
+                **MAIN_HAND_VANILLA,
+                "scale": list(FIRST_PERSON_MAIN_HAND_ONLY[model_id]),
+            }
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.
