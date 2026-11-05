@@ -155,7 +155,13 @@ public final class PluginUpdateService implements CommandExecutor {
                 String command = plugin.getConfig().getString("update.restart-command", "restart").replaceFirst("^/", "");
                 plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command);
             } else if (ANNOUNCE_SECONDS.contains(seconds)) {
-                plugin.getServer().broadcast(Component.text("Galaxy SMP " + version + " is ready. The server restarts in " + describe(seconds) + "."));
+                Component message = Component.text("Galaxy SMP " + version + " is ready. The server restarts in " + describe(seconds) + ".");
+                plugin.getServer().broadcast(message);
+                if (seconds == 120 || seconds == 30) {
+                    plugin.getServer().showTitle(net.kyori.adventure.title.Title.title(
+                            Component.text("Server restarting", net.kyori.adventure.text.format.NamedTextColor.RED),
+                            Component.text("in " + describe(seconds) + " to install Galaxy SMP " + version)));
+                }
             }
         }, 0L, 20L);
     }

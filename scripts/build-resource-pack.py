@@ -158,6 +158,39 @@ def resource_location(texture, model_id):
     return f"galaxy:item/{model_id}/{texture}"
 
 
+def split_shared_texture_ids(exported, source_model):
+    """Blockbench's JSON export gives textures that share an id one key, so every face gets the last one.
+
+    Faces that use such a texture are re-pointed at their own texture using the .bbmodel's per-face
+    texture index; elements are matched by name and box."""
+    textures = source_model.get("textures", [])
+    counts = {}
+    for texture in textures:
+        counts[texture.get("id")] = counts.get(texture.get("id"), 0) + 1
+    shared = {key for key, count in counts.items() if count > 1}
+    if not shared:
+        return
+    by_element = {
+        (element.get("name"), tuple(element["from"]), tuple(element["to"])): element
+        for element in source_model.get("elements", [])
+    }
+    exported_textures = exported.setdefault("textures", {})
+    for element in exported.get("elements", []):
+        source = by_element.get((element.get("name"), tuple(element["from"]), tuple(element["to"])))
+        if source is None:
+            continue
+        for name, face in element.get("faces", {}).items():
+            index = source.get("faces", {}).get(name, {}).get("texture")
+            if not isinstance(index, int) or index >= len(textures):
+                continue
+            texture = textures[index]
+            if texture.get("id") not in shared:
+                continue
+            key = "tex_" + re.sub(r"[^a-z0-9_]+", "_", slug(texture["name"]))
+            exported_textures[key] = texture["name"]
+            face["texture"] = "#" + key
+
+
 def rewrite_exported_model(model_path, exported, textures_by_name, model_id, loose_textures=None):
     old_textures = exported.get("textures", {})
     new_textures = {}
@@ -496,6 +529,7 @@ def main(source_dir, output_dir):
             models_without_exports.append(source_path.relative_to(source_dir).as_posix())
             continue
         exported = read_json(exported_path)
+        split_shared_texture_ids(exported, source_model)
         undefined = {
             face["texture"][1:]
             for element in exported.get("elements", [])
