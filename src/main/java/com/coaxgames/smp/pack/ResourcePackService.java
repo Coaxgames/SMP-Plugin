@@ -53,7 +53,7 @@ public final class ResourcePackService implements Listener {
         required = config.getBoolean("resource-pack.required", true);
         prompt = Component.text(config.getString("resource-pack.prompt", "Galaxy SMP needs its resource pack to show custom items."));
         String repository = config.getString("resource-pack.repository", "Coaxgames/SMP-Plugin");
-        long intervalTicks = Math.max(1L, config.getLong("resource-pack.check-interval-minutes", 10L)) * 60L * 20L;
+        long intervalTicks = Math.max(1L, config.getLong("resource-pack.check-interval-minutes", 5L)) * 60L * 20L;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> refresh(repository), 0L, intervalTicks);
     }
@@ -73,6 +73,7 @@ public final class ResourcePackService implements Listener {
         try {
             Pack latest = fetchLatest(repository);
             if (latest.equals(current)) {
+                plugin.getLogger().info("[ResourcePack] Pack unchanged (SHA-1 " + latest.sha1() + ").");
                 return;
             }
             current = latest;
@@ -102,10 +103,18 @@ public final class ResourcePackService implements Listener {
                 .header("User-Agent", "GalaxySMP-ResourcePack")
                 .header("Accept", "application/vnd.github+json, text/plain, */*")
                 .build();
-        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response;
+        try {
+            response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception exception) {
+            plugin.getLogger().warning("[ResourcePack] GET " + url + " failed: " + exception);
+            throw exception;
+        }
         if (response.statusCode() != 200) {
+            plugin.getLogger().warning("[ResourcePack] GET " + url + " returned HTTP " + response.statusCode() + ".");
             throw new IllegalStateException("HTTP " + response.statusCode() + " from " + url);
         }
+        plugin.getLogger().info("[ResourcePack] GET " + url + " returned HTTP 200.");
         return response.body();
     }
 

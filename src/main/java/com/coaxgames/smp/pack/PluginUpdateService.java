@@ -15,13 +15,16 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Checks GitHub for a newer plugin release. When one exists it downloads the jar into the server's update
  * folder (Paper swaps it in on the next start) and restarts the server after a public countdown.
  */
-public final class PluginUpdateService {
+public final class PluginUpdateService implements CommandExecutor {
     private static final Pattern TAG = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern ASSET_URL = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Set<Integer> ANNOUNCE_SECONDS = Set.of(600, 300, 120, 60, 30, 10, 5, 4, 3, 2, 1);
@@ -41,10 +44,13 @@ public final class PluginUpdateService {
     public void start() {
         var config = plugin.getConfig();
         if (!config.getBoolean("update.enabled", true)) {
+            plugin.getLogger().info("[Update] Auto-update is disabled (update.enabled: false).");
             return;
         }
         String repository = config.getString("resource-pack.repository", "Coaxgames/SMP-Plugin");
-        long intervalTicks = Math.max(1L, config.getLong("update.check-interval-minutes", 30L)) * 60L * 20L;
+        long intervalTicks = Math.max(1L, config.getLong("update.check-interval-minutes", 5L)) * 60L * 20L;
+        plugin.getLogger().info("[Update] Installed version " + plugin.getPluginMeta().getVersion() + "; checking "
+                + repository + " in 1 minute, then every " + intervalTicks / 1200L + " minutes.");
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> check(repository), 20L * 60L, intervalTicks);
     }
 
@@ -56,26 +62,58 @@ public final class PluginUpdateService {
 
     private void check(String repository) {
         if (restartScheduled) {
+            plugin.getLogger().info("[Update] Skipping check; a restart countdown is already running.");
             return;
         }
+        check(repository, null);
+    }
+
+    private void check(String repository, CommandSender requester) {
+        plugin.getLogger().info("[Update] Checking for a new release (installed " + plugin.getPluginMeta().getVersion() + ").");
         try {
             String release = get("https://api.github.com/repos/" + repository + "/releases/latest");
             Matcher tag = TAG.matcher(release);
             if (!tag.find()) {
+                plugin.getLogger().warning("[Update] The release response had no tag_name.");
+                reply(requester, "Could not read the latest release version.");
                 return;
             }
             String latest = tag.group(1);
             String installed = plugin.getPluginMeta().getVersion();
             if (compareVersions(latest, installed) <= 0) {
+                plugin.getLogger().info("[Update] Up to date: latest release " + latest + ", installed " + installed + ".");
+                reply(requester, "Galaxy SMP is up to date (" + installed + ").");
                 return;
             }
+            plugin.getLogger().info("[Update] Newer release found: " + latest + " (installed " + installed + ").");
             String jarUrl = findJarUrl(release).orElseThrow(() -> new IllegalStateException("Release " + latest + " has no plugin jar."));
             stage(jarUrl);
             plugin.getLogger().info("Plugin " + latest + " is staged in the update folder (installed: " + installed + ").");
+            reply(requester, "Found " + latest + " (installed " + installed + "). Restart countdown started.");
             plugin.getServer().getScheduler().runTask(plugin, () -> scheduleRestart(latest));
         } catch (Exception exception) {
             plugin.getLogger().log(Level.WARNING, "Could not check for a plugin update.", exception);
+            reply(requester, "The update check failed. See the server log.");
         }
+    }
+
+    private void reply(CommandSender requester, String message) {
+        if (requester != null) {
+            requester.sendMessage(Component.text(message));
+        }
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (countdown != null) {
+            countdown.cancel();
+            countdown = null;
+        }
+        restartScheduled = false;
+        sender.sendMessage(Component.text("Checking for a Galaxy SMP update..."));
+        String repository = plugin.getConfig().getString("resource-pack.repository", "Coaxgames/SMP-Plugin");
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> check(repository, sender));
+        return true;
     }
 
     private void stage(String jarUrl) throws Exception {
@@ -92,8 +130,10 @@ public final class PluginUpdateService {
         HttpResponse<Path> response = http.send(request, HttpResponse.BodyHandlers.ofFile(temp));
         if (response.statusCode() != 200 || !looksLikeJar(temp)) {
             Files.deleteIfExists(temp);
+            plugin.getLogger().warning("[Update] Jar download from " + jarUrl + " failed (HTTP " + response.statusCode() + ").");
             throw new IllegalStateException("Plugin jar download failed (HTTP " + response.statusCode() + ").");
         }
+        plugin.getLogger().info("[Update] Downloaded " + jarUrl + " to " + target + ".");
         Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -126,11 +166,26 @@ public final class PluginUpdateService {
                 .header("User-Agent", "GalaxySMP-Updater")
                 .header("Accept", "application/vnd.github+json")
                 .build();
-        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response;
+        try {
+            response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception exception) {
+            plugin.getLogger().warning("[Update] GET " + url + " failed: " + exception);
+            throw exception;
+        }
         if (response.statusCode() != 200) {
+            plugin.getLogger().warning("[Update] GET " + url + " returned HTTP " + response.statusCode()
+                    + (response.statusCode() == 403 || response.statusCode() == 429 ? " (likely GitHub rate limiting)" : "")
+                    + ": " + abbreviate(response.body()));
             throw new IllegalStateException("HTTP " + response.statusCode() + " from " + url);
         }
+        plugin.getLogger().info("[Update] GET " + url + " returned HTTP 200 (" + response.body().length() + " bytes).");
         return response.body();
+    }
+
+    private static String abbreviate(String body) {
+        String flat = body == null ? "" : body.replaceAll("\\s+", " ");
+        return flat.length() > 200 ? flat.substring(0, 200) + "..." : flat;
     }
 
     private static boolean looksLikeJar(Path file) throws java.io.IOException {

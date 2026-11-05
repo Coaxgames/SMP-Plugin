@@ -10,6 +10,10 @@ commands:
     description: Manage Galaxy SMP legendary items.
     usage: /galaxy <give|reset|reset-abilities|list|locate|find>
     permission: galaxy.admin
+  checkforupdate:
+    description: Cancel any pending update restart, then check for a new plugin release.
+    usage: /checkforupdate
+    permission: galaxy.admin
 permissions:
   galaxy.admin:
     description: Allows administering Galaxy SMP legendary items.
