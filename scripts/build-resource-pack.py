@@ -399,7 +399,11 @@ FIRST_PERSON_MAIN_HAND = {
     model_id: {**MAIN_HAND_VANILLA, "scale": list(transform["scale"])}
     for model_id, transform in FIRST_PERSON_OVERRIDES.items()
 }
-FIRST_PERSON_MAIN_HAND_ONLY = {"astral_sword": [0.9, 0.9, 0.9]}
+# Test: astral_sword_RotFix.bbmodel/.json replace astral_sword and are used with no display overrides.
+MODEL_ALIASES = {"astral_sword_rotfix": "astral_sword"}
+SUPERSEDED_MODELS = {"astral_sword"}
+# Blockbench y/z kept for the Collapsing Star Mace; x stays at the vanilla value for left-right placement.
+FIRST_PERSON_MAIN_HAND["collapsing_star_mace"]["translation"] = [1.13, -0.25, 2.75]
 
 
 def main(source_dir, output_dir):
@@ -458,12 +462,13 @@ def main(source_dir, output_dir):
     model_sources = sorted(
         path for path in source_dir.rglob("*.bbmodel")
         if pack_assets_dir not in path.parents
+        and slug(path.relative_to(source_dir).as_posix()) not in SUPERSEDED_MODELS
     )
     if not model_sources:
         fail(f"No Blockbench models found in {source_dir}.")
 
     item_ids = {
-        slug(path.relative_to(source_dir).as_posix())
+        MODEL_ALIASES.get(slug(path.relative_to(source_dir).as_posix()), slug(path.relative_to(source_dir).as_posix()))
         for pattern in ("*.bbmodel", "*.json")
         for path in source_dir.rglob(pattern)
         if pack_assets_dir not in path.parents
@@ -510,6 +515,7 @@ def main(source_dir, output_dir):
     models_without_exports = []
     for source_path in model_sources:
         model_id = slug(source_path.relative_to(source_dir).as_posix())
+        model_id = MODEL_ALIASES.get(model_id, model_id)
         if model_id in models_found:
             fail(f"More than one source file maps to item model id {model_id!r}.")
         source_model = read_json(source_path)
@@ -548,12 +554,6 @@ def main(source_dir, output_dir):
                 key: list(value) for key, value in FIRST_PERSON_MAIN_HAND[model_id].items()
             }
             displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
-        if model_id in FIRST_PERSON_MAIN_HAND_ONLY:
-            # The authored 10-unit z push puts the blade behind the camera in the main hand.
-            output_model.setdefault("display", {})["firstperson_righthand"] = {
-                **MAIN_HAND_VANILLA,
-                "scale": list(FIRST_PERSON_MAIN_HAND_ONLY[model_id]),
-            }
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.
@@ -604,7 +604,8 @@ def main(source_dir, output_dir):
 
     bbmodel_exports = {
         source.with_suffix(".json").resolve()
-        for source in model_sources
+        for source in source_dir.rglob("*.bbmodel")
+        if pack_assets_dir not in source.parents
     }
     for exported_path in sorted(source_dir.rglob("*.json")):
         if pack_assets_dir in exported_path.parents:
