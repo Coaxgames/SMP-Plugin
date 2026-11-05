@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import json
 import re
 import shutil
@@ -365,45 +365,9 @@ def write_boots_equipment(output_dir):
     (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
-FIRST_PERSON_OVERRIDES = {
-    # Off-hand poses (confirmed visible in game).
-    "star_mace": {
-        "rotation": [-122.04, -89, -101],
-        "translation": [1.75, -0.25, 2.75],
-        "scale": [0.9, 0.9, 0.9],
-    },
-    "collapsing_star_mace": {
-        "rotation": [-122.04, -89, -101],
-        "translation": [1.75, -0.25, 2.75],
-        "scale": [0.9, 0.9, 0.9],
-    },
-    "cosmic_crown": {
-        "rotation": [-180, -149, 180],
-        "translation": [0, 3.75, 0],
-        "scale": [0.9, 0.9, 0.9],
-    },
-    "singularity_boots": {
-        "rotation": [0, 82, 0],
-        "translation": [3.5, 3.25, 0],
-        "scale": [0.5, 0.5, 0.5],
-    },
-}
-
-# Main-hand poses use the vanilla handheld layout (the same one the visible spear uses),
-# since the off-hand values above do not show up in the main hand.
-MAIN_HAND_VANILLA = {
-    "rotation": [0, -90, 25],
-    "translation": [1.13, 3.2, 1.13],
-}
-FIRST_PERSON_MAIN_HAND = {
-    model_id: {**MAIN_HAND_VANILLA, "scale": list(transform["scale"])}
-    for model_id, transform in FIRST_PERSON_OVERRIDES.items()
-}
-# Test: astral_sword_RotFix.bbmodel/.json replace astral_sword and are used with no display overrides.
+# Astral Sword: astral_sword_RotFix.bbmodel/.json replace astral_sword.
 MODEL_ALIASES = {"astral_sword_rotfix": "astral_sword"}
 SUPERSEDED_MODELS = {"astral_sword"}
-# Blockbench y/z kept for the Collapsing Star Mace; x stays at the vanilla value for left-right placement.
-FIRST_PERSON_MAIN_HAND["collapsing_star_mace"]["translation"] = [1.13, -0.25, 2.75]
 
 
 def main(source_dir, output_dir):
@@ -546,14 +510,6 @@ def main(source_dir, output_dir):
         )
         if model_id.startswith("celestial_bow_pulling_"):
             compensate_drawn_arm(output_model)
-        if model_id in FIRST_PERSON_OVERRIDES:
-            # The authored first-person values push these models out of view.
-            displays = output_model.setdefault("display", {})
-            transform = FIRST_PERSON_OVERRIDES[model_id]
-            displays["firstperson_righthand"] = {
-                key: list(value) for key, value in FIRST_PERSON_MAIN_HAND[model_id].items()
-            }
-            displays["firstperson_lefthand"] = {key: list(value) for key, value in transform.items()}
         shield_blocking = None
         if model_id == "nova_shield" and source_model.get("display"):
             # The shield's display values are authored in the .bbmodel; its .json export can be stale.
