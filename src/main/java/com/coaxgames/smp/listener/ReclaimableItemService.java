@@ -22,10 +22,37 @@ import org.bukkit.persistence.PersistentDataType;
 public final class ReclaimableItemService {
     private final GalaxySmpPlugin plugin;
     private final NamespacedKey itemUuidKey;
+    private final java.util.Map<UUID, LoggedItem> loggedItems = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** An unrecoverable legendary drop, keyed by its item UUID (or entity UUID when it has none). */
+    public record LoggedItem(String name, String itemId, org.bukkit.Location location) {
+    }
+
+    public java.util.Map<UUID, LoggedItem> getLoggedItems() {
+        return java.util.Collections.unmodifiableMap(loggedItems);
+    }
 
     public ReclaimableItemService(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         itemUuidKey = new NamespacedKey(plugin, "reclaim-item-uuid");
+    }
+
+    private void notifyAdmins(UUID key, String itemId, org.bukkit.Location at) {
+        String command = "/galaxy find item " + key;
+        net.kyori.adventure.text.Component message = net.kyori.adventure.text.Component.text(
+                        "Untracked legendary drop " + (itemId == null ? "(unidentified)" : itemId) + " at "
+                                + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ() + " in " + at.getWorld().getName() + ". ",
+                        net.kyori.adventure.text.format.NamedTextColor.RED)
+                .append(net.kyori.adventure.text.Component.text("[Click to teleport and view]",
+                                net.kyori.adventure.text.format.NamedTextColor.AQUA)
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(command))
+                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                net.kyori.adventure.text.Component.text(command))));
+        for (var player : plugin.getServer().getOnlinePlayers()) {
+            if (player.hasPermission("galaxy.admin")) {
+                player.sendMessage(message);
+            }
+        }
     }
 
     boolean returnToReclaimBlock(Item entity) {
@@ -34,10 +61,20 @@ public final class ReclaimableItemService {
         UUID itemUuid = plugin.getLegendaryItems().getUniqueId(stack).orElse(null);
         if (itemId == null || itemUuid == null || plugin.getDataStore().getTrackedItem(itemUuid) == null) {
             org.bukkit.Location at = entity.getLocation();
-            plugin.getLogger().severe("Cannot recover untracked legendary drop " + (itemId == null ? "(unidentified)" : itemId)
-                    + " uuid=" + (itemUuid == null ? "none" : itemUuid)
+            plugin.getLogger().severe("Cannot recover untracked legendary drop \""
+                    + net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(stack.effectiveName())
+                    + "\" id=" + (itemId == null ? "(unidentified)" : itemId)
+                    + " item-uuid=" + (itemUuid == null ? "none" : itemUuid)
+                    + " entity-uuid=" + entity.getUniqueId()
                     + " at " + at.getWorld().getName() + " " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ()
                     + "; leaving it in the world.");
+            UUID key = itemUuid != null ? itemUuid : entity.getUniqueId();
+            String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(stack.effectiveName());
+            // A repeat sighting only updates the stored position; admins are pinged the first time.
+            if (loggedItems.put(key, new LoggedItem(name, itemId, at.clone())) == null) {
+                notifyAdmins(key, itemId, at);
+            }
             return false;
         }
 

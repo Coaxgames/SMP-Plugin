@@ -70,7 +70,7 @@ public final class LegendaryRulesListener implements Listener {
     public LegendaryRulesListener(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         items = plugin.getLegendaryItems();
-        reclaim = new ReclaimableItemService(plugin);
+        reclaim = plugin.getReclaimableItems();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

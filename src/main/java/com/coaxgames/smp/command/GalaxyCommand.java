@@ -50,6 +50,7 @@ public final class GalaxyCommand implements TabExecutor {
                 case "reset-abilities" -> resetAbilities(sender, label, args);
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
+                case "find" -> find(sender, label, args);
                 default -> sendUsage(sender, label);
             }
         } catch (IOException exception) {
@@ -70,8 +71,15 @@ public final class GalaxyCommand implements TabExecutor {
             return List.of();
         }
         if (args.length == 1) {
-            return matching(List.of("give", "reset", "reset-abilities", "list", "locate"), args[0]);
+            return matching(List.of("give", "reset", "reset-abilities", "list",             "locate", "find"), args[0]);
         }
+                    if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
+                        return matching(List.of("item"), args[1]);
+                    }
+                    if (args.length == 3 && args[0].equalsIgnoreCase("find") && args[1].equalsIgnoreCase("item")) {
+                        return matching(plugin.getReclaimableItems().getLoggedItems().keySet().stream()
+                                .map(UUID::toString).toList(), args[2]);
+                    }
         if (args.length == 2 && args[0].equalsIgnoreCase("reset-abilities")) {
             List<String> targets = new ArrayList<>(List.of("@s", "@p", "@a"));
             targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
@@ -235,6 +243,49 @@ public final class GalaxyCommand implements TabExecutor {
         }
     }
 
+    private void find(CommandSender sender, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("Only a player can teleport to an item."));
+            return;
+        }
+        if (args.length != 3 || !args[1].equalsIgnoreCase("item")) {
+            sender.sendMessage(Component.text("Usage: /" + label + " find item <uuid>"));
+            return;
+        }
+        UUID key;
+        try {
+            key = UUID.fromString(args[2]);
+        } catch (IllegalArgumentException exception) {
+            sender.sendMessage(Component.text("That is not a valid UUID."));
+            return;
+        }
+        var logged = plugin.getReclaimableItems().getLoggedItems().get(key);
+        if (logged == null || logged.location().getWorld() == null) {
+            sender.sendMessage(Component.text("No logged item with UUID " + key + "."));
+            return;
+        }
+        org.bukkit.Location item = logged.location();
+        org.bukkit.World world = item.getWorld();
+        org.bukkit.Location view = inspectionPoint(item);
+        view.setDirection(item.toVector().subtract(view.toVector()));
+        player.teleportAsync(view).thenAccept(success -> player.sendMessage(Component.text(success
+                ? String.format(java.util.Locale.ROOT, "Viewing %s (%s) last seen at %.1f, %.1f, %.1f in %s.",
+                        logged.name(), logged.itemId() == null ? "unidentified" : logged.itemId(),
+                        item.getX(), item.getY(), item.getZ(), world.getName())
+                : "The teleport was cancelled.")));
+    }
+
+    /** A spot a few blocks above and to the side of the item, falling back to straight above if that is blocked. */
+    private org.bukkit.Location inspectionPoint(org.bukkit.Location item) {
+        org.bukkit.Location above = item.clone().add(0, 4, 0);
+        org.bukkit.Location side = item.clone().add(3, 4, 3);
+        return isClear(side) ? side : above;
+    }
+
+    private boolean isClear(org.bukkit.Location location) {
+        return location.getBlock().isPassable() && location.clone().add(0, 1, 0).getBlock().isPassable();
+    }
+
     private String playerName(UUID playerUuid) {
         if (playerUuid == null) {
             return "unknown";
@@ -257,6 +308,6 @@ public final class GalaxyCommand implements TabExecutor {
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
                 + " give <player> <item> | reset <item> | reset-abilities <player|selector>"
-                + " | list | locate <item>"));
+                + " | list | locate <item> | find item <uuid>"));
     }
 }
