@@ -400,10 +400,6 @@ FIRST_PERSON_MAIN_HAND = {
     for model_id, transform in FIRST_PERSON_OVERRIDES.items()
 }
 FIRST_PERSON_MAIN_HAND_ONLY = {"astral_sword": [0.9, 0.9, 0.9]}
-# The wide mace heads sit behind the camera with the vanilla depth, so the maces push the item
-# about 10 units along +z.
-for _mace in ("star_mace", "collapsing_star_mace"):
-    FIRST_PERSON_MAIN_HAND[_mace]["translation"] = [1.13, 3.2, 10]
 
 
 def main(source_dir, output_dir):
