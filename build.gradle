@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.coaxgames.smp'
-version = '2.22.12'
+version = '2.22.13'
 repositories {
     maven {
         url = 'https://repo.papermc.io/repository/maven-public/'
