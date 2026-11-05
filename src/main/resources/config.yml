@@ -5,7 +5,7 @@ example-message: "Hello, world!"
 resource-pack:
   enabled: true
   repository: "Coaxgames/SMP-Plugin"
-  check-interval-minutes: 10
+  check-interval-minutes: 5
   required: true
   prompt: "Galaxy SMP needs its resource pack to show custom items."
 
@@ -13,7 +13,7 @@ resource-pack:
 # announces a countdown, then runs restart-command (the host's /restart; a leading slash is optional).
 update:
   enabled: true
-  check-interval-minutes: 30
+  check-interval-minutes: 5
   restart-delay-minutes: 10
   restart-command: "restart"
 

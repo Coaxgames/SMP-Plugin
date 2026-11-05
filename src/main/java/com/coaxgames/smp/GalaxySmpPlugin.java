@@ -94,6 +94,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         new com.coaxgames.smp.pack.ResourcePackService(this).start();
         pluginUpdates = new com.coaxgames.smp.pack.PluginUpdateService(this);
         pluginUpdates.start();
+        if (getCommand("checkforupdate") != null) {
+            getCommand("checkforupdate").setExecutor(pluginUpdates);
+        }
     }
 
     private void migrateDefaultRitualDuration() {
