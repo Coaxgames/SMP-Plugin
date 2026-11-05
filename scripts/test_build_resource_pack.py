@@ -11,6 +11,36 @@ rewrite_exported_model = MODULE.rewrite_exported_model
 build_shield_blocking = MODULE.build_shield_blocking
 align_shield_offhand = MODULE.align_shield_offhand
 copy_pack_assets = MODULE.copy_pack_assets
+split_shared_texture_ids = MODULE.split_shared_texture_ids
+
+
+class SplitSharedTextureIdsTests(unittest.TestCase):
+    def test_faces_keep_their_own_texture_when_ids_are_shared(self):
+        source = {
+            "textures": [
+                {"id": "spike", "name": "gold.png"},
+                {"id": "spike", "name": "midnight.png"},
+                {"id": "4", "name": "swirl.png"},
+            ],
+            "elements": [
+                {"name": "a", "from": [0, 0, 0], "to": [1, 1, 1],
+                 "faces": {"north": {"texture": 0}, "south": {"texture": 1}, "east": {"texture": 2}}},
+            ],
+        }
+        exported = {
+            "textures": {"spike": "midnight", "4": "swirl"},
+            "elements": [
+                {"name": "a", "from": [0, 0, 0], "to": [1, 1, 1],
+                 "faces": {"north": {"texture": "#spike"}, "south": {"texture": "#spike"},
+                           "east": {"texture": "#4"}}},
+            ],
+        }
+        split_shared_texture_ids(exported, source)
+        faces = exported["elements"][0]["faces"]
+        self.assertEqual(faces["north"]["texture"], "#tex_gold")
+        self.assertEqual(faces["south"]["texture"], "#tex_midnight")
+        self.assertEqual(faces["east"]["texture"], "#4")
+        self.assertEqual(exported["textures"]["tex_gold"], "gold.png")
 
 
 class RewriteExportedModelTests(unittest.TestCase):
