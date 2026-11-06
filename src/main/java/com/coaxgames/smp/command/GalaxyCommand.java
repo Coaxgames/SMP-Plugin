@@ -96,7 +96,7 @@ public final class GalaxyCommand implements TabExecutor {
             return matching(targets, args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
-            List<String> targets = new ArrayList<>(List.of("@p"));
+            List<String> targets = new ArrayList<>(List.of("@p", "all"));
             targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
             return matching(targets, args[1]);
         }
@@ -113,8 +113,26 @@ public final class GalaxyCommand implements TabExecutor {
     }
 
     private void give(CommandSender sender, String label, String[] args) throws IOException {
+        if (args.length == 2 && args[1].equalsIgnoreCase("all")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(Component.text("Only a player can use /" + label + " give all."));
+                return;
+            }
+            List<LegendaryItem> items = plugin.getLegendaryItems().getAll().stream()
+                    .sorted(java.util.Comparator.comparing(LegendaryItem::id))
+                    .toList();
+            if (items.isEmpty()) {
+                sender.sendMessage(Component.text("No legendary items are registered yet."));
+                return;
+            }
+            for (LegendaryItem item : items) {
+                giveItem(sender, player, item, 1);
+            }
+            return;
+        }
         if (args.length < 3 || args.length > 4) {
-            sender.sendMessage(Component.text("Usage: /" + label + " give <player|@p> <item> [count]"));
+            sender.sendMessage(Component.text("Usage: /" + label
+                    + " give all | give <player|@p> <item> [count]"));
             return;
         }
 
@@ -152,6 +170,10 @@ public final class GalaxyCommand implements TabExecutor {
             }
         }
 
+        giveItem(sender, target, definition, count);
+    }
+
+    private void giveItem(CommandSender sender, Player target, LegendaryItem definition, int count) throws IOException {
         int given = 0;
         String problem = null;
         for (int i = 0; i < count; i++) {
@@ -192,6 +214,7 @@ public final class GalaxyCommand implements TabExecutor {
                     + (definition.craftOnce() ? ". Its craft quota is now permanently used." : ".")));
         }
     }
+
     private void reset(CommandSender sender, String label, String[] args) throws IOException {
         if (args.length != 2) {
             sender.sendMessage(Component.text("Usage: /" + label + " reset <item>"));
@@ -352,7 +375,8 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
-                + " give <player|@p> <item> [count] | reset <item> | reset-abilities <player|selector>"
+                + " give all | give <player|@p> <item> [count] | reset <item>"
+                + " | reset-abilities <player|selector>"
                 + " | list | locate <item> | find item <uuid>"));
     }
 }
