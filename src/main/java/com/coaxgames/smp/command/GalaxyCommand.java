@@ -96,7 +96,9 @@ public final class GalaxyCommand implements TabExecutor {
             return matching(targets, args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
-            return matching(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1]);
+            List<String> targets = new ArrayList<>(List.of("@p"));
+            targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+            return matching(targets, args[1]);
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("give")) {
             return matching(List.of("1", "8", "16", "32", "64"), args[3]);
@@ -112,13 +114,24 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void give(CommandSender sender, String label, String[] args) throws IOException {
         if (args.length < 3 || args.length > 4) {
-            sender.sendMessage(Component.text("Usage: /" + label + " give <player> <item> [count]"));
+            sender.sendMessage(Component.text("Usage: /" + label + " give <player|@p> <item> [count]"));
             return;
         }
 
-        Player target = Bukkit.getPlayerExact(args[1]);
+        Player target;
+        if (args[1].equalsIgnoreCase("@p")) {
+            target = Bukkit.selectEntities(sender, args[1]).stream()
+                    .filter(Player.class::isInstance)
+                    .map(Player.class::cast)
+                    .findFirst()
+                    .orElse(null);
+        } else {
+            target = Bukkit.getPlayerExact(args[1]);
+        }
         if (target == null) {
-            sender.sendMessage(Component.text("That player must be online."));
+            sender.sendMessage(Component.text(args[1].equalsIgnoreCase("@p")
+                    ? "No players matched @p."
+                    : "That player must be online."));
             return;
         }
         LegendaryItem definition = plugin.getLegendaryItems().get(args[2]).orElse(null);
@@ -339,7 +352,7 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
-                + " give <player> <item> [count] | reset <item> | reset-abilities <player|selector>"
+                + " give <player|@p> <item> [count] | reset <item> | reset-abilities <player|selector>"
                 + " | list | locate <item> | find item <uuid>"));
     }
 }
