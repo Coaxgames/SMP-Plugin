@@ -8,7 +8,7 @@ depend:
 commands:
   galaxy:
     description: Manage Galaxy SMP legendary items.
-    usage: /galaxy <give|reset|reset-abilities|list|locate|find>
+    usage: /galaxy <give|reset|reset-abilities|list|locate|find|menu>
     permission: galaxy.admin
   checkforupdate:
     description: Cancel any pending update restart, then check for a new plugin release.
