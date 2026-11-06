@@ -23,8 +23,11 @@ public final class GalaxyCommand implements TabExecutor {
 
     private final GalaxySmpPlugin plugin;
 
-    public GalaxyCommand(GalaxySmpPlugin plugin) {
+    private final LegendaryMenu menu;
+
+    public GalaxyCommand(GalaxySmpPlugin plugin, LegendaryMenu menu) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.menu = Objects.requireNonNull(menu, "menu");
     }
 
     @Override
@@ -51,6 +54,13 @@ public final class GalaxyCommand implements TabExecutor {
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 case "find" -> find(sender, label, args);
+                case "menu" -> {
+                    if (sender instanceof Player player) {
+                        menu.open(player, 0);
+                    } else {
+                        sender.sendMessage(Component.text("Only players can open the menu."));
+                    }
+                }
                 default -> sendUsage(sender, label);
             }
         } catch (IOException exception) {
@@ -71,7 +81,7 @@ public final class GalaxyCommand implements TabExecutor {
             return List.of();
         }
         if (args.length == 1) {
-            return matching(List.of("give", "reset", "reset-abilities", "list",             "locate", "find"), args[0]);
+            return matching(List.of("give", "reset", "reset-abilities", "list",             "locate", "find", "menu"), args[0]);
         }
                     if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
                         return matching(List.of("item"), args[1]);
@@ -88,6 +98,9 @@ public final class GalaxyCommand implements TabExecutor {
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             return matching(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1]);
         }
+        if (args.length == 4 && args[0].equalsIgnoreCase("give")) {
+            return matching(List.of("1", "8", "16", "32", "64"), args[3]);
+        }
         if ((args.length == 3 && args[0].equalsIgnoreCase("give"))
                 || (args.length == 2 && (args[0].equalsIgnoreCase("reset")
                 || args[0].equalsIgnoreCase("locate")))) {
@@ -98,8 +111,8 @@ public final class GalaxyCommand implements TabExecutor {
     }
 
     private void give(CommandSender sender, String label, String[] args) throws IOException {
-        if (args.length != 3) {
-            sender.sendMessage(Component.text("Usage: /" + label + " give <player> <item>"));
+        if (args.length < 3 || args.length > 4) {
+            sender.sendMessage(Component.text("Usage: /" + label + " give <player> <item> [count]"));
             return;
         }
 
@@ -113,40 +126,59 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text("Unknown legendary item: " + args[2]));
             return;
         }
-        ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
-        if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
-            sender.sendMessage(Component.text(target.getName() + " already holds the configured maximum of "
-                    + definition.id() + " (" + plugin.getLegendaryItems().maxPerPlayer(definition.id()) + ")."));
-            return;
-        }
-        if (definition.trackUniqueInstance()) {
-            int slot = target.getInventory().firstEmpty();
-            if (slot < 0) {
-                sender.sendMessage(Component.text(target.getName() + " has no empty inventory slot."));
-                return;
+        int count = 1;
+        if (args.length == 4) {
+            try {
+                count = Integer.parseInt(args[3]);
+            } catch (NumberFormatException exception) {
+                count = 0;
             }
-            UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
-                    .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
-            plugin.getDataStore().recordAdministrativeGrant(
-                    definition.id(),
-                    definition.maxCrafts(),
-                    itemUuid,
-                    target.getUniqueId(),
-                    target.getLocation(),
-                    definition.craftOnce()
-            );
-            target.getInventory().setItem(slot, item);
-        } else {
-            var leftovers = target.getInventory().addItem(item);
-            if (!leftovers.isEmpty()) {
-                sender.sendMessage(Component.text(target.getName() + "'s inventory has no room for the full stack."));
+            if (count < 1 || count > 2304) {
+                sender.sendMessage(Component.text("Count must be a number from 1 to 2304."));
                 return;
             }
         }
-        sender.sendMessage(Component.text("Gave " + definition.id() + " to " + target.getName()
-                + (definition.craftOnce() ? ". Its craft quota is now permanently used." : ".")));
-    }
 
+        int given = 0;
+        String problem = null;
+        for (int i = 0; i < count; i++) {
+            ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
+            if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
+                problem = target.getName() + " already holds the configured maximum of "
+                        + definition.id() + " (" + plugin.getLegendaryItems().maxPerPlayer(definition.id()) + ").";
+                break;
+            }
+            if (definition.trackUniqueInstance()) {
+                int slot = target.getInventory().firstEmpty();
+                if (slot < 0) {
+                    problem = target.getName() + " has no empty inventory slot.";
+                    break;
+                }
+                UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
+                        .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
+                plugin.getDataStore().recordAdministrativeGrant(
+                        definition.id(),
+                        definition.maxCrafts(),
+                        itemUuid,
+                        target.getUniqueId(),
+                        target.getLocation(),
+                        definition.craftOnce()
+                );
+                target.getInventory().setItem(slot, item);
+            } else if (!target.getInventory().addItem(item).isEmpty()) {
+                problem = target.getName() + "'s inventory has no room for the full stack.";
+                break;
+            }
+            given++;
+        }
+        if (problem != null) {
+            sender.sendMessage(Component.text(problem + " Gave " + given + " of " + count + "."));
+        }
+        if (given > 0) {
+            sender.sendMessage(Component.text("Gave " + given + "x " + definition.id() + " to " + target.getName()
+                    + (definition.craftOnce() ? ". Its craft quota is now permanently used." : ".")));
+        }
+    }
     private void reset(CommandSender sender, String label, String[] args) throws IOException {
         if (args.length != 2) {
             sender.sendMessage(Component.text("Usage: /" + label + " reset <item>"));
@@ -307,7 +339,7 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
-                + " give <player> <item> | reset <item> | reset-abilities <player|selector>"
+                + " give <player> <item> [count] | reset <item> | reset-abilities <player|selector>"
                 + " | list | locate <item> | find item <uuid>"));
     }
 }

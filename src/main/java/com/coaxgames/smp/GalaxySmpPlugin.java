@@ -88,7 +88,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         if (getCommand("galaxy") == null) {
             throw new IllegalStateException("The galaxy command is missing from plugin.yml.");
         }
-        GalaxyCommand galaxyCommand = new GalaxyCommand(this);
+        com.coaxgames.smp.command.LegendaryMenu menu = new com.coaxgames.smp.command.LegendaryMenu(this);
+        getServer().getPluginManager().registerEvents(menu, this);
+        GalaxyCommand galaxyCommand = new GalaxyCommand(this, menu);
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
         new com.coaxgames.smp.pack.ResourcePackService(this).start();
