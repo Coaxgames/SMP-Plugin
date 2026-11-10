@@ -26,7 +26,10 @@ cooldowns:
 
 phase-four:
   combo-window-seconds: 3
+  # Lunar Leggings retain this legacy setting, including on existing servers.
   daily-trigger-tick: 13500
+  solstice-chestplate:
+    trigger-tick: 6000
   daily-effect-seconds: 300
   astral-sword:
     attack-speed-seconds: 30
@@ -36,9 +39,10 @@ phase-four:
     burst-strength: 1.5
   mass-orb:
     passive-refresh-ticks: 40
-    # Provisional height-scaled damage: max(0, fall-distance - 3) * damage-per-block,
+    # Holder fall damage: max(0, fall-distance - 3) * damage-per-block,
     # capped at maximum-damage, then reduced by the configured Feather Falling XV placeholder.
-    # Damage is in Minecraft health points.
+    # Damage is in Minecraft health points. Enemy slam damage is separate: 0.5 points
+    # per block fallen, up to 20 points, when the holder falls onto an entity.
     free-fall-distance: 3.0
     damage-per-block: 1.0
     maximum-damage: 40.0
@@ -66,6 +70,8 @@ phase-five:
   wormhole-trident:
     # The radius is intentionally provisional pending owner confirmation.
     interaction-radius: 2.0
+    # Exit distance and lifetime retain their existing config keys for upgrades.
+    # The exit is placed when the rifts open; the lifetime starts at that time.
     creator-launch-distance: 20
     lifetime-after-passage-seconds: 50
     opponent-damage-hearts: 2.0

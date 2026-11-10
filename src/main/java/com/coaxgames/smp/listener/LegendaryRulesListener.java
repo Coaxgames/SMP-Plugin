@@ -206,6 +206,12 @@ public final class LegendaryRulesListener implements Listener {
         }
         if (!persistOwnerAndLocation(stack, player.getUniqueId(), player.getLocation())) {
             event.setCancelled(true);
+            return;
+        }
+        boolean itemUpdated = items.upgradeVoidSword(stack);
+        itemUpdated |= items.refreshDailyEffectLore(stack);
+        if (itemUpdated) {
+            event.getItem().setItemStack(stack);
         }
     }
 
@@ -268,11 +274,16 @@ public final class LegendaryRulesListener implements Listener {
     }
 
     // Items created before a model was assigned keep stale metadata, so backfill the expected item model.
-    private void refreshItemModels(Inventory inventory) {
+    public void refreshItemModels(Inventory inventory) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
             if (stack == null || stack.getType().isAir()) {
                 continue;
+            }
+            boolean itemUpdated = items.upgradeVoidSword(stack);
+            itemUpdated |= items.refreshDailyEffectLore(stack);
+            if (itemUpdated) {
+                inventory.setItem(slot, stack);
             }
             items.identify(stack).ifPresent(definition -> {
                 var expected = definition.createBaseItem().getItemMeta();

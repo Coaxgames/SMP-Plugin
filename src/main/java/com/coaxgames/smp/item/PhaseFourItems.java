@@ -41,7 +41,7 @@ public final class PhaseFourItems {
                 new String[] {"HWH", "WNW", "HWH"}, new Ingredient[] {new Ingredient(
                         'H', Material.PLAYER_HEAD), new Ingredient('W', Material.WITHER_ROSE),
                 new Ingredient('N', Material.NETHERITE_SWORD)},
-                new EnchantmentLevel(Enchantment.SHARPNESS, 4),
+                new EnchantmentLevel(Enchantment.SHARPNESS, 5),
                 new EnchantmentLevel(Enchantment.LOOTING, 3)));
         registry.register(legendary(plugin, "solstice_chestplate", Material.NETHERITE_CHESTPLATE,
                 new String[] {"HEH", "SCS", "HEH"}, new Ingredient[] {new Ingredient(

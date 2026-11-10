@@ -276,6 +276,64 @@ public final class LegendaryItemRegistry {
         return createItem(id, UUID.randomUUID());
     }
 
+    public boolean upgradeVoidSword(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("void_sword")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        int level = meta.getEnchantLevel(Enchantment.SHARPNESS);
+        if (level != 4) {
+            return false;
+        }
+        meta.addEnchant(Enchantment.SHARPNESS, 5, true);
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            for (int i = 0; i < updatedLore.size(); i++) {
+                if (net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(updatedLore.get(i)).equals("- Sharpness IV")) {
+                    updatedLore.set(i, Component.text("- Sharpness V", NamedTextColor.GRAY));
+                }
+            }
+            meta.lore(updatedLore);
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not upgrade Void Sword enchantment.");
+        }
+        return true;
+    }
+
+    public boolean refreshDailyEffectLore(ItemStack item) {
+        String id = identify(item).map(LegendaryItem::id).orElse("");
+        if (!id.equals("solstice_chestplate") && !id.equals("lunar_leggings")) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        String newLine = abilityLore(id).getFirst();
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (line.startsWith("At world time ") && line.endsWith(" seconds while worn.")
+                    && !line.equals(newLine)) {
+                updatedLore.set(i, Component.text(newLine, NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update daily effect lore for " + id + ".");
+            }
+        }
+        return changed;
+    }
+
     public ItemStack createItem(String id, UUID itemUuid) {
         LegendaryItem definition = get(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + id));
@@ -338,6 +396,7 @@ public final class LegendaryItemRegistry {
             case "kuiper_ball" -> List.of("Throw to freeze a hit target and launch nearby entities.");
             case "mass_orb" -> List.of(
                     "While carried, greatly reduces fall damage.",
+                    "While held, falling onto enemies deals 1/4 heart per block, up to 10 hearts.",
                     "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
                             + " health points.");
             case "astral_sword" -> List.of(
@@ -346,10 +405,12 @@ public final class LegendaryItemRegistry {
             case "void_sword" -> List.of(
                     "Every 4 consecutive hits: inflict Slowness I and Wither I for 10 seconds.");
             case "solstice_chestplate" -> List.of(
-                    "At world time 13,500: Speed III, Strength II, and Resistance I for "
+                    "At world time " + configLong("phase-four.solstice-chestplate.trigger-tick", 6_000)
+                            + ": Speed III, Strength II, and Resistance I for "
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "lunar_leggings" -> List.of(
-                    "At world time 13,500: Speed I, Strength I, and Resistance II for "
+                    "At world time " + configLong("phase-four.daily-trigger-tick", 13_500)
+                            + ": Speed I, Strength I, and Resistance II for "
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "star_mace" -> List.of(
                     "After 2 successful hits: 30-second cooldown.",
@@ -362,8 +423,9 @@ public final class LegendaryItemRegistry {
                     "Every 5 successful Lunge activations: thrust forward and damage targets ahead.",
                     "Cooldown: " + configLong("cooldowns.nebula_spear", 45) + " seconds.");
             case "wormhole_trident" -> List.of(
-                    "Every 5 successful Riptides: open a rift.",
-                    "Passing through launches you forward; opponents take damage and Wither.");
+                    "Every 5 successful Riptides: open two reusable rifts for "
+                            + configLong("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50) + " seconds.",
+                    "Travel between the rifts; non-owners take damage and Wither I.");
             case "celestial_bow" -> List.of(
                     "Fully charged shots deal splash damage and create a lingering "
                             + plugin.getConfig().getString("phase-five.celestial-bow.cloud-effect", "Wither")

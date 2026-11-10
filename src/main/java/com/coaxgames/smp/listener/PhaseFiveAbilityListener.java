@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -62,6 +63,7 @@ public final class PhaseFiveAbilityListener implements Listener {
     private static final String COSMIC_CROWN = "cosmic_crown";
     private static final String SINGULARITY_BOOTS = "singularity_boots";
     private static final String NOVA_SHIELD = "nova_shield";
+    static final int RIFT_WITHER_AMPLIFIER = 0;
     private static final NamespacedKey WORMHOLE_RIFT_MODEL =
             Objects.requireNonNull(NamespacedKey.fromString("galaxy:wormhole_rift"));
     private static final ItemStack NOVA_SHIELD_PARTICLE_ITEM = createNovaShieldParticleItem();
@@ -171,7 +173,32 @@ public final class PhaseFiveAbilityListener implements Listener {
             riptideCounts.remove(playerId);
             Location location = event.getPlayer().getLocation();
             double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
-            rifts.add(new Rift(playerId, location, spawnRiftDisplay(location)));
+            Vector direction = location.getDirection().normalize();
+            double distance = number("phase-five.wormhole-trident.creator-launch-distance", 20.0);
+            var obstruction = location.getWorld().rayTraceBlocks(
+                    location, direction, distance, FluidCollisionMode.NEVER, true);
+            if (obstruction != null) {
+                distance = Math.max(0.0, location.toVector().distance(obstruction.getHitPosition()) - 0.5);
+            }
+            Location destination = location.clone().add(direction.multiply(distance));
+            if (distance <= radius * 2.0
+                    || !destination.getBlock().isPassable()
+                    || !destination.clone().add(0, 1, 0).getBlock().isPassable()) {
+                event.getPlayer().sendMessage(Component.text("The rift could not open: its exit is obstructed or too close."));
+                return;
+            }
+            long lifetimeMillis = Math.multiplyExact(
+                    (long) number("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50.0), 1_000L);
+            ItemDisplay entrance = spawnRiftDisplay(location);
+            ItemDisplay exit;
+            try {
+                exit = spawnRiftDisplay(destination);
+            } catch (RuntimeException exception) {
+                entrance.remove();
+                throw exception;
+            }
+            rifts.add(new Rift(playerId, location, destination, entrance, exit,
+                    System.currentTimeMillis() + lifetimeMillis));
             for (int point = 0; point < 24; point++) {
                 double angle = 2.0 * Math.PI * point / 24.0;
                 Location marker = location.clone().add(
@@ -446,7 +473,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         crownHitCounts.remove(id);
         shieldAxeHitCounts.remove(id);
         for (Rift rift : rifts) {
-            rift.inside.remove(id);
+            rift.traversal.leave(id);
         }
     }
 
@@ -475,48 +502,58 @@ public final class PhaseFiveAbilityListener implements Listener {
         while (iterator.hasNext()) {
             Rift rift = iterator.next();
             if (rift.expiresAtMillis <= now) {
-                rift.display.remove();
+                rift.entranceDisplay.remove();
+                rift.exitDisplay.remove();
                 iterator.remove();
                 continue;
             }
             Player creator = Bukkit.getPlayer(rift.creator);
-            if (!rift.creatorPassed && (creator == null || !creator.isOnline())) {
-                continue;
-            }
             double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
-            World world = Bukkit.getWorld(rift.location.getWorld().getUID());
+            World world = Bukkit.getWorld(rift.entrance.getWorld().getUID());
             if (world == null) {
                 continue;
             }
             for (Player online : Bukkit.getOnlinePlayers()) {
                 if (!online.getWorld().equals(world)) {
-                    rift.inside.remove(online.getUniqueId());
+                    rift.traversal.leave(online.getUniqueId());
                 }
             }
 
-            world.spawnParticle(Particle.PORTAL, rift.location, 4, radius / 2, 0.5, radius / 2, 0.02);
+            world.spawnParticle(Particle.PORTAL, rift.entrance, 4, radius / 2, 0.5, radius / 2, 0.02);
+            world.spawnParticle(Particle.PORTAL, rift.exit, 4, radius / 2, 0.5, radius / 2, 0.02);
             for (Player player : world.getPlayers()) {
-                boolean inRift = player.getLocation().distanceSquared(rift.location) <= radius * radius;
-                if (!inRift) {
-                    boolean wasInside = rift.inside.remove(player.getUniqueId());
-                    if (player.equals(creator) && !rift.creatorPassed && wasInside) {
-                        launchRiftCreator(rift, player, now);
+                Location current = player.getLocation();
+                boolean inEntrance = current.distanceSquared(rift.entrance) <= radius * radius;
+                boolean inExit = current.distanceSquared(rift.exit) <= radius * radius;
+                RiftTraversal.Endpoint source = rift.traversal.enter(
+                        player.getUniqueId(), inEntrance, inExit);
+                if (source == null) {
+                    continue;
+                }
+                Location destination = (source == RiftTraversal.Endpoint.ENTRANCE ? rift.exit : rift.entrance).clone();
+                destination.setYaw(current.getYaw());
+                destination.setPitch(current.getPitch());
+                if (!destination.getBlock().isPassable()
+                        || !destination.clone().add(0, 1, 0).getBlock().isPassable()) {
+                    player.sendMessage(Component.text("The other rift is obstructed."));
+                    continue;
+                }
+                if (!player.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                    plugin.getLogger().warning("Could not teleport " + player.getUniqueId() + " through a Wormhole rift.");
+                    continue;
+                }
+                if (!player.getUniqueId().equals(rift.creator)) {
+                    double damage = number("phase-five.wormhole-trident.opponent-damage-hearts", 2.0) * 2.0;
+                    if (creator != null && creator.isOnline()) {
+                        player.damage(damage, creator);
+                    } else {
+                        player.damage(damage);
                     }
-                    continue;
-                }
-                rift.inside.add(player.getUniqueId());
-                if (player.equals(creator) && !rift.creatorPassed) {
-                    continue;
-                }
-                if (rift.creatorPassed && !player.equals(creator)
-                        && rift.affected.add(player.getUniqueId())) {
-                    player.damage(number("phase-five.wormhole-trident.opponent-damage-hearts", 2.0) * 2.0,
-                            creator);
                     player.addPotionEffect(new PotionEffect(
                             PotionEffectType.WITHER,
                             (int) Math.min(Integer.MAX_VALUE,
                                     number("phase-five.wormhole-trident.opponent-wither-seconds", 20.0) * 20.0),
-                            0,
+                            RIFT_WITHER_AMPLIFIER,
                             true,
                             true,
                             true));
@@ -556,7 +593,8 @@ public final class PhaseFiveAbilityListener implements Listener {
         }
         rescueDisplays.clear();
         for (Rift rift : rifts) {
-            rift.display.remove();
+            rift.entranceDisplay.remove();
+            rift.exitDisplay.remove();
         }
         rifts.clear();
     }
@@ -586,28 +624,6 @@ public final class PhaseFiveAbilityListener implements Listener {
                 number("phase-five.celestial-bow.cloud-effect-seconds", 5.0) * 20.0);
         int amplifier = (int) number("phase-five.celestial-bow.cloud-effect-amplifier", 0.0);
         cloud.addCustomEffect(new PotionEffect(effect, effectTicks, amplifier, true, true, true), true);
-    }
-
-    private void launchRiftCreator(Rift rift, Player creator, long now) {
-        rift.creatorPassed = true;
-        rift.expiresAtMillis = now + Math.multiplyExact(
-                (long) number("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50.0),
-                1_000L);
-        Location origin = creator.getLocation();
-        Vector direction = origin.getDirection().normalize();
-        double distance = number("phase-five.wormhole-trident.creator-launch-distance", 20.0);
-        Location destination = origin.clone().add(direction.clone().multiply(distance));
-        var obstruction = origin.getWorld().rayTraceBlocks(
-                origin, direction, distance, FluidCollisionMode.NEVER, true);
-        if (obstruction != null) {
-            double safeDistance = Math.max(0.0,
-                    origin.toVector().distance(obstruction.getHitPosition()) - 0.5);
-            destination = origin.clone().add(direction.multiply(safeDistance));
-        }
-        if (!creator.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
-            plugin.getLogger().warning("Could not launch Wormhole Trident creator " + creator.getUniqueId()
-                    + " through the rift.");
-        }
     }
 
     private boolean isAxe(Material material) {
@@ -666,18 +682,22 @@ public final class PhaseFiveAbilityListener implements Listener {
 
     private static final class Rift {
         private final UUID creator;
-        private final Location location;
-        private final ItemDisplay display;
-        private final Set<UUID> inside = new HashSet<>();
-        private final Set<UUID> affected = new HashSet<>();
-        private boolean creatorPassed;
-        private long expiresAtMillis = Long.MAX_VALUE;
+        private final Location entrance;
+        private final Location exit;
+        private final ItemDisplay entranceDisplay;
+        private final ItemDisplay exitDisplay;
+        private final RiftTraversal traversal;
+        private final long expiresAtMillis;
 
-        private Rift(UUID creator, Location location, ItemDisplay display) {
+        private Rift(UUID creator, Location entrance, Location exit, ItemDisplay entranceDisplay,
+                ItemDisplay exitDisplay, long expiresAtMillis) {
             this.creator = creator;
-            this.location = location.clone();
-            this.display = display;
-            inside.add(creator);
+            this.entrance = entrance.clone();
+            this.exit = exit.clone();
+            this.entranceDisplay = entranceDisplay;
+            this.exitDisplay = exitDisplay;
+            this.expiresAtMillis = expiresAtMillis;
+            traversal = new RiftTraversal(creator);
         }
     }
 }

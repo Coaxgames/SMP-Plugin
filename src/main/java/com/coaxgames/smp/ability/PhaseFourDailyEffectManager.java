@@ -40,7 +40,8 @@ public final class PhaseFourDailyEffectManager {
 
     private void tick() {
         long now = System.currentTimeMillis();
-        long triggerTick = plugin.getConfig().getLong("phase-four.daily-trigger-tick", 13_500L);
+        long solsticeTick = plugin.getConfig().getLong("phase-four.solstice-chestplate.trigger-tick", 6_000L);
+        long lunarTick = plugin.getConfig().getLong("phase-four.daily-trigger-tick", 13_500L);
         long durationMillis = Math.multiplyExact(
                 plugin.getConfig().getLong("phase-four.daily-effect-seconds", 300L), 1_000L);
         boolean catchUp = plugin.getConfig().getBoolean("phase-four.lunar-leggings.catch-up-if-offline", false);
@@ -49,15 +50,19 @@ public final class PhaseFourDailyEffectManager {
             restoreActiveEffect(player, LUNAR, now);
             long worldTime = player.getWorld().getTime();
             long worldDay = player.getWorld().getFullTime() / 24_000L;
-            boolean exactTriggerWindow = worldTime >= triggerTick && worldTime < triggerTick + 20L;
-            boolean lunarTriggerWindow = catchUp ? worldTime >= triggerTick : exactTriggerWindow;
-            if (exactTriggerWindow && wears(player, Material.NETHERITE_CHESTPLATE, SOLSTICE)) {
+            if (inTriggerWindow(worldTime, solsticeTick, false)
+                    && wears(player, Material.NETHERITE_CHESTPLATE, SOLSTICE)) {
                 startDailyEffect(player, SOLSTICE, worldDay, now, durationMillis);
             }
-            if (lunarTriggerWindow && wears(player, Material.NETHERITE_LEGGINGS, LUNAR)) {
+            if (inTriggerWindow(worldTime, lunarTick, catchUp)
+                    && wears(player, Material.NETHERITE_LEGGINGS, LUNAR)) {
                 startDailyEffect(player, LUNAR, worldDay, now, durationMillis);
             }
         }
+    }
+
+    static boolean inTriggerWindow(long worldTime, long triggerTick, boolean catchUp) {
+        return worldTime >= triggerTick && (catchUp || worldTime < triggerTick + 20L);
     }
 
     private boolean wears(Player player, Material material, String itemId) {

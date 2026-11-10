@@ -8,13 +8,16 @@ import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.LivingEntity;
@@ -29,11 +32,15 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+import org.bukkit.util.BoundingBox;
 
 public final class PhaseFourAbilityListener implements Listener {
     private final GalaxySmpPlugin plugin;
@@ -42,6 +49,7 @@ public final class PhaseFourAbilityListener implements Listener {
     private final HitCounter astralHits;
     private final HitCounter voidHits;
     private final Map<UUID, AttributeModifier> astralModifiers = new HashMap<>();
+    private final Map<UUID, MassOrbFall> massOrbFalls = new HashMap<>();
 
     public PhaseFourAbilityListener(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -56,6 +64,7 @@ public final class PhaseFourAbilityListener implements Listener {
     public void resetAbilityProgress(UUID playerUuid) {
         astralHits.clear(playerUuid);
         voidHits.clear(playerUuid);
+        massOrbFalls.remove(playerUuid);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -147,6 +156,84 @@ public final class PhaseFourAbilityListener implements Listener {
             event.setCancelled(true);
         } else {
             event.setDamage(scaledDamage);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMassOrbMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (event instanceof PlayerTeleportEvent || to == null || !from.getWorld().equals(to.getWorld())
+                || player.isFlying() || player.isGliding() || player.isInsideVehicle()
+                || player.isInWater()
+                || (!isItem(player.getInventory().getItemInMainHand(), "mass_orb")
+                && !isItem(player.getInventory().getItemInOffHand(), "mass_orb"))) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
+        double descent = from.getY() - to.getY();
+        if (descent < 0) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
+        if (descent == 0) {
+            if (player.isOnGround()) {
+                massOrbFalls.remove(playerId);
+            }
+            return;
+        }
+
+        MassOrbFall fall = massOrbFalls.computeIfAbsent(playerId,
+                ignored -> new MassOrbFall(Math.max(0.0, player.getFallDistance() - descent)));
+        double halfWidth = player.getWidth() / 2.0;
+        BoundingBox path = new BoundingBox(
+                Math.min(from.getX(), to.getX()) - halfWidth,
+                to.getY() - 0.01,
+                Math.min(from.getZ(), to.getZ()) - halfWidth,
+                Math.max(from.getX(), to.getX()) + halfWidth,
+                from.getY() + 0.01,
+                Math.max(from.getZ(), to.getZ()) + halfWidth);
+        for (var entity : player.getWorld().getNearbyEntities(path)) {
+            if (!(entity instanceof LivingEntity target) || target.equals(player)
+                    || fall.hitEntities.contains(target.getUniqueId())) {
+                continue;
+            }
+            double fraction = MassOrbDamage.impactFraction(
+                    from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ(),
+                    player.getWidth(), target.getBoundingBox());
+            if (fraction < 0) {
+                continue;
+            }
+            double damage = MassOrbDamage.slamDamage(fall.distance + descent * fraction);
+            if (damage > 0) {
+                fall.hitEntities.add(target.getUniqueId());
+                target.damage(damage, player);
+            }
+        }
+        fall.distance += descent;
+        if (player.isOnGround()) {
+            massOrbFalls.remove(playerId);
+        }
+    }
+
+    @EventHandler
+    public void onMassOrbQuit(PlayerQuitEvent event) {
+        massOrbFalls.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMassOrbTeleport(PlayerTeleportEvent event) {
+        massOrbFalls.remove(event.getPlayer().getUniqueId());
+    }
+
+    private static final class MassOrbFall {
+        private double distance;
+        private final Set<UUID> hitEntities = new HashSet<>();
+
+        private MassOrbFall(double distance) {
+            this.distance = distance;
         }
     }
 

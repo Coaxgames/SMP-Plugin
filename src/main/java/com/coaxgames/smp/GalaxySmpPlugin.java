@@ -78,7 +78,11 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
-        getServer().getPluginManager().registerEvents(new LegendaryRulesListener(this), this);
+        LegendaryRulesListener legendaryRules = new LegendaryRulesListener(this);
+        getServer().getPluginManager().registerEvents(legendaryRules, this);
+        for (var online : getServer().getOnlinePlayers()) {
+            legendaryRules.refreshItemModels(online.getInventory());
+        }
         phaseFourAbilityListener = new PhaseFourAbilityListener(this);
         getServer().getPluginManager().registerEvents(phaseFourAbilityListener, this);
         phaseFiveMaceAbilityListener = new PhaseFiveMaceAbilityListener(this);
@@ -237,6 +241,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 "phase-four.combo-window-seconds",
                 "phase-four.astral-sword.attack-speed-seconds",
                 "phase-four.daily-trigger-tick",
+                "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",
                 "phase-four.kuiper-ball.freeze-seconds",
                 "phase-four.mass-orb.feather-falling-level",
@@ -256,6 +261,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         long triggerTick = getConfig().getLong("phase-four.daily-trigger-tick", 13_500L);
         if (triggerTick >= 24_000L) {
             throw new IllegalStateException("phase-four.daily-trigger-tick must be between 0 and 23999.");
+        }
+        if (getConfig().getLong("phase-four.solstice-chestplate.trigger-tick", 6_000L) >= 24_000L) {
+            throw new IllegalStateException(
+                    "phase-four.solstice-chestplate.trigger-tick must be between 1 and 23999.");
         }
         for (String path : java.util.List.of(
                 "phase-four.kuiper-ball.burst-radius",

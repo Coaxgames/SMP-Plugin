@@ -30,6 +30,7 @@ class PluginMetadataTest {
                 "phase-four.combo-window-seconds",
                 "phase-four.astral-sword.attack-speed-seconds",
                 "phase-four.daily-trigger-tick",
+                "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",
                 "phase-four.kuiper-ball.freeze-seconds",
                 "phase-four.mass-orb.feather-falling-level",
@@ -124,6 +125,7 @@ class PluginMetadataTest {
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.mass_orb"));
             assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
             assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
+            assertEquals(6_000L, config.getLong("phase-four.solstice-chestplate.trigger-tick"));
             assertEquals(30L, config.getLong("cooldowns.star_mace"));
             assertEquals(30L, config.getLong("cooldowns.collapsing_star_mace"));
             assertEquals(7.0, config.getDouble("phase-five.mace-damage-cap-hearts"));
