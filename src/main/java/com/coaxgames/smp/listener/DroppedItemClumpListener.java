@@ -11,7 +11,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
-import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -31,13 +30,27 @@ public final class DroppedItemClumpListener implements Listener {
         countKey = new NamespacedKey(plugin, "ground-clump-count");
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onSpawn(ItemSpawnEvent event) {
-        Item item = event.getEntity();
-        if (eligible(item.getItemStack())) {
-            plugin.getServer().getScheduler().runTask(plugin, () -> clumpNearby(item));
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> clumpNearby(item), 20L);
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> clumpNearby(item), 100L);
+    public void start() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (var world : plugin.getServer().getWorlds()) {
+                for (Item item : world.getEntitiesByClass(Item.class)) {
+                    clumpNearby(item);
+                }
+            }
+        }, 1L, 20L);
+    }
+
+    void clumpNearby(Item source) {
+        if (!source.isValid() || !eligible(source.getItemStack())) {
+            return;
+        }
+        for (var entity : source.getNearbyEntities(RADIUS, RADIUS, RADIUS)) {
+            if (entity instanceof Item target && target.isValid()) {
+                merge(source, target);
+                if (!source.isValid()) {
+                    return;
+                }
+            }
         }
     }
 
@@ -80,20 +93,6 @@ public final class DroppedItemClumpListener implements Listener {
                 .map(item -> !item.protectedFromLossAndStorage()
                         && !item.trackUniqueInstance() && !item.hasPerPlayerCarryLimit())
                 .orElse(false);
-    }
-
-    private void clumpNearby(Item source) {
-        if (!source.isValid() || !eligible(source.getItemStack())) {
-            return;
-        }
-        for (var entity : source.getNearbyEntities(RADIUS, RADIUS, RADIUS)) {
-            if (entity instanceof Item target && target.isValid()) {
-                merge(source, target);
-                if (!source.isValid()) {
-                    return;
-                }
-            }
-        }
     }
 
     private void merge(Item source, Item target) {
@@ -139,7 +138,7 @@ public final class DroppedItemClumpListener implements Listener {
         if (source < 1 || target < 1 || source > MAX_CLUMP || target > MAX_CLUMP) {
             throw new IllegalArgumentException("Invalid ground clump count.");
         }
-        return Math.min(source, MAX_CLUMP - target);
+        return source == MAX_CLUMP ? 0 : Math.min(source, MAX_CLUMP - target);
     }
 
     private boolean isClump(Item item) {
