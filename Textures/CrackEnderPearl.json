@@ -8,8 +8,8 @@
 	"elements": [
 		{
 			"name": "ender_pearl",
-			"from": [7, 1, 7.5],
-			"to": [10, 14, 8.5],
+			"from": [6.5, 1, 7.5],
+			"to": [9.5, 14, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [10, 2, 7, 15], "texture": "#0"},
@@ -22,8 +22,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [5, 2, 7.5],
-			"to": [7, 13, 8.5],
+			"from": [4.5, 2, 7.5],
+			"to": [6.5, 13, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [7, 3, 5, 14], "texture": "#0"},
@@ -36,8 +36,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [10, 2, 7.5],
-			"to": [12, 13, 8.5],
+			"from": [9.5, 2, 7.5],
+			"to": [11.5, 13, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [12, 3, 10, 14], "texture": "#0"},
@@ -50,8 +50,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [4, 3, 7.5],
-			"to": [5, 12, 8.5],
+			"from": [3.5, 3, 7.5],
+			"to": [4.5, 12, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [5, 4, 4, 13], "texture": "#0"},
@@ -64,8 +64,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [12, 3, 7.5],
-			"to": [13, 12, 8.5],
+			"from": [11.5, 3, 7.5],
+			"to": [12.5, 12, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [13, 4, 12, 13], "texture": "#0"},
@@ -78,8 +78,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [3, 4, 7.5],
-			"to": [4, 11, 8.5],
+			"from": [2.5, 4, 7.5],
+			"to": [3.5, 11, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [4, 5, 3, 12], "texture": "#0"},
@@ -92,8 +92,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [13, 4, 7.5],
-			"to": [14, 11, 8.5],
+			"from": [12.5, 4, 7.5],
+			"to": [13.5, 11, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [14, 5, 13, 12], "texture": "#0"},
@@ -106,8 +106,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [2, 6, 7.5],
-			"to": [3, 9, 8.5],
+			"from": [1.5, 6, 7.5],
+			"to": [2.5, 9, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [3, 7, 2, 10], "texture": "#0"},
@@ -120,8 +120,8 @@
 		},
 		{
 			"name": "ender_pearl",
-			"from": [14, 6, 7.5],
-			"to": [15, 9, 8.5],
+			"from": [13.5, 6, 7.5],
+			"to": [14.5, 9, 8.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 7.5]},
 			"faces": {
 				"north": {"uv": [15, 7, 14, 10], "texture": "#0"},
@@ -135,29 +135,26 @@
 	],
 	"display": {
 		"thirdperson_righthand": {
-			"translation": [0, 1.75, 0],
+			"translation": [0, 2, 1],
 			"scale": [0.5, 0.5, 0.5]
 		},
 		"thirdperson_lefthand": {
-			"translation": [0, 1.75, 0],
+			"translation": [0, 2, 1],
 			"scale": [0.5, 0.5, 0.5]
 		},
 		"firstperson_righthand": {
-			"rotation": [-30, -28, 0],
-			"translation": [0, 1.75, 0],
-			"scale": [0.5, 0.5, 0.5]
+			"rotation": [-30, -90, 0],
+			"translation": [2.5, 1.75, 0],
+			"scale": [0.75, 0.75, 0.75]
 		},
 		"firstperson_lefthand": {
-			"rotation": [-30, -28, 0],
-			"translation": [0, 1.75, 0],
-			"scale": [0.5, 0.5, 0.5]
+			"rotation": [-30, -90, 0],
+			"translation": [2.5, 1.75, 0],
+			"scale": [0.75, 0.75, 0.75]
 		},
 		"ground": {
 			"translation": [0, 1.5, 0],
 			"scale": [0.5, 0.5, 0.5]
-		},
-		"gui": {
-			"scale": [0.75, 0.75, 0.75]
 		},
 		"on_shelf": {
 			"translation": [0, 0, -3.25]
