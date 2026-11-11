@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,19 +49,45 @@ class PhaseFiveMaceAbilityListenerTest {
             World world = mock(World.class);
             when(fixture.target.getWorld()).thenReturn(world);
             when(fixture.target.getLocation()).thenReturn(new Location(world, 0, 0, 0));
+            LivingEntity victim = mock(LivingEntity.class);
+            when(victim.getLocation()).thenReturn(new Location(world, 0, 0, 0));
             when(world.getNearbyEntities(any(Location.class), anyDouble(), anyDouble(), anyDouble()))
-                    .thenReturn(List.of());
+                    .thenReturn(List.of(victim));
 
             fixture.listener.onMaceDamage(fixture.damage);
             fixture.listener.onArmSwing(fixture.swing);
             fixture.runTick();
+            verify(world, times(2)).spawnParticle(eq(Particle.ITEM), any(Location.class), eq(5),
+                    eq(0.35), eq(0.35), eq(0.35), eq(0.08), any(ItemStack.class));
+            verify(victim, times(2)).damage(1.0, fixture.player);
             fixture.listener.onMaceDamage(fixture.damage);
             fixture.listener.onArmSwing(fixture.swing);
             fixture.runTick();
 
             verify(fixture.cooldowns).start(fixture.playerId, "collapsing_star_mace");
-            verify(world, times(5)).spawnParticle(eq(Particle.ITEM), any(Location.class), eq(1),
-                    anyDouble(), anyDouble(), anyDouble(), anyDouble(), any(ItemStack.class));
+            verify(world, times(5)).spawnParticle(eq(Particle.ITEM), any(Location.class), eq(5),
+                    eq(0.35), eq(0.35), eq(0.35), eq(0.08), any(ItemStack.class));
+            verify(victim, times(5)).damage(1.0, fixture.player);
+        }
+    }
+
+    @Test
+    void showsSparksWhenHitKillsTargetWithoutApplyingSplashDamage() {
+        try (var items = mockConstruction(ItemStack.class, (item, context) ->
+                    when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)));
+             var bukkit = mockStatic(Bukkit.class)) {
+            Fixture fixture = new Fixture("collapsing_star_mace", bukkit);
+            World world = mock(World.class);
+            when(fixture.target.getWorld()).thenReturn(world);
+            when(fixture.target.getLocation()).thenReturn(new Location(world, 0, 0, 0));
+            when(fixture.target.isDead()).thenReturn(true);
+
+            fixture.listener.onMaceDamage(fixture.damage);
+            fixture.runTick();
+
+            verify(world, times(2)).spawnParticle(eq(Particle.ITEM), any(Location.class), eq(5),
+                    eq(0.35), eq(0.35), eq(0.35), eq(0.08), any(ItemStack.class));
+            verify(world, never()).getNearbyEntities(any(Location.class), anyDouble(), anyDouble(), anyDouble());
         }
     }
 

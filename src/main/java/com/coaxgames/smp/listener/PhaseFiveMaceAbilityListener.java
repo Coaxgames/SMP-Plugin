@@ -281,17 +281,23 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
 
     private void scheduleSparks(LivingEntity target, Player attacker, int sparkCount) {
         double radius = nonNegativeConfig("phase-five.collapsing-star-mace.spark-radius", 1.5);
+        var impact = target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0);
+        var impactWorld = target.getWorld();
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!target.isValid() || target.isDead()) {
-                return;
-            }
+            boolean damageEligible = target.isValid() && !target.isDead();
+            var location = damageEligible
+                    ? target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0)
+                    : impact;
+            var world = damageEligible ? target.getWorld() : impactWorld;
             for (int spark = 0; spark < sparkCount; spark++) {
-                var location = target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0);
-                target.getWorld().spawnParticle(
-                        Particle.ITEM, location, 1, 0.0, 0.0, 0.0, 0.0,
+                world.spawnParticle(
+                        Particle.ITEM, location, 5, 0.35, 0.35, 0.35, 0.08,
                         SPARK_PARTICLE_ITEM);
+                if (!damageEligible) {
+                    continue;
+                }
                 double radiusSquared = radius * radius;
-                for (var entity : target.getWorld().getNearbyEntities(location, radius, radius, radius)) {
+                for (var entity : world.getNearbyEntities(location, radius, radius, radius)) {
                     if (!(entity instanceof LivingEntity living)
                             || living.equals(attacker)
                             || living.getLocation().distanceSquared(location) > radiusSquared) {
