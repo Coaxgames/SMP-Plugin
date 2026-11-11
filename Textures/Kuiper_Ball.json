@@ -3,6 +3,7 @@
 	"credit": "Made with Blockbench",
 	"parent": "minecraft:item/generated",
 	"textures": {
+		"particle": "block/kuiper_ball_animation",
 		"mass_orb": "block/kuiper_ball_animation"
 	},
 	"elements": [

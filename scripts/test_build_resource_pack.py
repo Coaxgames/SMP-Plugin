@@ -1,4 +1,5 @@
 import importlib.util
+import shutil
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,6 +13,30 @@ build_shield_blocking = MODULE.build_shield_blocking
 align_shield_offhand = MODULE.align_shield_offhand
 copy_pack_assets = MODULE.copy_pack_assets
 split_shared_texture_ids = MODULE.split_shared_texture_ids
+
+
+class CorruptPearlPackTests(unittest.TestCase):
+    def test_supplied_model_and_texture_bind_only_to_corrupt_pearl(self):
+        assets = SCRIPT_PATH.parent.parent / "Textures"
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "source"
+            source.mkdir()
+            for name in ("CrackEnderPearl.bbmodel", "CrackEnderPearl.json"):
+                shutil.copy2(assets / name, source / name)
+            output = root / "pack"
+            MODULE.main(source, output)
+
+            galaxy = output / "assets" / "galaxy"
+            item = MODULE.read_json(galaxy / "items" / "corrupt_ender_pearl.json")
+            model = MODULE.read_json(galaxy / "models" / "item" / "corrupt_ender_pearl.json")
+            original = MODULE.read_json(assets / "CrackEnderPearl.json")
+            texture = galaxy / "textures" / "item" / "corrupt_ender_pearl" / "ender_pearl.png"
+            self.assertEqual(item["model"]["model"], "galaxy:item/corrupt_ender_pearl")
+            self.assertEqual(model["textures"]["particle"], "galaxy:item/corrupt_ender_pearl/ender_pearl")
+            self.assertEqual(model["display"], original["display"])
+            self.assertEqual(texture.read_bytes(), (assets / "ender_pearl.png").read_bytes())
+            self.assertFalse((output / "assets" / "minecraft" / "items" / "ender_pearl.json").exists())
 
 
 class SplitSharedTextureIdsTests(unittest.TestCase):

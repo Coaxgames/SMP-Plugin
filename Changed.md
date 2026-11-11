@@ -4,6 +4,8 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Bound the supplied CrackEnderPearl model and texture to newly created Corrupt Ender Pearls. Ordinary Ender Pearls keep their vanilla appearance; verify in game.
+- Added `/galaxy give <player|@p> all` to grant each registered item to a chosen online player. Existing grant limits apply; `/galaxy give all` still targets the sender.
 - Changed ground clumping to recheck nearby compatible items every second, including full stacks and items already loaded, after Kuiper Balls were reported to stack like vanilla. The 128-item ground count is stored on the entity while inventory stacks retain their normal limits. In-game retesting remains.
 - Set the Celestial Bow cloud lifetime default to 20 seconds. Final cloud effect, lifetime and effect strength remain configurable placeholders and are deferred to Phase 6.
 - Added the same vanilla Ender Pearl-style cooldown indicator to Kuiper Ball, Mass Orb, both maces and Nova Shield. Each custom item uses its own cooldown group instead of the vanilla material group; persisted Kuiper, Mass Orb and mace markers restore on login. Verify visuals and ordinary-item isolation in game.

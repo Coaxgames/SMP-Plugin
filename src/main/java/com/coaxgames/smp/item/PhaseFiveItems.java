@@ -145,7 +145,7 @@ public final class PhaseFiveItems {
     public static final class CorruptEnderPearl implements LegendaryItem {
         private final LegendaryItemRegistry registry;
 
-        private CorruptEnderPearl(LegendaryItemRegistry registry) {
+        CorruptEnderPearl(LegendaryItemRegistry registry) {
             this.registry = registry;
         }
 
@@ -159,8 +159,9 @@ public final class PhaseFiveItems {
             ItemStack item = new ItemStack(Material.ENDER_PEARL);
             var meta = item.getItemMeta();
             meta.setMaxStackSize(CORRUPT_PEARL_STACK_LIMIT);
+            meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:corrupt_ender_pearl")));
             if (!item.setItemMeta(meta)) {
-                throw new IllegalStateException("Could not set Corrupt Ender Pearl stack size.");
+                throw new IllegalStateException("Could not apply Corrupt Ender Pearl metadata.");
             }
             return item;
         }
