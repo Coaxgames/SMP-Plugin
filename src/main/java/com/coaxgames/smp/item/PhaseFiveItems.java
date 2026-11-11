@@ -4,13 +4,20 @@ import java.util.Objects;
 import java.time.Duration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Enderman;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PhaseFiveItems {
+    public static final int CORRUPT_PEARL_STACK_LIMIT =
+            com.coaxgames.smp.listener.EnderPearlStackListener.STACK_LIMIT;
+
     private PhaseFiveItems() {
     }
 
@@ -18,6 +25,7 @@ public final class PhaseFiveItems {
         Objects.requireNonNull(plugin, "plugin");
         Objects.requireNonNull(registry, "registry");
 
+        registry.register(new CorruptEnderPearl(registry));
         registry.register(item(plugin, "nebula_spear", Material.NETHERITE_SPEAR,
                 new String[] {"HTH", "GSG", "HRH"},
                 new Ingredient[] {
@@ -48,7 +56,6 @@ public final class PhaseFiveItems {
                         new Ingredient('L', Material.BLAZE_ROD)
                 },
                 new EnchantmentLevel(Enchantment.POWER, 5),
-                new EnchantmentLevel(Enchantment.FLAME, 1),
                 new EnchantmentLevel(Enchantment.PUNCH, 2),
                 new EnchantmentLevel(Enchantment.INFINITY, 1)));
         registry.register(item(plugin, "cosmic_crown", Material.NETHERITE_HELMET,
@@ -66,15 +73,16 @@ public final class PhaseFiveItems {
                 new EnchantmentLevel(Enchantment.THORNS, 3),
                 new EnchantmentLevel(Enchantment.UNBREAKING, 3),
                 new EnchantmentLevel(Enchantment.MENDING, 1)));
-        // The undecided corner ingredient positions intentionally remain empty until supplied by the owner.
         registry.register(item(plugin, "singularity_boots", Material.NETHERITE_BOOTS,
-                new String[] {" H ", "B0B", " H "},
+                new String[] {"PHP", "B0B", "PHP"},
                 new Ingredient[] {
                         new Ingredient('H', Material.PLAYER_HEAD),
                         new Ingredient('B', Material.BREEZE_ROD),
+                        new Ingredient('P', Material.ENDER_PEARL),
                         new Ingredient('0', Material.NETHERITE_BOOTS)
                 },
-                new EnchantmentLevel(Enchantment.PROTECTION, 4)));
+                new EnchantmentLevel(Enchantment.PROTECTION, 4),
+                new EnchantmentLevel(Enchantment.DEPTH_STRIDER, 3)));
         registry.register(item(plugin, "nova_shield", Material.SHIELD,
                 new String[] {"PNP", "PTP", "HNH"},
                 new Ingredient[] {
@@ -121,7 +129,10 @@ public final class PhaseFiveItems {
         ShapedRecipe recipe = new ShapedRecipe(new NamespacedKey(plugin, id), result);
         recipe.shape(shape);
         for (Ingredient ingredient : ingredients) {
-            if (ingredient.material() == Material.PLAYER_HEAD) {
+            if ("nova_shield".equals(id) && ingredient.symbol() == 'P') {
+                recipe.setIngredient('P', new RecipeChoice.MaterialChoice(
+                        java.util.List.copyOf(Tag.PLANKS.getValues())));
+            } else if (ingredient.material() == Material.PLAYER_HEAD) {
                 recipe.setIngredient(ingredient.symbol(),
                         new RecipeChoice.MaterialChoice(Material.PLAYER_HEAD));
             } else {
@@ -129,6 +140,60 @@ public final class PhaseFiveItems {
             }
         }
         return new PhaseFiveItemDefinition(id, result, recipe);
+    }
+
+    public static final class CorruptEnderPearl implements LegendaryItem {
+        private final LegendaryItemRegistry registry;
+
+        private CorruptEnderPearl(LegendaryItemRegistry registry) {
+            this.registry = registry;
+        }
+
+        @Override
+        public String id() {
+            return "corrupt_ender_pearl";
+        }
+
+        @Override
+        public ItemStack createBaseItem() {
+            ItemStack item = new ItemStack(Material.ENDER_PEARL);
+            var meta = item.getItemMeta();
+            meta.setMaxStackSize(CORRUPT_PEARL_STACK_LIMIT);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not set Corrupt Ender Pearl stack size.");
+            }
+            return item;
+        }
+
+        @Override
+        public boolean craftOnce() {
+            return false;
+        }
+
+        @Override
+        public boolean protectedFromLossAndStorage() {
+            return false;
+        }
+
+        @Override
+        public boolean hasPerPlayerCarryLimit() {
+            return false;
+        }
+
+        @EventHandler
+        public void onEndermanDeath(EntityDeathEvent event) {
+            if (event.getEntity() instanceof Enderman
+                    && isCorruptPearlDropRoll(java.util.concurrent.ThreadLocalRandom.current().nextInt(20))) {
+                event.getDrops().add(registry.createItem(id()));
+            }
+        }
+    }
+
+    static boolean isCorruptPearlDropRoll(int roll) {
+        if (roll < 0 || roll >= 20) {
+            throw new IllegalArgumentException("Drop roll must be between 0 and 19.");
+        }
+        return roll == 0;
     }
 
     private record Ingredient(char symbol, Material material) {

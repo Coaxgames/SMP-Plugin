@@ -11,6 +11,8 @@ import com.coaxgames.smp.listener.PhaseFourAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
+import com.coaxgames.smp.listener.EnderPearlStackListener;
+import com.coaxgames.smp.listener.DroppedItemClumpListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
 import com.coaxgames.smp.ritual.RitualManager;
 import com.coaxgames.smp.storage.LegendaryDataStore;
@@ -78,10 +80,15 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
+        getServer().getPluginManager().registerEvents(new EnderPearlStackListener(this), this);
+        getServer().getPluginManager().registerEvents(new DroppedItemClumpListener(this, legendaryItems), this);
         LegendaryRulesListener legendaryRules = new LegendaryRulesListener(this);
         getServer().getPluginManager().registerEvents(legendaryRules, this);
         for (var online : getServer().getOnlinePlayers()) {
             legendaryRules.refreshItemModels(online.getInventory());
+            for (String id : com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS) {
+                com.coaxgames.smp.util.ItemCooldownMarkers.sync(online, id, cooldownManager);
+            }
         }
         phaseFourAbilityListener = new PhaseFourAbilityListener(this);
         getServer().getPluginManager().registerEvents(phaseFourAbilityListener, this);
@@ -162,7 +169,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     public int resetAbilities(Player player) throws IOException {
         int clearedCooldowns = getCooldownManager().clearAll(player.getUniqueId());
-        player.setCooldown(Material.SHIELD, 0);
+        for (String id : com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS) {
+            com.coaxgames.smp.util.ItemCooldownMarkers.set(player, id, 0);
+        }
+        com.coaxgames.smp.util.ItemCooldownMarkers.set(player, "nova_shield", 0);
         phaseFourAbilityListener.resetAbilityProgress(player.getUniqueId());
         phaseFiveMaceAbilityListener.resetAbilityProgress(player.getUniqueId());
         phaseFiveAbilityListener.resetAbilityProgress(player.getUniqueId());
@@ -244,6 +254,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",
                 "phase-four.kuiper-ball.freeze-seconds",
+                "phase-four.kuiper-ball.cooldown-millis",
                 "phase-four.mass-orb.feather-falling-level",
                 "phase-four.mass-orb.passive-refresh-ticks")) {
             if (getConfig().contains(path)
@@ -269,6 +280,8 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         for (String path : java.util.List.of(
                 "phase-four.kuiper-ball.burst-radius",
                 "phase-four.kuiper-ball.burst-strength",
+                "phase-four.kuiper-ball.burst-vertical-boost",
+                "phase-four.kuiper-ball.burst-minimum-vertical",
                 "phase-four.mass-orb.free-fall-distance",
                 "phase-four.mass-orb.damage-per-block",
                 "phase-four.mass-orb.maximum-damage",
@@ -282,6 +295,15 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 }
             }
         }
+        for (String path : java.util.List.of(
+                "phase-four.kuiper-ball.target-players",
+                "phase-four.kuiper-ball.target-mobs",
+                "phase-four.kuiper-ball.target-items",
+                "phase-four.kuiper-ball.target-projectiles")) {
+            if (getConfig().contains(path) && !(getConfig().get(path) instanceof Boolean)) {
+                throw new IllegalStateException(path + " must be true or false.");
+            }
+        }
     }
 
     private void validatePhaseFiveSettings() {
@@ -291,7 +313,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             throw new IllegalStateException(capPath + " must be a positive number.");
         }
         for (String itemId : java.util.List.of(
-                "star_mace", "collapsing_star_mace", "nebula_spear", "nova_shield")) {
+                "star_mace", "collapsing_star_mace", "mass_orb", "nebula_spear", "nova_shield")) {
             String cooldownPath = "cooldowns." + itemId;
             if (getConfig().contains(cooldownPath)
                     && (!ConfigNumbers.isWholeNumber(getConfig(), cooldownPath)
@@ -299,21 +321,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
                 throw new IllegalStateException(cooldownPath + " must be a positive whole number of seconds.");
             }
         }
-        String countPath = "phase-five.collapsing-star-mace.spark-count-per-hit";
-        int sparkCount = getConfig().getInt(countPath, 1);
-        if (sparkCount < 1 || sparkCount > 20
-                || !ConfigNumbers.isWholeNumber(getConfig(), countPath)) {
-            throw new IllegalStateException(countPath + " must be a whole number from 1 to 20.");
-        }
         String radiusPath = "phase-five.collapsing-star-mace.spark-radius";
         double radius = configuredNumber(radiusPath, 1.5);
         if (radius < 0.0) {
             throw new IllegalStateException(radiusPath + " must be a non-negative number.");
-        }
-        String damagePath = "phase-five.collapsing-star-mace.spark-damage";
-        double damage = configuredNumber(damagePath, 2.0);
-        if (damage <= 0.0 || damage > 2.0) {
-            throw new IllegalStateException(damagePath + " must be greater than zero and at most two health points.");
         }
         validatePositiveSetting("phase-five.nebula-spear.thrust-velocity", 2.5);
         validatePositiveSetting("phase-five.nebula-spear.thrust-radius", 2.5);
@@ -344,11 +355,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         validatePositiveSetting("phase-five.cosmic-crown.thorns-damage", 2.0);
         validatePositiveSetting("phase-five.singularity-boots.explosion-fall-distance", 50.0);
-        long shieldDisableSeconds = configuredWholeNumber("phase-five.nova-shield.disable-seconds", 5L);
-        if (shieldDisableSeconds <= 0 || shieldDisableSeconds > Integer.MAX_VALUE / 20L) {
-            throw new IllegalStateException(
-                    "phase-five.nova-shield.disable-seconds is outside the supported positive range.");
-        }
     }
 
     private void validatePositiveSetting(String path, double fallback) {

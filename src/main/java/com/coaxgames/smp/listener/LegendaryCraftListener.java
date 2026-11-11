@@ -42,11 +42,17 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         CraftingInventory inventory = event.getInventory();
-        String blockedReason = craftBlockReason(item, inventory.getMatrix());
+        Player player = event.getView().getPlayer() instanceof Player p ? p : null;
+        if (player != null && isLimitBlocked(player, item)) {
+            inventory.setResult(null);
+            return;
+        }
+        String blockedReason = craftBlockReason(item, inventory.getMatrix(), player != null && player.isOp());
         if (blockedReason != null) {
             inventory.setResult(blockedPreview(blockedReason));
             return;
         }
+
         if (item.craftOnce()) {
             ItemStack preview = new ItemStack(Material.BARRIER);
             var meta = preview.getItemMeta();
@@ -57,12 +63,26 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         ItemStack result = plugin.getLegendaryItems().createItem(item.id());
-        if (event.getView().getPlayer() instanceof Player player
-                && !plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
+        if (player != null && !plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
             inventory.setResult(blockedPreview("You are carrying the maximum allowed " + item.id() + "."));
             return;
         }
         inventory.setResult(result);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onRecipeBookClick(com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent event) {
+        Recipe recipe = plugin.getServer().getRecipe(event.getRecipe());
+        LegendaryItem item = plugin.getLegendaryItems().getForRecipe(recipe).orElse(null);
+        if (item != null && isLimitBlocked(event.getPlayer(), item)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean isLimitBlocked(Player player, LegendaryItem item) {
+        return !plugin.getRitualManager().hasCapacity(player, item.id(), 1)
+                || !player.isOp() && item.craftOnce()
+                && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -79,7 +99,7 @@ public final class LegendaryCraftListener implements Listener {
             event.getInventory().setResult(null);
             return;
         }
-        String blockedReason = craftBlockReason(item, event.getInventory().getMatrix());
+        String blockedReason = craftBlockReason(item, event.getInventory().getMatrix(), player.isOp());
         if (blockedReason != null) {
             event.setCancelled(true);
             event.getInventory().setResult(null);
@@ -174,7 +194,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         if (!(event.getBlock().getState() instanceof Crafter crafter)
-                || craftBlockReason(item, crafter.getInventory().getContents()) != null) {
+                || craftBlockReason(item, crafter.getInventory().getContents(), false) != null) {
             event.setCancelled(true);
             return;
         }
@@ -232,8 +252,8 @@ public final class LegendaryCraftListener implements Listener {
         }
     }
 
-    private String craftBlockReason(LegendaryItem item, ItemStack[] matrix) {
-        if (item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()) {
+    private String craftBlockReason(LegendaryItem item, ItemStack[] matrix, boolean operator) {
+        if (!operator && item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()) {
             return "The one-time craft for " + item.id() + " has already been used.";
         }
         if (!HeadDropHead.allRecipeHeadsAreMarked(matrix)) {
@@ -245,7 +265,35 @@ public final class LegendaryCraftListener implements Listener {
                 || !isItem(matrix[8], "galaxy_string"))) {
             return "The Celestial Bow requires Galaxy String in all three right-column slots.";
         }
+        if (item.id().equals("singularity_boots")) {
+            if (matrix.length < 9 || !isItem(matrix[0], "corrupt_ender_pearl")
+                    || !isItem(matrix[2], "corrupt_ender_pearl")
+                    || !isItem(matrix[6], "corrupt_ender_pearl")
+                    || !isItem(matrix[8], "corrupt_ender_pearl")) {
+                return "The Singularity Boots require Corrupt Ender Pearls in all four corners.";
+            }
+        }
+        if (item.id().equals("nova_shield")
+                && !matchingShieldPlanks(matrix)) {
+            return "The Nova Shield requires one matching plank type in all four plank slots.";
+        }
         return null;
+    }
+
+    static boolean matchingShieldPlanks(ItemStack[] matrix) {
+        if (matrix.length < 9 || matrix[0] == null) {
+            return false;
+        }
+        Material type = matrix[0].getType();
+        return org.bukkit.Tag.PLANKS.isTagged(type)
+                && sameShieldPlanks(type,
+                        matrix[2] == null ? null : matrix[2].getType(),
+                        matrix[3] == null ? null : matrix[3].getType(),
+                        matrix[5] == null ? null : matrix[5].getType());
+    }
+
+    static boolean sameShieldPlanks(Material first, Material second, Material third, Material fourth) {
+        return first != null && first == second && first == third && first == fourth;
     }
 
     private ItemStack blockedPreview(String reason) {
@@ -293,6 +341,8 @@ public final class LegendaryCraftListener implements Listener {
                 updated[slot] = consumed;
             } else if (remainder != null && !remainder.isAir()) {
                 updated[slot] = new ItemStack(remainder);
+            } else {
+                updated[slot] = null;
             }
         }
         if (inventory instanceof CraftingInventory craftingInventory) {

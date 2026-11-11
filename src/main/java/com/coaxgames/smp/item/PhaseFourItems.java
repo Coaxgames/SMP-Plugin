@@ -35,8 +35,7 @@ public final class PhaseFourItems {
                         'H', Material.PLAYER_HEAD), new Ingredient('N', Material.NETHERITE_INGOT),
                 new Ingredient('D', Material.DIAMOND_BLOCK), new Ingredient('B', Material.BREEZE_ROD)},
                 new EnchantmentLevel(Enchantment.SHARPNESS, 6),
-                new EnchantmentLevel(Enchantment.LOOTING, 3),
-                new EnchantmentLevel(Enchantment.FIRE_ASPECT, 1)));
+                new EnchantmentLevel(Enchantment.LOOTING, 3)));
         registry.register(legendary(plugin, "void_sword", Material.NETHERITE_SWORD,
                 new String[] {"HWH", "WNW", "HWH"}, new Ingredient[] {new Ingredient(
                         'H', Material.PLAYER_HEAD), new Ingredient('W', Material.WITHER_ROSE),
@@ -52,7 +51,8 @@ public final class PhaseFourItems {
                 new String[] {"HRH", "RLR", "HRH"}, new Ingredient[] {new Ingredient(
                         'H', Material.PLAYER_HEAD), new Ingredient('R', Material.RESPAWN_ANCHOR),
                 new Ingredient('L', Material.NETHERITE_LEGGINGS)},
-                new EnchantmentLevel(Enchantment.PROTECTION, 4)));
+                new EnchantmentLevel(Enchantment.PROTECTION, 4),
+                new EnchantmentLevel(Enchantment.SWIFT_SNEAK, 3)));
     }
 
     private static PhaseFourItemDefinition repeatable(

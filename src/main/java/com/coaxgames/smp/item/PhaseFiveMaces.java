@@ -25,7 +25,7 @@ public final class PhaseFiveMaces {
                 new Ingredient('W', Material.WITHER_SKELETON_SKULL),
                 new Ingredient('M', Material.HEAVY_CORE),
                 new Ingredient('I', Material.NETHERITE_INGOT)},
-                new EnchantmentLevel(Enchantment.WIND_BURST, 3),
+                new EnchantmentLevel(Enchantment.WIND_BURST, 1),
                 new EnchantmentLevel(Enchantment.DENSITY, 2)));
         registry.register(mace(plugin, "collapsing_star_mace",
                 new String[] {"HCH", "DND", "HBH"},

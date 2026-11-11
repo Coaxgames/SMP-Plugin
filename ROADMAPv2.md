@@ -12,7 +12,7 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 
 - **Server:** Paper 26.3. Plugin declares `api-version: '26.3'`.
 - **Java:** 25+ (Paper 26.3 runtime requirement). **Build:** Gradle + `paper-api` (`compileOnly`); use `paperweight-userdev` only if NMS is needed (avoid).
-- **Config/data:** `config.yml` (tunables, including per-item player carrying caps), `data.yml`/SQLite (item ownership, ritual state, cooldowns, crafted flags).
+- **Config/data:** `config.yml` (tunables; legacy per-item carry settings are retained for compatibility but no longer control the limit), `data.yml`/SQLite (item ownership, ritual state, cooldowns, crafted flags).
 - **Packaging:** single shaded-free jar, `paper-plugin.yml` or `plugin.yml`.
 - **Plugins:** Galaxy SMP and the required Head Drop dependency only. Nebula Spear uses the server's native spear/Lunge behavior; no additional lunge plugin is required.
 
@@ -23,17 +23,17 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 | Item | Base | Key Ability / Rules | Recipe (from notes) |
 |---|---|---|---|
 | Nebula Spear | Netherite spear | Damage + cooldown, unbreakable; every 5 lunges → thrust (riptide-like velocity), max 4 hearts vs prot 4 diamond; comes with Lunge III, no other enchants; attribute swapping ineffective; 45s CD | Corners: player head; top: trident; middle: netherite spear; bottom: redstone block; sides: gold blocks |
-| Star Mace | Mace | Wind Burst starts at I, rises on hits to V and falls on misses; a swing at V starts a 30s cooldown; Density II; damage cap 7 hearts | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
-| Collapsing Star Mace | Mace | Consecutive hits build sparks; each spark deals splash damage and damage grows with sparks; exact balance remains open | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
+| Star Mace | Mace | Wind Burst starts at I and rises by one on hits to V; only a miss resets to I and starts a 30s cooldown, including at V; Density II; damage cap 7 hearts | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
+| Collapsing Star Mace | Mace | Breach 3 + Wind Burst 2; damage cap 7 hearts; one spark per full heart of actual mace damage, plus one spark per consecutive hit after the first; each spark deals 1 health point of splash damage | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
 | Astral Sword | Netherite sword | Sharpness 6, Looting 3, no Fire Aspect; no enchanting; 4-hit combo → faster attack speed for 30 seconds | Corners: heads; top+middle: netherite ingot; bottom: breeze rod; sides: diamond blocks |
 | Void Sword | Netherite sword | Unbreakable, Sharpness V, Looting III; 4-hit combo → Slowness I + Wither I for 10s | Corners: heads; middle: netherite sword; edges: wither roses |
 | Celestial Bow | Bow | Power V, Punch II, Infinity, no Flame; fully charged → splash damage + lingering potion/cloud of Wither or Poison | Left-middle end rod, bottom blaze rod, top breeze rod, left corners heads, right column Galaxy String x3, middle end crystal |
 | Wormhole Trident | Trident | Every 5 Riptides creates a pair of reusable rifts; the exit is placed 20 blocks forward in the creator's look direction when opened, and both close after 50s; non-owners passing through either end take 2 hearts + Wither I for 20s | Top/bottom: trident; corners: heads; middle: netherite ingot; left/right: wither skeleton skulls |
 | Cosmic Crown | Netherite helmet | Max-enchant stats, unbreakable; thorns every 2 hits taken; boosted absorption (gapple 4 hearts, notch apple 10 hearts) | Middle: netherite helmet; sides: heads; corners: notch apples; top: axolotl bucket; bottom: silence armor trim |
-| Singularity Boots | Netherite boots | Protection IV and Depth Strider III; no fall damage; fall ≥block 50 → creeper-sized explosion on impact | Middle: netherite boots; corners: cracked/corrupt Ender Pearls; edges: breeze rods; top/bottom: heads |
+| Singularity Boots | Netherite boots | Protection IV and Depth Strider III; no fall damage; fall ≥block 50 → creeper-sized explosion on impact | Middle: netherite boots; corners: Corrupt Ender Pearls; edges: breeze rods; top/bottom: heads |
 | Solstice Chestplate | Netherite chestplate | Protection IV; once per Minecraft day at tick 6000: Speed 3, Strength 2, Resistance 1 for 5 min | Middle: netherite chestplate; top/bottom: end crystal; left/right: nether stars; corners: heads |
-| Lunar Leggings | Netherite leggings | Protection IV and Swift Sneak (level to confirm); at tick 13500: Speed 1, Strength 1, Resistance 2 for 5 min; unbreakable | Middle: netherite leggings; edges: respawn anchors; corners: heads |
-| Nova Shield | Shield | Two fully charged axe critical hits disable blocking for 10s; totem rescue only in offhand, 10-minute rescue cooldown | Middle: totem; top/bottom: netherite blocks; sides+top corners: any wood type; bottom corners: heads |
+| Lunar Leggings | Netherite leggings | Protection IV and Swift Sneak III; at tick 13500: Speed 1, Strength 1, Resistance 2 for 5 min; unbreakable | Middle: netherite leggings; edges: respawn anchors; corners: heads |
+| Nova Shield | Shield | Two fully charged axe critical hits disable blocking for 10s; totem rescue only in offhand, 10-minute rescue cooldown | Middle: totem; top/bottom: netherite blocks; sides+top corners: same type of planks; bottom corners: heads |
 
 ### 2.2 Craftable / repeatable items
 
@@ -42,16 +42,21 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 | Galaxy String | Plain crafting component, no ability | Top: blaze rod; middle: breeze rod; bottom: end rod |
 | Kuiper Ball | Freeze and wind-charge-like burst; 1.5s cooldown, configurable radius/power and player/mob targeting; recipe yields 10 | Corners: snowballs; center and middle-left/middle-right: powdered snow; top-middle/bottom-middle: breeze charges |
 | Mass Orb | Infinitely craftable; Slowness IV; direct fall-slam deals 0.25 hearts per block, capped at 10 hearts; holder takes reduced fall damage; 20s cooldown | Middle: heavy core; sides: netherite blocks; top/bottom: blue ice; corners: gold blocks |
-| Cracked/Corrupt Ender Pearl | Custom Enderman drop at 5%; Singularity Boots ingredient | Drop; exact name and model to confirm |
+| Corrupt Ender Pearl | Custom Enderman drop at 5%; Singularity Boots ingredient; newly created pearls stack to 8 | Vanilla Ender Pearl appearance until owner supplies the model |
+
+Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total per-player pearl limit.
 
 ### 2.3 Global rules
 
-1. Legendary items can be crafted **once ever** server-wide (exceptions: Galaxy String, Kuiper Ball, Mass Orb). A server reset or administrative removal does not allow another craft; preserve the craft record across resets.
+1. Non-operators can craft each legendary item **once ever** server-wide; operator copies bypass the craft quota. Galaxy String, Kuiper Ball, Mass Orb and Corrupt Ender Pearls are repeatable. A server reset or administrative removal does not allow another non-operator craft; preserve the craft record across resets.
 2. The vanilla mace recipe is disabled. Only the two custom mace recipes are allowed, and each custom mace type can be crafted once ever. Track each recipe's crafted state separately in this plugin; a server reset or administrative removal does not reset either flag.
 3. Legendary items are unbreakable and protected from loss. On player death, the item remains at the death location unless destroyed by hazards such as lava, the void, or cactus; a hazard-destroyed item is returned to (0,0) as a reclaimable block. An item left to despawn is also returned there.
 4. Curse of Vanishing (COV) is prohibited; items cannot be enchanted or disenchanted (anvil, grindstone, and enchanting table blocked).
 5. Cannot be stored in ender chests or any container (chests, barrels, shulkers, hoppers, droppers, item frames, armor stands, bundles, etc.).
 6. Crafting triggers a **3 min ritual**, except for Galaxy String, Kuiper Ball, and Mass Orb. The item does not exist in the world until the timer ends. An animation appears above the crafting table, then the item drops there. Every 3 min, chat reveals the crafter's coordinates and the crafted item's name.
+7. Each non-operator may carry at most **two legendary items in total**, including both maces. For example, a chestplate and a weapon or both different maces fill the limit. Usables and repeatable ingredients, such as Kuiper Balls, Mass Orbs, Galaxy String and Corrupt Ender Pearls, do not count. Operators are exempt from the player and server-wide limits.
+8. For non-operators, there may be **one Star Mace and one Collapsing Star Mace server-wide**, independently; both count toward the player's two-legendary limit. Operator copies are exempt. Once a non-operator's mace has been made, another non-operator cannot craft another of that type. The current separate craft records do not by themselves prove all acquisition paths enforce the server-wide item cap.
+9. When a limit blocks crafting, show no crafting-table output and prevent recipe-book autofill from enabling the craft. If an operator drops a mace while that mace's non-operator slot is occupied, immediately return it to the operator and log the operator and coordinates. If that slot is free, a non-operator may pick up the dropped operator mace.
 
 ## 3. Technical Design
 
@@ -63,7 +68,7 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 ### 3.2 Recipes
 - Register shaped recipes using exact choices for fixed custom ingredients such as Galaxy String. Player-head slots must match the Head Drop PDC marker, not a fixed display name or full `ItemStack` snapshot.
 - Head Drop (`HeadDrop`) 3.1.0 or newer is a required server plugin (`plugin.yml` hard dependency and startup version check). Configure its `drop.placement: item` so recipe heads are usable as items; for block placement, require `head.persist_lore_on_placement: true`.
-- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each custom mace type has its own independent, permanent server-wide one-craft limit: one Star Mace and one Collapsing Star Mace may each be crafted. “First mace on the server” remains an open question (see Open Question 11).
+- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each type has its own independent, permanent server-wide one-craft limit; the owner also requires no more than one of each mace present server-wide. Verify all acquisition paths against that cap.
 - Recipe heads come from [Head Drop](https://modrinth.com/plugin/head-drop). Its 3.1.0 source tags generated heads with plugin-owned persistent data: `headdrop:dropped` as a byte value of `1` (`DROPPED_KEY = "dropped"`). Validate that marker in crafting events rather than matching player-specific display names or lore. Configure `drop.placement: item` so deaths produce recipe-usable item heads; if heads are placed as blocks, Head Drop can preserve the marker through placement and return it when broken when `head.persist_lore_on_placement` is enabled.
 - Craft-once enforcement in `PrepareItemCraftEvent` (deny result) and `CraftItemEvent` (atomically record in the data store; handle shift-click and automated crafting).
 - On successful craft, consume ingredients and start the ritual; do not create the item until the 3-minute timer completes. Show the animation over the crafting table and drop the item there at completion.
@@ -75,12 +80,12 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 | Hazard / despawn recovery | If a dropped legendary is destroyed by a hazard or is about to despawn, return it to (0,0) in reclaimable block form; implement protection/handling for lava, void, cactus, and other agreed hazards |
 | Death | Let the item remain at the death location. If a hazard destroys it, return it to (0,0) in reclaimable block form |
 | No containers | `InventoryClickEvent`, `InventoryDragEvent`, `InventoryMoveItemEvent`, `InventoryPickupItemEvent`, hotbar-swap, shift-click, bundles, `PlayerDropItem` into frames/stands; check `InventoryType` ≠ PLAYER/CRAFTING |
-| One at a time | `EntityPickupItemEvent`, `InventoryClickEvent`, `PlayerJoinEvent` check |
+| Two legendary items total | Enforce for non-operators across crafting, grants, pickup, inventory movement, ritual delivery, reclaim and join/restart recovery; exclude operators, repeatable usables and ingredients |
 | No (dis)enchant | `PrepareAnvilEvent`, `PrepareGrindstoneEvent`, `PrepareItemEnchantEvent`, `EnchantItemEvent`, Mending/XP |
 
 ### 3.4 Abilities (implementation notes)
 - **Damage caps:** `EntityDamageByEntityEvent` – compute the bounded value from `getFinalDamage()` and verify the applied result after armor/protection modifiers; do not assume `setDamage()` directly sets final damage. Test against prot 4 diamond.
-- **Combo counters:** per-attacker tracking for Void Sword, Star Mace progression and Cosmic Crown. Star Mace inactivity reset timing remains to be confirmed.
+- **Combo counters:** per-attacker tracking for Void Sword, Star Mace progression and Cosmic Crown. Star Mace progression resets on a missed swing, not inactivity.
 - **Lunge/Riptide counting:** use the native spear Lunge enchantment already confirmed working on the existing server; implement Nebula Spear's fifth-successful-lunge trigger using the Paper API available in the target setup. No third-party lunge integration is expected. Count trident Riptides for Wormhole Trident.
 - **Rift (Wormhole):** `Location` + radius, particle task, `BukkitScheduler`/Folia-safe scheduler; 50s lifetime; entry check by proximity.
 - **Time-based buffs (Solstice/Lunar):** Solstice at tick 6000; Lunar at tick 13500, once per Minecraft day.
@@ -117,7 +122,7 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 - [x] Disable the vanilla mace recipe; enforce independent, permanent craft records by item ID, allowing one of each custom mace type when their definitions are added in Phase 5
 - [x] Enforce craft-once limits in prepare/craft events and Paper's automated Crafter event; atomically persist the count, item UUID, owner when known, and location
 - [x] Block legendary storage/transfers through containers and ender chests, hopper/dropper movement, bundles, shulker boxes, item frames, armor stands, inventory click/drag/hotbar-swap, and player/non-player pickups
-- [x] Configure the per-player carrying cap independently for each item ID; default to one per item, with zero meaning unlimited
+- [x] Apply a shared two-legendary carrying limit for non-operators, counting pending rituals and excluding operators and repeatable usables/ingredients; live verification remains open.
 - [x] Prevent item damage, enchanting, disenchanting, Curse of Vanishing, and relevant anvil/grindstone/enchanting-table/Mending/XP routes
 - [x] Keep ordinary death drops at the death location; recover lava/fire/void/cactus/explosion/despawn losses into a protected, reclaimable barrel block at world X/Z (0,0)
 - [x] Track owner and last-known location across craft, pickup, drop, death, logout, recovery, and administrative grant
@@ -130,7 +135,7 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 - [ ] **Owner local test:** Verify the vanilla mace recipe is absent and Star Mace/Collapsing Star Mace each have an independent one-ever server-wide craft record
 - [ ] **Owner local test:** Verify normal crafting, shift-click, repeated attempts, Crafter automation, restart persistence, and administrative grants against craft-once records
 - [ ] **Owner local test:** Exercise container protections: chest/barrel/shulker/ender chest, hopper/dropper, bundle, crafting grid, item frame, armor stand, shift-click, drag, number-key/offhand swap, and container open/break/explosion paths
-- [ ] **Owner local test:** Verify per-item carrying caps at default, custom values, and zero/unlimited through crafting, pickup, inventory movement, join/restart recovery, reclaim, and `/galaxy give`; verify distinct item types have independent caps
+- [ ] **Owner local test:** Verify the two-legendary total across crafting, pickup, inventory movement, join/restart recovery, reclaim and `/galaxy give`; verify both maces count, usables do not, and removal frees carrying capacity without resetting craft history.
 - [ ] **Owner local test:** Verify durability, enchanting table, anvil, grindstone, Curse of Vanishing, Mending, and XP repair are blocked for identified items
 - [ ] **Owner local test:** Verify death drops stay at the death location; lava, fire, cactus, void, explosions, and despawn create a protected reclaim barrel at world X/Z (0,0), and claiming it restores the same item UUID
 - [ ] Re-run the relevant recipe, protection, lifecycle, and persistence tests whenever later phases add item definitions or change event handling
@@ -153,9 +158,9 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 ### Phase 4 – Simple Items (first playable)
 The checked entries below describe the earlier implementation, not acceptance of the newer corrections in Phase 5.
 - [x] Galaxy String: shaped, repeatable recipe; plain crafting component, no ability or craft quota; stack-compatible item identity with no unique-instance UUID
-- [x] Kuiper Ball: shaped recipe yields 10, custom stack maximum 64; marked thrown snowballs freeze a direct hit for 30 seconds and create a configurable wind-charge-like velocity burst; repeatable with normal stack merging and no per-player carrying limit
+- [x] Kuiper Ball: shaped recipe yields 10, custom stack maximum 64; marked thrown snowballs freeze a direct hit and create a configurable velocity burst; cooldown, radius, strength, vertical impulse, and player/mob/item/projectile targeting are host-configurable; repeatable with normal stack merging and no per-player carrying limit
 - [x] Mass Orb: repeatable recipe, Slowness IV while held, and direct fall-slams on living targets at 0.25 hearts per block fallen, capped at 10 hearts before normal damage mitigation; the holder is exempt from slam damage but retains the existing configurable fall-damage reduction
-- [x] Astral Sword: recipe, Sharpness VI/Looting III/Fire Aspect, no-enchant protection, and temporary 1.65x attack-speed multiplier for 30 seconds after four hits
+- [x] Astral Sword: recipe, Sharpness VI/Looting III without Fire Aspect, no-enchant protection, and temporary 1.65x attack-speed multiplier for 30 seconds after four hits
 - [x] Void Sword: recipe, Unbreakable/Sharpness IV/Looting III, no-enchant protection, and Slowness I plus Wither I for 10 seconds after four hits
 - [x] Solstice Chestplate: register Protection IV; grant Speed III, Strength II, Resistance I for five minutes when world time crosses tick 13,500; persist daily trigger
 - [x] Lunar Leggings: register Protection IV and Unbreakable; grant Speed I, Strength I, Resistance II for five minutes at world tick 13,500; active remaining duration pauses over clean shutdown and resumes after restart
@@ -163,68 +168,94 @@ The checked entries below describe the earlier implementation, not acceptance of
 - [ ] **Owner local test:** Verify all seven shaped recipes' exact ingredients and outputs; Head Drop heads work and ordinary player heads are rejected
 - [ ] **Owner local test:** Verify Galaxy String and Kuiper Ball stacking, Kuiper Ball output of 10/stack size 64, multiple Kuiper Balls/Mass Orbs remain carried without being dropped or capped, and repeatable crafts do not start rituals or consume craft-once quota
 - [ ] **Owner local test:** Verify Astral/Void four-hit combos, effect targets and durations, Astral attack-speed multiplier, and reset window
-- [ ] **Owner local test:** Verify Kuiper Ball freeze and burst; Mass Orb direct slams at 10, 20 and 40+ blocks, target selection, Slowness IV, and the holder's reduced fall damage
-- [ ] **Owner local test:** Wear Solstice Chestplate/Lunar Leggings at tick 13,500, check effect amplifiers/duration and once-per-day behavior plus the plugin grant log, restart during an active effect, and decide Lunar missed-trigger catch-up behavior
+- [ ] **Owner local test:** Verify Kuiper Ball freeze and burst; Mass Orb direct slams at 10, 20 and 40+ blocks, the 20-second cooldown on attempted slam, target selection, Slowness IV, and the holder's reduced fall damage
+- [ ] **Owner local test:** Wear Solstice Chestplate at tick 6000 and Lunar Leggings at tick 13500, check effect amplifiers/duration and once-per-day behavior plus the plugin grant log, restart during an active effect, and decide Lunar missed-trigger catch-up behavior
 - [ ] Verify Phase 4 items on Paper 26.3, including protection/enchant rules, craft/ritual lifecycle, persistence and recovery; no texture pack is required for mechanics testing
 
 **Phase 4 status:** Item definitions, recipes, abilities, configurable placeholders and repository tests are implemented. Live Paper gameplay checks remain unchecked for owner verification. The holder's Mass Orb fall-damage reduction and Lunar catch-up behavior remain open for balance/owner decisions.
 
 ### Phase 5 – Complex Abilities
-The following checked entries record the earlier implementation; newer requirements and their current status are tracked in the correction checklist below and supersede conflicting details.
-- [x] Star Mace: register its shaped recipe as one custom mace type, Wind Burst III/Density II, seven-heart damage ceiling, and 30-second cooldown after two successful hits; retain its independent one-ever craft allowance
-- [x] Collapsing Star Mace: register its shaped recipe as a separate custom mace type, Breach III/Wind Burst II, seven-heart damage ceiling, and spark/tiny-explosion response when pre-cap final damage exceeds five hearts, with each spark capped at one heart; retain its independent one-ever craft allowance
-- [x] Add configurable provisional spark-count/radius/damage settings; preserve the open questions about final explosion radius and whether a hit may create multiple sparks
-- [x] Add automated coverage for mace damage capping/threshold and confirm the existing datastore test covers independent permanent craft records
+- [x] Register separate Star Mace and Collapsing Star Mace recipes with their specified base enchantments and independent one-ever craft allowances
+- [x] Add automated coverage for mace damage capping, Star Mace hit/miss progression and cooldown conditions, damage-based Collapsing Star sparks, and confirm the existing datastore test covers independent permanent craft records
 - [ ] **Owner local test:** Verify each mace recipe, Head Drop head-marker requirement, output enchantments/unbreakable status, and separate permanent craft-once records; confirm the vanilla mace recipe is unavailable
-- [ ] **Owner local test:** Verify each mace's two-hit 30-second cooldown and seven-heart damage ceiling against unarmored and Protection IV diamond targets
-- [ ] **Owner local test:** Verify Collapsing Star Mace sparks trigger only above five hearts and each spark deals no more than one heart; review the provisional spark count and radius settings
+- [ ] **Owner local test:** Verify Star Mace I-to-V hit progression, no cooldown on a successful hit at V, miss reset and 30-second miss cooldown at every level, and the seven-heart damage ceiling against unarmored and Protection IV diamond targets
+- [ ] **Owner local test:** Verify Collapsing Star spark count from damage and consecutive hits, one-health-point splash damage per spark, streak resets, two-hit cooldown and configured radius
 - [x] Nebula Spear: register its recipe with native Lunge III only; count the target Paper API's successful `EntityLungeEvent`s and apply the fifth-lunge thrust, four-heart damage ceiling, and 45-second cooldown without relying on inferred movement/velocity
 - [x] Wormhole Trident: count successful Riptides and create two visible, reusable rift endpoints on every fifth; close both 50 seconds after opening, and apply two hearts plus Wither I for 20 seconds to non-owners on each passage
-- [x] Celestial Bow: register its recipe with Power V, Flame, Punch II, and Infinity; tag fully charged shots, apply configurable splash damage, and create a configurable lingering Wither-or-Poison cloud on impact
+- [x] Celestial Bow: register its recipe with Power V, Punch II, and Infinity without Flame; tag fully charged shots, apply configurable splash damage, and create a configurable lingering Wither-or-Poison cloud on impact
 - [x] Cosmic Crown: register its recipe with maximum helmet enchantments and unbreakable protection; retaliate every two damage hits and boost absorption from all sources, with golden apples set to four hearts and enchanted golden apples to ten hearts
-- [x] Singularity Boots: register Protection IV and its recipe using the specified ingredients; intentionally leave the unspecified corner positions empty until the owner supplies a replacement, cancel fall damage, and create a creeper-sized explosion after a fall of at least 50 blocks
-- [x] Nova Shield: register its recipe; disable held shields after two axe hits for the configurable disable timer and restore them automatically; prevent lethal damage with the totem effect and a persisted 10-minute cooldown
+- [x] Singularity Boots: register Protection IV and a recipe requiring Corrupt Ender Pearls in the four corners, cancel fall damage, and create a creeper-sized explosion after a fall of at least 50 blocks
+- [x] Register the Nova Shield recipe and persisted totem-style rescue cooldown
+- [x] Implement Nova Shield hit qualification, ten-second disable and offhand-only rescue; the same-type plank recipe is implemented locally. All still need in-game verification.
 - [x] Add validated configuration placeholders for undecided balance values; retain unresolved owner decisions without blocking implementation or filling unspecified ingredients
-- [x] Add repository tests for the Phase 5 damage threshold/cap and configuration defaults
-- [ ] **Owner local test:** Verify all Phase 5 recipes, Head Drop head-marker requirements, output identity/enchants (including Lunge III and Power V/Flame/Punch II/Infinity), and the independent one-ever craft records; confirm vanilla mace remains unavailable. Singularity Boots corners are intentionally blank.
+- [x] Add repository tests for Phase 5 damage caps, Star Mace progression and Collapsing Star spark scaling, plus configuration defaults
+- [ ] **Owner local test:** Verify all Phase 5 recipes, Head Drop head-marker requirements, Corrupt Ender Pearl ingredients, output identity/enchants (including Lunge III and Power V/Punch II/Infinity without Flame), and the independent one-ever craft records; confirm vanilla mace remains unavailable.
 - [ ] **Owner local test:** Verify Mace damage caps/cooldowns/sparks, Nebula's fifth-successful-Lunge thrust, Wormhole's fifth-Riptide rift/passage/lifetime without anti-cheat setbacks, and Celestial Bow's charged-shot splash/cloud.
 - [ ] **Owner local test:** Verify Cosmic Crown's every-two-hit retaliation and absorption increases, Singularity Boots fall immunity/50-block explosion, and Nova Shield's two-axe-hit disable/restore and lethal-damage rescue/cooldown.
 - [ ] Verify all Phase 5 abilities against Protection IV diamond and test configured cooldowns, effect durations, persistence and exploit resistance.
 
-#### Phase 5 corrections – owner feedback
+#### Owner-feedback checklist
+**Key:** ✅ implemented locally, needs in-game testing · ⬜ still open
 
-- [x] **Rift implementation:** Create matching entrance and exit displays; allow repeated two-way travel until both close; each non-owner passage applies Wither I and two hearts of damage, while the creator is exempt. Local implementation is built and repository-tested, not verified in game.
-- [ ] **Owner local test:** Verify both rift textures, passage in both directions for owner and others, repeated use, Wither I/damage, exit safety and 50-second lifetime.
-- [ ] **Kuiper cooldown:** Apply a 1.5-second cooldown and the requested post-1.9 UI; verify it cannot be bypassed by switching stacks.
-- [ ] **Kuiper burst:** Provide radius and power controls and a player/mob targeting toggle; do not affect dropped items, arrows or other unintended entities. Confirm toggle semantics and balance defaults.
-- [x] **Mass Orb slam implementation:** While held, directly slam living targets for 0.25 hearts per block fallen, up to 10 hearts before normal mitigation; do not deal slam damage to the holder or make them immune to ordinary fall damage. Local implementation is repository-tested only.
-- [ ] **Mass Orb cooldown:** Add the requested 20-second cooldown and post-1.9 UI; define which action starts it and verify prevention of repeated slams.
-- [ ] **Owner local test:** Verify Mass Orb 10-, 20- and 40-block impacts, 10-heart cap, victim/holder damage, target selection and cooldown.
-- [ ] **Nova Shield hit qualification:** Require two fully charged, maximum critical axe hits against the shield; attacks before full axe recharge do not count.
-- [ ] **Nova Shield disable:** After the second qualifying hit, disable normal shield blocking for 10 seconds against damage types it would otherwise block; restore use afterwards.
-- [ ] **Nova Shield rescue:** Trigger the totem-style pop only when the shield is in the offhand; preserve its separate rescue cooldown.
-- [ ] **Cooldown markers:** Add ender-pearl-style cooldown indicators for both maces and the shield; verify markers match their actual cooldowns without unintended effects on unrelated items.
-- [ ] **Star Mace:** Start at Wind Burst I; each successful hit raises the next level by one to V, each miss lowers it by two to a minimum of I. Swinging at V starts a 30-second cooldown whether the swing hits or misses; progression pauses during cooldown. Inactivity-reset timing awaits owner clarification.
-- [ ] **Collapsing Star Mace:** Consecutive hits produce more sparks; each spark deals splash damage and damage increases with sparks as requested. Confirm exact per-spark scaling, streak reset and relationship to the previous threshold/cap before implementation.
-- [x] **Void Sword Sharpness:** Generate new Void Swords with Sharpness V and upgrade identified Sharpness IV swords in player inventories on join/plugin enable or when picked up, preserving their identity and other metadata. Automated build verification only; live verification remains below.
-- [ ] **Remaining enchantments:** Add Swift Sneak to Lunar Leggings (level to confirm), Depth Strider III to Singularity Boots, and remove Fire Aspect and Flame from all weapons. Verify existing items as well as newly generated items.
-- [ ] **Owner local test:** Check newly given/crafted Void Swords and previously obtained Sharpness IV swords after joining or picking them up; verify Sharpness V, lore, UUID and other metadata.
-- [x] **Daily buffs implementation:** Solstice Chestplate defaults to tick 6000 and Lunar Leggings to tick 13500, with independent trigger settings and existing daily persistence.
-- [ ] **Owner local test:** Verify Solstice at tick 6000, Lunar at tick 13500, neither triggering at the other's tick, and once-per-day/restart behavior.
-- [ ] **Cracked/Corrupt Ender Pearl:** Create the custom pearl with a 5% Enderman drop chance; use it in the missing Singularity Boots recipe corners. Confirm final name/model and verify custom identity rather than accepting ordinary pearls.
-- [ ] **Nova Shield recipe:** Accept any wood type in the specified wood slots; verify mixed wood types and all supported wood materials.
-- [ ] **Celestial Bow recipe:** Verify all three string slots require Galaxy String and reject ordinary string, including manual and automated crafting. The current crafting listener already checks the three slots; gameplay verification is pending.
-- [ ] Add targeted automated tests for each correction and perform the corresponding owner-local Paper checks, including existing-item upgrades and cooldown persistence.
+##### Rift
+1. ✅ Matching entrance and exit.
+2. ✅ Reusable travel in both directions.
+3. ✅ Wither I and two hearts of damage for non-owners.
 
-**Phase 5 status:** Earlier abilities are implemented, but the newer corrections above remain open except for the local rift and Mass Orb implementations. No live gameplay verification is claimed for those changes.
+##### Cooldowns and UI
+1. ✅ The same vanilla Ender Pearl-style cooldown sweep is implemented for Kuiper Ball, Mass Orb, both maces and Nova Shield using separate custom-item cooldown groups; in-game verification remains.
+2. ✅ Kuiper Ball: **1.5-second cooldown on throw attempt**; in-game verification remains.
+3. ✅ Mass Orb: **20-second cooldown starts when a slam is attempted**; in-game verification remains.
+4. ✅ Both maces and the Nova Shield use separate custom-item cooldown groups rather than material-wide markers. Verify the indicator and ordinary-item isolation in game.
+
+##### Nova Shield
+1. ✅ Require two blocked axe critical hits.
+2. ✅ Require full axe recharge for each counted hit.
+3. ✅ Disable Nova Shield blocking for 10 seconds after the second qualifying hit; its cooldown group does not include ordinary shields. In-game verification remains.
+4. ✅ Totem rescue only when the Nova Shield is in the offhand.
+5. ✅ Recipe accepts matching planks of any wood type; rejects mixed types and logs. In-game verification remains.
+
+##### Items and abilities
+1. ✅ Swift Sneak III on new Lunar Leggings and upgrade of existing identified leggings. In-game verification remains.
+2. ✅ Kuiper Ball settings are host-configurable: freeze duration, cooldown, radius, strength, vertical boost/minimum, and booleans for players, mobs, dropped items, and projectiles. Players/mobs default on; dropped items/projectiles default off. In-game verification remains.
+3. ✅ Void Sword Sharpness V, including an upgrade for older swords.
+4. ✅ Remove Fire Aspect and Flame from legendary weapons; existing identified items are cleaned on player-inventory refresh or pickup. In-game verification remains.
+5. ✅ Solstice Chestplate at tick 6000.
+6. ✅ Lunar Leggings remain at tick 13500.
+7. ⬜ Collapsing Star Mace growing sparks and splash damage: local implementation and automated coverage exist; verify the complete mechanic in game before closing.
+8. ✅ Mass Orb fall-scaled slam damage.
+9. ⬜ Star Mace Wind Burst progression and miss-only cooldown: local implementation and automated coverage exist; verify hits, misses and cooldowns in game before closing.
+10. ✅ Depth Strider III on newly created Singularity Boots; in-game verification remains.
+
+##### Items, drops and limits
+1. ✅ Corrupt Ender Pearl: 5% Enderman drop, boots ingredient, and maximum stack size of 8. Uses vanilla pearl appearance until the owner supplies a texture/model; in-game verification remains.
+2. ⬜ Fix repeatable-item untracked-drop error spam.
+3. ✅ Nearby compatible repeatable custom items and ordinary Ender Pearls clump into one ground entity containing up to 128 items; pickup respects inventory stack limits. Paper gameplay verification remains.
+4. ⬜ Verify legendary limit behavior after OP inventory removal, including freed player capacity and permanent mace craft records.
+5. ⬜ Verify Celestial Bow requires Galaxy String; the code already checks the slots.
+6. ⬜ Verify ordinary and Corrupt Ender Pearl stacks on Paper: loot, drops, inventory changes, creative and other acquisition paths must cap at 8 without a per-player total limit.
+7. ✅ Two legendary items total per non-operator, counting both maces and pending rituals but excluding repeatable usables and ingredients; operators are exempt. In-game verification remains.
+8. ✅ Independent persistent Star and Collapsing Star mace slots for non-operators; operator copies are exempt. Crafting, grants, pickup and reclaim use the tracker. In-game and acquisition-path verification remains.
+9. ✅ Hide crafting output and block recipe-book autofill when a limit is reached; return an operator's dropped mace if its non-operator slot is occupied and log operator and coordinates. A non-operator can claim an operator's dropped mace when that slot is free. In-game verification remains.
+
+##### Updates
+1. ⬜ Verify and correct pack-only update restart behavior.
+
+These statuses describe local implementation only; none of the ✅ items are claimed as verified in game. Changes remain local and unpushed.
+
+**Phase 5 status:** The owner-feedback checklist above is authoritative for corrected mechanics and current status. Earlier local code and repository tests do not change an item marked ⬜ to complete; no in-game verification is claimed.
+
+**Nova Shield testing:** Verify full versus partial axe recharge, critical versus ordinary attacks, missed/unblocked hits, both consecutive qualifying hits, the complete 10-second disable and restoration, vanilla shield-disable interactions, and lethal damage with the shield in the offhand, main hand and inventory. The old `phase-five.nova-shield.disable-seconds` setting is ignored; the requested disable duration is fixed at 10 seconds.
 
 **Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Server URL/hash configuration and player acceptance still require deployment by the server owner.
 
 ### Phase 6 – Item Lifecycle, Limits & Update Corrections
 
 - [ ] **Repeatable drop errors:** Investigate and fix unknown-ID/untracked-drop spam for usable repeatable items such as Kuiper Balls; do not require unique UUID tracking for items that do not need it. Preserve legitimate diagnostics for genuinely untracked protected items.
-- [ ] **Dropped-item buildup:** Add a floor-count check or a clumping system capped at 16 per slot, as requested; confirm which approach and its exact scope before implementation.
-- [ ] **OP removal and limits:** Investigate global and per-player limits after operators remove items from inventories. Define intended behavior separately for permanent craft-once records and current carrying limits before changing either; verify grant, removal, pickup, inventory edits and restart.
+- [x] **Dropped-item buildup:** Add Clumps-inspired ground-item merging for compatible repeatable custom items and ordinary Ender Pearls, with up to 128 items represented by one entity. Partial pickup leaves the remainder on the ground, and inventory stack limits remain unchanged. Preserve protected legendary items separately.
+- [ ] **Owner local test:** Verify ground clumping and partial player/hopper pickup with full and partially full inventories, pearl stacks of 8, mixed item metadata, item ownership, despawn and chunk reload.
+- [ ] **OP removal and limits:** Verify the implemented two-legendary total, separate non-operator mace slots and operator exemptions in game, including bench output and recipe-book autofill, grants, removal, pickup, inventory edits, operator drops and restart. Removing an item frees carrying capacity but does not erase permanent craft-once records.
+- The owner confirmed the test server has no old data. No legacy migration or reset is necessary.
 - [ ] **Resource-pack-only updates:** Verify a pack-only update does not enforce a restart unless the plugin itself changes, or implement the requested warning alternative. The pack service resends packs independently; the separate plugin updater's version-triggered restart needs investigation.
 - [ ] **Update warnings:** Verify actual plugin-update restart warnings, including 2-minute and 30-second notices, and distinguish pack refreshes from plugin restarts.
 - [ ] Add regression tests and owner-local checks for drop handling, entity buildup, item limits and pack-only versus plugin updates.
@@ -247,27 +278,41 @@ The following checked entries record the earlier implementation; newer requireme
 1. **Ritual reveal — [REQUIRED: Phase 3].** The item name must use that item's own configured gradient in the global reveal, and coordinates must be formatted in parentheses as `(X, Y, Z)`. Audience and the remaining exact message format are undecided; use placeholders for those details. Reuse the same configured item-name component for death and interaction messages (Phase 7).
 2. **Lunar Leggings catch-up — [REQUIRED: Phase 4].** The trigger is confirmed as world time tick 13,500 in the 24,000-tick day, with a five-minute effect. Persist and resume an effect that was active at restart. Still decide whether a day whose tick 13,500 passed while the plugin/server was offline should grant the missed effect on startup, or wait for the next day's trigger. “Catch-up” here means only this missed-trigger decision, not resuming an already-active effect.
 3. **Mass Orb fall-damage formula — [OWNER VERIFICATION IN PHASE 4].** Direct fall-slams deal 0.25 hearts per block fallen to living targets, capped at 10 hearts before normal damage mitigation. The holder takes no slam damage but still takes reduced fall damage; the existing configurable Feather Falling XV reduction remains provisional.
-4. **Singularity Boots recipe — [REQUIRED: Phase 5].** The owner supplied a cracked/corrupt Ender Pearl with a 5% Enderman drop as the missing ingredient. The current corner slots are still empty; implement the pearl and recipe, and confirm its final name/model.
+4. **Corrupt Ender Pearl — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Endermen have a 5% chance to drop the custom Corrupt Ender Pearl, required in all four Singularity Boots recipe corners. It currently uses the vanilla pearl appearance; the owner will provide a model later.
 5. **Celestial Bow effect — [REQUIRED: Phase 5].** The final cloud effect (Wither or Poison), duration, and strength are undecided. Use explicit configurable placeholders until chosen; do not treat either option as final.
-6. **Collapsing Star Mace sparks — [REQUIRED: Phase 5].** The owner now requires consecutive hits to increase spark count and spark damage. Confirm exact scaling and streak reset, and whether the older five-heart trigger and one-heart-per-spark cap still apply.
+6. **Collapsing Star Mace sparks — [OWNER VERIFICATION IN PHASE 5].** Local code and automated tests cover damage-based and consecutive-hit sparks with one health point of splash damage per spark. The correction stays open until the complete behavior is verified in game.
 7. **Wormhole Trident rift — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The trigger, paired reusable endpoints, opponent damage/effect on each passage, and 50-second lifetime beginning on opening are implemented. The exit is placed using the creator's facing direction at opening, up to the configured 20 blocks; obstructed or overlapping exits are rejected. Interaction radius is a configurable placeholder until owner review.
 8. **Nebula Spear lunge — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The source notes specify a Netherite spear with native Lunge III, a thrust after five lunges, Riptide II-like velocity, a four-heart maximum against Protection IV diamond, no other enchants, and a 45-second cooldown. The existing server uses Galaxy SMP and Head Drop only; no additional lunge plugin or redesign is involved. The listener counts Paper's successful `EntityLungeEvent`; verify behavior in the Phase 5 owner test.
 9. **Cosmic Crown thorns — [REQUIRED: Phase 5].** Keep the specified trigger of every two damaging hits taken. The implementation currently uses the direct attacker as the retaliation target and configurable damage; both are provisional until the owner confirms the target/rule.
-10. **“First mace on the server” — [REQUIRED: Phase 5].** The server should allow one of each custom mace type: one Star Mace and one Collapsing Star Mace, each with a separate permanent server-wide craft record. Keep the “first mace on the server” question open for the server owner: does the Star Mace need to be the first mace of any kind to exist/be crafted on the server, or is it only the first custom mace type introduced by this plugin? Do not add a scan for existing mace items or block either custom type's independent craft allowance unless the owner confirms the broader rule.
+10. **Mace limits — [IMPLEMENTED LOCALLY; OWNER VERIFICATION REQUIRED].** There are two custom mace types, with a server-wide maximum of one Star Mace and one Collapsing Star Mace for non-operators. Each has an independent permanent craft record, and both count toward the non-operator player's two-legendary total. Operators are exempt. This is not an open question.
 11. **Astral Sword attack-speed balance — [REQUIRED: Phase 7].** Use a temporary 1.65x attack-speed multiplier for 30 seconds after the four-hit combo. Keep the final value open for balance review; clarify whether “1.65 boost” is intended as a multiplier if testing exposes any ambiguity.
-12. **Star Mace inactivity — [REQUIRED: Phase 5].** Owner will confirm the inactivity-reset timing; hit/miss progression and the level-V cooldown are specified in the Phase 5 checklist.
-13. **Cooldown UI and Mass Orb cooldown — [REQUIRED: Phase 5].** Confirm the intended post-1.9 UI and which Mass Orb action starts its 20-second cooldown; the owner separately requested an ender-pearl-style marker for maces and shield.
-14. **Swift Sneak and Kuiper targeting — [REQUIRED: Phase 5].** Confirm Swift Sneak level, Kuiper radius/power defaults, and how its player/mob targeting toggle should work.
-15. **Dropped repeatables and limits — [REQUIRED: Phase 6].** Choose floor counting or clumping capped at 16 per slot, and define the scope. Clarify desired global versus per-player limits after OP removal without silently overturning the permanent craft-once rule.
+12. **Star Mace progression — [OWNER VERIFICATION IN PHASE 5].** Local code and automated tests cover Wind Burst progression and the miss-only 30-second cooldown, including misses at V; a successful hit at V does not start the cooldown. The correction stays open until verified in game.
+13. **Cooldown UI — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** All five custom items use the same vanilla Ender Pearl-style sweep with separate cooldown groups. Ordinary snowballs, heavy cores, maces and shields do not share these groups. Persisted Kuiper, Mass Orb and mace cooldowns restore their markers on login; verify in game.
+14. **Swift Sneak — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Lunar Leggings receive Swift Sneak III; existing identified leggings are upgraded on inventory refresh or pickup. Kuiper Ball settings remain under `phase-four.kuiper-ball`.
+15. **Dropped repeatables and limits — [OWNER VERIFICATION IN PHASE 6].** The owner chose ground clumps of up to 128 items, unpacked according to inventory stack limits. The owner has confirmed the two-legendary player limit and separate one-of-each-mace server limits; removal must not silently overturn permanent craft-once records.
 
 ## 6. Changelog
 
+- 2026-11-11: Added Ender Pearl-style cooldown sweeps for Kuiper Ball and Mass Orb and moved both maces and Nova Shield to separate custom-item cooldown groups. Restore persisted markers on login; in-game indicator and isolation checks remain.
+- 2026-11-11: Corrected Star Mace so its 30-second cooldown starts only on a miss, including at Wind Burst V; a successful hit at V no longer starts a cooldown. In-game verification remains.
+- 2026-11-11: Removed Fire Aspect from Astral Sword and Flame from Celestial Bow. Existing identified protected items have these enchants and their generated lore removed on player-inventory refresh or pickup; live verification remains.
+- 2026-11-11: Nova Shield now counts only blocked, fully charged player axe critical hits, prevents vanilla premature disable, disables blocking for 10 seconds after two qualifying hits, and rescues only from the offhand. Live combat verification remains.
+- 2026-11-11: Added Clumps-inspired ground clumping for compatible repeatable items and Ender Pearls, storing up to 128 items per ground entity with partial pickup and unchanged inventory stack limits. Automated merge arithmetic is tested; live Paper validation remains.
+- 2026-11-11: Added Depth Strider III to new Singularity Boots. Applied the eight-per-stack pearl metadata to loot, spawned drops and player inventory changes, with creative checks; no player-wide pearl cap. Server-side gameplay and other acquisition paths need verification. Removed the unnecessary Corrupt Pearl legacy-migration task.
+- 2026-11-11: Implemented shared non-operator legendary limits, independent non-operator mace tracking, operator exemptions, blocked recipe-book clicks and output, and logged operator mace-drop cancellation. Owner confirmed the test server has no old data; no migration is needed. Automated tests/build pass; live verification is pending.
+- 2026-11-11: Clarified that operators bypass both limits; documented blocked bench output/recipe-book autofill and the requested logged return of operator-dropped maces when the matching non-operator slot is occupied. The later entry above records their implementation.
+- 2026-11-11: Confirmed one of each mace server-wide and two legendary items total per player, with both maces counting and usables excluded. Removed the repeated mace question and marked enforcement beyond existing per-item and craft-once checks as outstanding.
+- 2026-11-11: Set newly created Corrupt Ender Pearls to a maximum stack size of 8. Corrected the cooldown UI checklist to distinguish enforced cooldowns from visible markers and recorded the mace implementations as awaiting in-game verification.
+- 2026-11-11: Added Swift Sneak III to Lunar Leggings, the 5% Corrupt Ender Pearl drop and boots recipe, and Nova Shield recipes requiring matching planks; custom pearl model and in-game verification remain pending.
+- 2026-11-11: Implemented the Mass Orb 20-second cooldown, starting on an attempted fall-slam, and the Kuiper 1.5-second throw-attempt cooldown with configurable entity targeting. Documented that cooldown indicators use the vanilla Ender Pearl sweep.
+- 2026-11-11: Exposed all Kuiper Ball effect parameters in `config.yml`, including freeze duration, cooldown, burst radius/strength, vertical impulse, and target-category booleans; documented host configuration and validated numeric values.
+- 2026-11-11: Replaced the Phase 5–6 owner-feedback checklist with the owner's latest status key. ✅ entries are local-only and still need in-game testing; ⬜ entries remain open. No changes were pushed.
 - 2026-11-10: Created roadmap v2 from the existing roadmap; added the complete owner-feedback correction checklists to Phases 5 and 6, moved polish and balance to Phase 7, and retained owner-local tests and unresolved decisions.
 - 2026-10-22: Initial roadmap drafted from IdeasOnPaper.md; updated from answers in OpenQuestions.md and reviewed for consistency.
 - 2026-10-22: Expanded Phases 1–6 to trace the implementation against Sections 2–3.5; recorded remaining design decisions instead of guessing.
 - 2026-10-25: Applied owner decisions to Open Questions 1–11 and affected Phase 3–5 requirements; retained unresolved questions with required-phase tags and explicit placeholders.
 - 2026-10-25: Clarified Nebula Spear uses the native Lunge behavior on the existing Galaxy SMP + Head Drop server; no additional plugin integration is required. Phase 5 still needs to implement and verify successful-lunge counting against the target Paper API.
-- 2026-10-25: Corrected the mace rule: each custom mace type has its own permanent server-wide one-craft allowance, and kept the “first mace on the server” interpretation open for the server owner.
+- 2026-10-25: Recorded each custom mace type's independent permanent server-wide one-craft allowance. The later owner confirmation above resolves the former “first mace” question.
 - 2026-10-25: Implemented the Phase 2 rules engine, made Head Drop 3.1.0+ a required dependency, and added Phase 2.1 automated/server integration test checklists.
 
 

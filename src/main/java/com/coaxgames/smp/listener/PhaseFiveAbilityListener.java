@@ -5,6 +5,8 @@ import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.util.ConfigNumbers;
 import com.coaxgames.smp.util.MaceDamage;
 import io.papermc.paper.event.entity.EntityLungeEvent;
+import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -79,6 +82,7 @@ public final class PhaseFiveAbilityListener implements Listener {
     private final Map<UUID, Integer> riptideCounts = new HashMap<>();
     private final Map<UUID, Integer> crownHitCounts = new HashMap<>();
     private final Map<UUID, Integer> shieldAxeHitCounts = new HashMap<>();
+    private final Map<UUID, AttackCharge> attackCharges = new HashMap<>();
     private final Set<UUID> absorptionUpgradeInProgress = new HashSet<>();
     private final Set<ItemDisplay> rescueDisplays = new HashSet<>();
     private final List<Rift> rifts = new ArrayList<>();
@@ -354,29 +358,61 @@ public final class PhaseFiveAbilityListener implements Listener {
         });
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPreAttack(PrePlayerAttackEntityEvent event) {
+        if (!event.willAttack()) {
+            return;
+        }
+        UUID attacker = event.getPlayer().getUniqueId();
+        AttackCharge charge = new AttackCharge(event.getAttacked().getUniqueId(),
+                event.getPlayer().getCooledAttackStrength(0.0F));
+        attackCharges.put(attacker, charge);
+        Bukkit.getScheduler().runTask(plugin, () -> attackCharges.remove(attacker, charge));
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVanillaShieldDisable(PlayerShieldDisableEvent event) {
+        Player player = event.getPlayer();
+        if (player.hasActiveItem() && isItem(player.getActiveItem(), NOVA_SHIELD)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onShieldAxeHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player defender)
                 || !(event.getDamager() instanceof Player attacker)
-                || !isAxe(attacker.getInventory().getItemInMainHand().getType())
-                || !hasHeldItem(defender, NOVA_SHIELD)) {
+                || !defender.hasActiveItem() || !isItem(defender.getActiveItem(), NOVA_SHIELD)) {
+            return;
+        }
+        AttackCharge charge = attackCharges.remove(attacker.getUniqueId());
+        float strength = charge != null && charge.target().equals(defender.getUniqueId())
+                ? charge.strength() : 0.0F;
+        boolean blocked = event.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING)
+                && event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) < 0.0;
+        boolean qualifies = NovaShieldRules.qualifies(
+                isAxe(attacker.getInventory().getItemInMainHand().getType()),
+                event.isCritical(), strength, blocked,
+                defender.getCooldown(com.coaxgames.smp.util.ItemCooldownMarkers.group(NOVA_SHIELD)) > 0);
+        if (!qualifies) {
             return;
         }
         UUID defenderId = defender.getUniqueId();
-        if (shieldAxeHitCounts.merge(defenderId, 1, Integer::sum) < 2) {
+        int hits = NovaShieldRules.nextHitCount(shieldAxeHitCounts.getOrDefault(defenderId, 0), true);
+        if (hits < NovaShieldRules.HITS_TO_DISABLE) {
+            shieldAxeHitCounts.put(defenderId, hits);
             return;
         }
         shieldAxeHitCounts.remove(defenderId);
-        long ticks = Math.multiplyExact(
-                (long) number("phase-five.nova-shield.disable-seconds", 5.0), 20L);
-        defender.setCooldown(Material.SHIELD, Math.toIntExact(ticks));
+        defender.clearActiveItem();
+        com.coaxgames.smp.util.ItemCooldownMarkers.set(defender, NOVA_SHIELD, NovaShieldRules.DISABLE_TICKS);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onNovaRescue(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)
                 || event.getFinalDamage() < player.getHealth() + player.getAbsorptionAmount()
-                || !hasItem(player, NOVA_SHIELD)
+                || !isItem(player.getInventory().getItemInOffHand(), NOVA_SHIELD)
                 || plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), NOVA_SHIELD)) {
             return;
         }
@@ -398,6 +434,11 @@ public final class PhaseFiveAbilityListener implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 100, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 800, 0, true, true, true));
         player.setAbsorptionAmount(Math.max(player.getAbsorptionAmount(), 4.0));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onShieldHolderDeath(PlayerDeathEvent event) {
+        shieldAxeHitCounts.remove(event.getEntity().getUniqueId());
     }
 
     private void playNovaShieldRescueEffect(Player player) {
@@ -472,6 +513,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         riptideCounts.remove(id);
         crownHitCounts.remove(id);
         shieldAxeHitCounts.remove(id);
+        attackCharges.remove(id);
         for (Rift rift : rifts) {
             rift.traversal.leave(id);
         }
@@ -604,6 +646,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         riptideCounts.remove(playerUuid);
         crownHitCounts.remove(playerUuid);
         shieldAxeHitCounts.remove(playerUuid);
+        attackCharges.remove(playerUuid);
     }
 
     private void createCelestialCloud(World world, Location impact) {
@@ -658,18 +701,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         return isItem(item, itemId);
     }
 
-    private boolean hasItem(Player player, String itemId) {
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (isItem(stack, itemId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasHeldItem(Player player, String itemId) {
-        return isItem(player.getInventory().getItemInMainHand(), itemId)
-                || isItem(player.getInventory().getItemInOffHand(), itemId);
+    private record AttackCharge(UUID target, float strength) {
     }
 
     private double number(String path, double fallback) {

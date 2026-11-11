@@ -4,6 +4,7 @@ import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.util.HitCounter;
 import com.coaxgames.smp.util.MassOrbDamage;
+import com.coaxgames.smp.util.ItemCooldownMarkers;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import java.io.IOException;
 import java.time.Duration;
@@ -20,7 +21,9 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
@@ -101,7 +104,19 @@ public final class PhaseFourAbilityListener implements Listener {
                 || !isItem(event.getItemStack(), "kuiper_ball")) {
             return;
         }
+        Player player = event.getPlayer();
+        if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), "kuiper_ball")
+                || !startKuiperCooldown(player)) {
+            event.setCancelled(true);
+            event.setShouldConsume(false);
+            return;
+        }
         snowball.getPersistentDataContainer().set(kuiperProjectileKey, PersistentDataType.BYTE, (byte) 1);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                ItemCooldownMarkers.sync(player, "kuiper_ball", plugin.getCooldownManager());
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -113,9 +128,12 @@ public final class PhaseFourAbilityListener implements Listener {
         }
         double radius = nonNegativeConfig("phase-four.kuiper-ball.burst-radius", 4.0);
         double strength = nonNegativeConfig("phase-four.kuiper-ball.burst-strength", 1.5);
+        double verticalBoost = nonNegativeConfig("phase-four.kuiper-ball.burst-vertical-boost", 0.35);
+        double minimumVertical = nonNegativeConfig("phase-four.kuiper-ball.burst-minimum-vertical", 0.35);
         for (org.bukkit.entity.Entity nearby : projectile.getWorld().getNearbyEntities(
                 projectile.getLocation(), radius, radius, radius)) {
-            if (nearby.equals(projectile) || nearby.equals(projectile.getShooter())) {
+            if (nearby.equals(projectile) || nearby.equals(projectile.getShooter())
+                    || !isKuiperBurstTarget(nearby)) {
                 continue;
             }
             if (nearby instanceof LivingEntity living && event.getHitEntity() == living) {
@@ -129,10 +147,56 @@ public final class PhaseFourAbilityListener implements Listener {
             if (direction.lengthSquared() == 0) {
                 direction = new Vector(0, 1, 0);
             } else {
-                direction.normalize().setY(Math.max(0.35, direction.getY() + 0.35));
+                direction.normalize().setY(Math.max(
+                        minimumVertical, direction.getY() + verticalBoost));
             }
             nearby.setVelocity(direction.multiply(strength));
         }
+    }
+
+    private boolean startKuiperCooldown(Player player) {
+        long cooldownMillis = positiveConfig("phase-four.kuiper-ball.cooldown-millis", 1_500L);
+        try {
+            boolean started = plugin.getCooldownManager().start(
+                    player.getUniqueId(), "kuiper_ball", Duration.ofMillis(cooldownMillis));
+            if (started) {
+                ItemCooldownMarkers.sync(player, "kuiper_ball", plugin.getCooldownManager());
+            }
+            return started;
+        } catch (IOException | ArithmeticException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not persist Kuiper Ball cooldown for " + player.getUniqueId()
+                            + "; the projectile launch was cancelled.",
+                    exception);
+            return false;
+        }
+    }
+
+    private boolean isKuiperBurstTarget(org.bukkit.entity.Entity entity) {
+        if (entity instanceof Player) {
+            return booleanConfig("phase-four.kuiper-ball.target-players", true);
+        }
+        if (entity instanceof Mob) {
+            return booleanConfig("phase-four.kuiper-ball.target-mobs", true);
+        }
+        if (entity instanceof Item) {
+            return booleanConfig("phase-four.kuiper-ball.target-items", false);
+        }
+        if (entity instanceof Projectile) {
+            return booleanConfig("phase-four.kuiper-ball.target-projectiles", false);
+        }
+        return false;
+    }
+
+    private boolean booleanConfig(String path, boolean fallback) {
+        if (!plugin.getConfig().contains(path)) {
+            return fallback;
+        }
+        Object value = plugin.getConfig().get(path);
+        if (!(value instanceof Boolean enabled)) {
+            throw new IllegalStateException(path + " must be true or false.");
+        }
+        return enabled;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -173,6 +237,10 @@ public final class PhaseFourAbilityListener implements Listener {
             massOrbFalls.remove(playerId);
             return;
         }
+        if (plugin.getCooldownManager().isOnCooldown(playerId, "mass_orb")) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
         double descent = from.getY() - to.getY();
         if (descent < 0) {
             massOrbFalls.remove(playerId);
@@ -200,6 +268,9 @@ public final class PhaseFourAbilityListener implements Listener {
                     || fall.hitEntities.contains(target.getUniqueId())) {
                 continue;
             }
+            if (plugin.getCooldownManager().isOnCooldown(playerId, "mass_orb")) {
+                break;
+            }
             double fraction = MassOrbDamage.impactFraction(
                     from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ(),
                     player.getWidth(), target.getBoundingBox());
@@ -208,6 +279,9 @@ public final class PhaseFourAbilityListener implements Listener {
             }
             double damage = MassOrbDamage.slamDamage(fall.distance + descent * fraction);
             if (damage > 0) {
+                if (!startMassOrbCooldown(player)) {
+                    break;
+                }
                 fall.hitEntities.add(target.getUniqueId());
                 target.damage(damage, player);
             }
@@ -215,6 +289,22 @@ public final class PhaseFourAbilityListener implements Listener {
         fall.distance += descent;
         if (player.isOnGround()) {
             massOrbFalls.remove(playerId);
+        }
+    }
+
+    private boolean startMassOrbCooldown(Player player) {
+        try {
+            boolean started = plugin.getCooldownManager().start(player.getUniqueId(), "mass_orb");
+            if (started) {
+                ItemCooldownMarkers.sync(player, "mass_orb", plugin.getCooldownManager());
+            }
+            return started;
+        } catch (IOException | ArithmeticException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not persist Mass Orb cooldown for " + player.getUniqueId()
+                            + "; the slam was cancelled.",
+                    exception);
+            return false;
         }
     }
 

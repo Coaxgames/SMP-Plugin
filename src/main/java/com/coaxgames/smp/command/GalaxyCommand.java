@@ -179,8 +179,7 @@ public final class GalaxyCommand implements TabExecutor {
         for (int i = 0; i < count; i++) {
             ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
             if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
-                problem = target.getName() + " already holds the configured maximum of "
-                        + definition.id() + " (" + plugin.getLegendaryItems().maxPerPlayer(definition.id()) + ").";
+                problem = target.getName() + " already holds the maximum of two legendary items.";
                 break;
             }
             if (definition.trackUniqueInstance()) {
@@ -191,14 +190,16 @@ public final class GalaxyCommand implements TabExecutor {
                 }
                 UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
                         .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
-                plugin.getDataStore().recordAdministrativeGrant(
-                        definition.id(),
-                        definition.maxCrafts(),
-                        itemUuid,
-                        target.getUniqueId(),
-                        target.getLocation(),
-                        definition.craftOnce()
-                );
+                if (!target.isOp() && definition.craftOnce()) {
+                    if (!plugin.getDataStore().recordCraftedItem(definition.id(), definition.maxCrafts(),
+                            itemUuid, target.getUniqueId(), target.getLocation(), true)) {
+                        problem = "The server-wide limit for " + definition.id() + " has already been reached.";
+                        break;
+                    }
+                } else {
+                    plugin.getDataStore().recordAdministrativeGrant(definition.id(), definition.maxCrafts(),
+                            itemUuid, target.getUniqueId(), target.getLocation(), false);
+                }
                 target.getInventory().setItem(slot, item);
             } else if (!target.getInventory().addItem(item).isEmpty()) {
                 problem = target.getName() + "'s inventory has no room for the full stack.";
@@ -211,7 +212,8 @@ public final class GalaxyCommand implements TabExecutor {
         }
         if (given > 0) {
             sender.sendMessage(Component.text("Gave " + given + "x " + definition.id() + " to " + target.getName()
-                    + (definition.craftOnce() ? ". Its craft quota is now permanently used." : ".")));
+                    + (definition.craftOnce() && !target.isOp()
+                    ? ". Its craft quota is now permanently used." : ".")));
         }
     }
 
@@ -225,6 +227,11 @@ public final class GalaxyCommand implements TabExecutor {
             return;
         }
         int removed = plugin.getCooldownManager().clearForItem(args[1]);
+        if (com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS.contains(args[1])) {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                com.coaxgames.smp.util.ItemCooldownMarkers.set(online, args[1], 0);
+            }
+        }
         sender.sendMessage(Component.text("Cleared " + removed + " cooldown(s) for " + args[1]
                 + ". Its permanent crafted-ever record was not changed."));
     }

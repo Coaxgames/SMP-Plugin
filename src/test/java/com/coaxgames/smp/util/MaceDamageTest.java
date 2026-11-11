@@ -9,18 +9,41 @@ import org.junit.jupiter.api.Test;
 
 class MaceDamageTest {
     @Test
-    void capsBaseDamageAtSevenHeartsAndDetectsHitsOverFiveHearts() {
+    void capsBaseDamageAtSevenHearts() {
         assertEquals(14.0, MaceDamage.capBaseDamage(30.0, 14.0));
         assertEquals(8.0, MaceDamage.capBaseDamage(8.0, 14.0));
-        assertFalse(MaceDamage.exceedsSparkThreshold(10.0));
-        assertTrue(MaceDamage.exceedsSparkThreshold(10.01));
+    }
+
+    @Test
+    void starMaceProgressionIncreasesOnHitsAndOnlyMissesStartCooldown() {
+        assertEquals(2, MaceDamage.nextStarMaceWindBurst(1, true));
+        assertEquals(5, MaceDamage.nextStarMaceWindBurst(4, true));
+        assertEquals(5, MaceDamage.nextStarMaceWindBurst(5, true));
+        assertEquals(1, MaceDamage.nextStarMaceWindBurst(4, false));
+        assertEquals(1, MaceDamage.nextStarMaceWindBurst(5, false));
+        assertFalse(MaceDamage.startsStarMaceCooldown(4, true));
+        assertFalse(MaceDamage.startsStarMaceCooldown(5, true));
+        assertTrue(MaceDamage.startsStarMaceCooldown(5, false));
+        assertTrue(MaceDamage.startsStarMaceCooldown(1, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> MaceDamage.nextStarMaceWindBurst(0, true));
+    }
+
+    @Test
+    void collapsingSparksScaleWithDamageAndConsecutiveHits() {
+        assertEquals(1, MaceDamage.collapsingSparkCount(2.0, 1));
+        assertEquals(5, MaceDamage.collapsingSparkCount(8.0, 2));
+        assertEquals(8, MaceDamage.collapsingSparkCount(14.0, 2));
+        assertEquals(0, MaceDamage.collapsingSparkCount(1.99, 1));
+        assertThrows(IllegalArgumentException.class,
+                () -> MaceDamage.collapsingSparkCount(Double.POSITIVE_INFINITY, 1));
+        assertThrows(IllegalArgumentException.class,
+                () -> MaceDamage.collapsingSparkCount(2.0, 0));
     }
 
     @Test
     void rejectsInvalidDamageValues() {
         assertThrows(IllegalArgumentException.class,
                 () -> MaceDamage.capBaseDamage(Double.NaN, 14.0));
-        assertThrows(IllegalArgumentException.class,
-                () -> MaceDamage.exceedsSparkThreshold(Double.POSITIVE_INFINITY));
     }
 }

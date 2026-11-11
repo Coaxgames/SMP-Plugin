@@ -23,8 +23,8 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 | Item | Base | Key Ability / Rules | Recipe (from notes) |
 |---|---|---|---|
 | Nebula Spear | Netherite spear | Damage + cooldown, unbreakable; every 5 lunges → thrust (riptide-like velocity), max 4 hearts vs prot 4 diamond; comes with Lunge III, no other enchants; attribute swapping ineffective; 45s CD | Corners: player head; top: trident; middle: netherite spear; bottom: redstone block; sides: gold blocks |
-| Star Mace | Mace | 1st mace on server; Wind Burst 3, Density 2; after 2 hits 30s CD; damage cap 7 hearts; no enchant/disenchant | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
-| Collapsing Star Mace | Mace | Mace perks + sparks if hit > 5 hearts; each spark = tiny explosion (cap 1 heart); dmg cap 7 hearts; Breach 3 + Wind Burst 2 | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
+| Star Mace | Mace | Wind Burst starts at I and rises by one on hits to V; a miss resets to I and starts a 30s cooldown; a swing at V starts the same cooldown; Density 2; damage cap 7 hearts | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
+| Collapsing Star Mace | Mace | Breach 3 + Wind Burst 2; damage cap 7 hearts; one spark per full heart of actual mace damage, plus one spark per consecutive hit after the first; each spark deals 1 health point of splash damage | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
 | Astral Sword | Netherite sword | Sharpness 6, Looting 3, Fire Aspect; no enchanting; 4-hit combo →Faster attack speed for 30 seconds | Corners: heads; top+middle: netherite ingot; bottom: breeze rod; sides: diamond blocks |
 | Void Sword | Netherite sword | Unbreakable, Sharp 4, Looting 3; 4-hit combo → Slowness 1 + Wither 1 for 10s | Corners: heads; middle: netherite sword; edges: wither roses |
 | Celestial Bow | Bow | Power V, Flame, Punch II, Infinity; fully charged → splash damage + lingering potion/cloud of Wither or Poison | Left-middle end rod, bottom blaze rod, top breeze rod, left corners heads, right column Galaxy String x3, middle end crystal |
@@ -79,7 +79,7 @@ Living document. Source of ideas: [IdeasOnPaper.md](./IdeasOnPaper.md). Update t
 
 ### 3.4 Abilities (implementation notes)
 - **Damage caps:** `EntityDamageByEntityEvent` – compute the bounded value from `getFinalDamage()` and verify the applied result after armor/protection modifiers; do not assume `setDamage()` directly sets final damage. Test against prot 4 diamond.
-- **Combo counters:** per-attacker map with timeout (Void Sword 4 hits, Star Mace 2 hits, Cosmic Crown 2 hits taken).
+- **Combo counters:** per-attacker tracking for Void Sword, Star Mace progression and Cosmic Crown. Star Mace progression resets on a missed swing, not inactivity.
 - **Lunge/Riptide counting:** use the native spear Lunge enchantment already confirmed working on the existing server; implement Nebula Spear's fifth-successful-lunge trigger using the Paper API available in the target setup. No third-party lunge integration is expected. Count trident Riptides for Wormhole Trident.
 - **Rift (Wormhole):** `Location` + radius, particle task, `BukkitScheduler`/Folia-safe scheduler; 50s lifetime; entry check by proximity.
 - **Time-based buffs (Solstice/Lunar):** grant the Solstice Chestplate effects once per Minecraft day when `world.getTime()` reaches 13,500 ticks; Lunar Leggings timing remains to be specified.

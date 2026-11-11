@@ -51,6 +51,38 @@ public final class LegendaryDataStore {
         return getCraftCount(itemId) > 0;
     }
 
+    public static boolean isLimitedMace(String itemId) {
+        return "star_mace".equals(itemId) || "collapsing_star_mace".equals(itemId);
+    }
+
+    public synchronized UUID getNonOperatorMace(String itemId) {
+        if (!isLimitedMace(itemId)) {
+            throw new IllegalArgumentException("Not a limited mace: " + itemId);
+        }
+        return parseUuid(data.getString("mace-slots." + itemId));
+    }
+
+    public synchronized boolean claimNonOperatorMace(String itemId, UUID itemUuid) throws IOException {
+        Objects.requireNonNull(itemUuid, "itemUuid");
+        UUID existing = getNonOperatorMace(itemId);
+        if (existing != null) {
+            return existing.equals(itemUuid);
+        }
+        if (hasBeenCrafted(itemId)) {
+            return false;
+        }
+        data.set("mace-slots." + itemId, itemUuid.toString());
+        data.set("crafts." + itemId, 1);
+        try {
+            save();
+        } catch (IOException exception) {
+            data.set("mace-slots." + itemId, null);
+            data.set("crafts." + itemId, null);
+            throw exception;
+        }
+        return true;
+    }
+
     public synchronized boolean tryRecordCraft(String itemId, int maxCrafts) throws IOException {
         validateCraftLimit(itemId, maxCrafts);
         int count = getCraftCount(itemId);
@@ -110,6 +142,9 @@ public final class LegendaryDataStore {
         String craftPath = "crafts." + itemId;
         if (enforceCraftLimit) {
             data.set(craftPath, count + 1);
+            if (isLimitedMace(itemId)) {
+                data.set("mace-slots." + itemId, itemUuid.toString());
+            }
         }
         data.set(itemPath + ".id", itemId);
         data.set(itemPath + ".owner", ownerUuid == null ? null : ownerUuid.toString());
@@ -134,6 +169,9 @@ public final class LegendaryDataStore {
         } catch (IOException exception) {
             if (enforceCraftLimit) {
                 data.set(craftPath, count == 0 ? null : count);
+                if (isLimitedMace(itemId)) {
+                    data.set("mace-slots." + itemId, null);
+                }
             }
             data.set(itemPath, null);
             data.set(ritualPath, null);
@@ -272,6 +310,9 @@ public final class LegendaryDataStore {
         data.set(ritualPath, null);
         if (craftCounted) {
             data.set(craftPath, previousCraftCount == 1 ? null : previousCraftCount - 1);
+            if (isLimitedMace(itemId) && itemUuid.equals(getNonOperatorMace(itemId))) {
+                data.set("mace-slots." + itemId, null);
+            }
         }
         try {
             save();
@@ -280,6 +321,9 @@ public final class LegendaryDataStore {
             restoreSection(ritualPath, previousRitual);
             if (craftCounted) {
                 data.set(craftPath, previousCraftCount);
+                if (isLimitedMace(itemId)) {
+                    data.set("mace-slots." + itemId, itemUuid.toString());
+                }
             }
             throw exception;
         }
@@ -393,6 +437,9 @@ public final class LegendaryDataStore {
         String craftPath = "crafts." + itemId;
         if (enforceCraftLimit) {
             data.set(craftPath, count + 1);
+            if (isLimitedMace(itemId)) {
+                data.set("mace-slots." + itemId, itemUuid.toString());
+            }
         }
         setItemRecord(itemId, itemUuid, ownerUuid, location);
         try {
@@ -400,6 +447,9 @@ public final class LegendaryDataStore {
         } catch (IOException exception) {
             if (enforceCraftLimit) {
                 data.set(craftPath, count == 0 ? null : count);
+                if (isLimitedMace(itemId)) {
+                    data.set("mace-slots." + itemId, null);
+                }
             }
             data.set(itemPath, null);
             throw exception;
