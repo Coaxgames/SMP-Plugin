@@ -4,6 +4,7 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Made Collapsing Star Mace sparks more visible with a wider burst of existing spark particles, including on lethal hits; spark damage and cooldown remain unchanged. In-game visual verification is pending.
 - Separated plugin versions from pack release revisions: unchanged plugin JAR contents retain their version, pack-only releases update live, and packs requiring newer plugin code wait for restart. Existing servers need this updater installed first.
 - Corrected mace hit tracking for attacks received before arm-swing events, so successful hits are not mistaken for misses. Native Wind Burst still needs separate cooldown suppression and in-game verification.
 - Temporary GitHub Actions recovery test change.
