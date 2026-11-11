@@ -100,12 +100,17 @@ public final class GalaxyCommand implements TabExecutor {
             targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
             return matching(targets, args[1]);
         }
-        if (args.length == 4 && args[0].equalsIgnoreCase("give")) {
+        if (args.length == 4 && args[0].equalsIgnoreCase("give") && !args[2].equalsIgnoreCase("all")) {
             return matching(List.of("1", "8", "16", "32", "64"), args[3]);
         }
-        if ((args.length == 3 && args[0].equalsIgnoreCase("give"))
-                || (args.length == 2 && (args[0].equalsIgnoreCase("reset")
-                || args[0].equalsIgnoreCase("locate")))) {
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
+            List<String> itemIds = new ArrayList<>(plugin.getLegendaryItems().getAll().stream()
+                    .map(LegendaryItem::id).toList());
+            itemIds.add("all");
+            return matching(itemIds, args[2]);
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("reset")
+                || args[0].equalsIgnoreCase("locate"))) {
             return matching(plugin.getLegendaryItems().getAll().stream().map(LegendaryItem::id).toList(),
                     args[args.length - 1]);
         }
@@ -118,21 +123,12 @@ public final class GalaxyCommand implements TabExecutor {
                 sender.sendMessage(Component.text("Only a player can use /" + label + " give all."));
                 return;
             }
-            List<LegendaryItem> items = plugin.getLegendaryItems().getAll().stream()
-                    .sorted(java.util.Comparator.comparing(LegendaryItem::id))
-                    .toList();
-            if (items.isEmpty()) {
-                sender.sendMessage(Component.text("No legendary items are registered yet."));
-                return;
-            }
-            for (LegendaryItem item : items) {
-                giveItem(sender, player, item, 1);
-            }
+            giveAll(sender, player);
             return;
         }
         if (args.length < 3 || args.length > 4) {
             sender.sendMessage(Component.text("Usage: /" + label
-                    + " give all | give <player|@p> <item> [count]"));
+                    + " give all | give <player|@p> all | give <player|@p> <item> [count]"));
             return;
         }
 
@@ -150,6 +146,14 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text(args[1].equalsIgnoreCase("@p")
                     ? "No players matched @p."
                     : "That player must be online."));
+            return;
+        }
+        if (args[2].equalsIgnoreCase("all")) {
+            if (args.length != 3) {
+                sender.sendMessage(Component.text("Usage: /" + label + " give <player|@p> all"));
+                return;
+            }
+            giveAll(sender, target);
             return;
         }
         LegendaryItem definition = plugin.getLegendaryItems().get(args[2]).orElse(null);
@@ -171,6 +175,19 @@ public final class GalaxyCommand implements TabExecutor {
         }
 
         giveItem(sender, target, definition, count);
+    }
+
+    private void giveAll(CommandSender sender, Player target) throws IOException {
+        List<LegendaryItem> items = plugin.getLegendaryItems().getAll().stream()
+                .sorted(java.util.Comparator.comparing(LegendaryItem::id))
+                .toList();
+        if (items.isEmpty()) {
+            sender.sendMessage(Component.text("No legendary items are registered yet."));
+            return;
+        }
+        for (LegendaryItem item : items) {
+            giveItem(sender, target, item, 1);
+        }
     }
 
     private void giveItem(CommandSender sender, Player target, LegendaryItem definition, int count) throws IOException {
@@ -382,7 +399,7 @@ public final class GalaxyCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(Component.text("Usage: /" + label
-                + " give all | give <player|@p> <item> [count] | reset <item>"
+                + " give all | give <player|@p> all | give <player|@p> <item> [count] | reset <item>"
                 + " | reset-abilities <player|selector>"
                 + " | list | locate <item> | find item <uuid>"));
     }

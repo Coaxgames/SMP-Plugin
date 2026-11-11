@@ -42,7 +42,7 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 | Galaxy String | Plain crafting component, no ability | Top: blaze rod; middle: breeze rod; bottom: end rod |
 | Kuiper Ball | Freeze and wind-charge-like burst; 1.5s cooldown, configurable radius/power and player/mob targeting; recipe yields 10 | Corners: snowballs; center and middle-left/middle-right: powdered snow; top-middle/bottom-middle: breeze charges |
 | Mass Orb | Infinitely craftable; Slowness IV; direct fall-slam deals 0.25 hearts per block, capped at 10 hearts; holder takes reduced fall damage; 20s cooldown | Middle: heavy core; sides: netherite blocks; top/bottom: blue ice; corners: gold blocks |
-| Corrupt Ender Pearl | Custom Enderman drop at 5%; Singularity Boots ingredient; newly created pearls stack to 8 | Vanilla Ender Pearl appearance until owner supplies the model |
+| Corrupt Ender Pearl | Custom Enderman drop at 5%; Singularity Boots ingredient; newly created pearls stack to 8 | Uses the supplied CrackEnderPearl model and texture; in-game verification remains |
 
 Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total per-player pearl limit.
 
@@ -228,7 +228,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 10. ✅ Depth Strider III on newly created Singularity Boots; in-game verification remains.
 
 ##### Items, drops and limits
-1. ✅ Corrupt Ender Pearl: 5% Enderman drop, boots ingredient, and maximum stack size of 8. Uses vanilla pearl appearance until the owner supplies a texture/model; in-game verification remains.
+1. ✅ Corrupt Ender Pearl: 5% Enderman drop, boots ingredient, and maximum stack size of 8. Uses the supplied CrackEnderPearl model and texture; in-game verification remains.
 2. ⬜ Fix repeatable-item untracked-drop error spam.
 3. ⬜ Retest nearby compatible repeatable custom items and ordinary Ender Pearls clumping into one ground entity containing up to 128 items. A periodic scan now handles full stacks and items that meet after their initial spawn; pickup must respect inventory stack limits.
 4. ⬜ Verify legendary limit behavior after OP inventory removal, including freed player capacity and permanent mace craft records.
@@ -280,7 +280,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 1. **Ritual reveal — [REQUIRED: Phase 3].** The item name must use that item's own configured gradient in the global reveal, and coordinates must be formatted in parentheses as `(X, Y, Z)`. Audience and the remaining exact message format are undecided; use placeholders for those details. Reuse the same configured item-name component for death and interaction messages (Phase 7).
 2. **Lunar Leggings catch-up — [REQUIRED: Phase 4].** The trigger is confirmed as world time tick 13,500 in the 24,000-tick day, with a five-minute effect. Persist and resume an effect that was active at restart. Still decide whether a day whose tick 13,500 passed while the plugin/server was offline should grant the missed effect on startup, or wait for the next day's trigger. “Catch-up” here means only this missed-trigger decision, not resuming an already-active effect.
 3. **Mass Orb fall-damage formula — [OWNER VERIFICATION IN PHASE 4].** Direct fall-slams deal 0.25 hearts per block fallen to living targets, capped at 10 hearts before normal damage mitigation. The holder takes no slam damage but still takes reduced fall damage; the existing configurable Feather Falling XV reduction remains provisional.
-4. **Corrupt Ender Pearl — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Endermen have a 5% chance to drop the custom Corrupt Ender Pearl, required in all four Singularity Boots recipe corners. It currently uses the vanilla pearl appearance; the owner will provide a model later.
+4. **Corrupt Ender Pearl — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Endermen have a 5% chance to drop the custom Corrupt Ender Pearl, required in all four Singularity Boots recipe corners. The supplied CrackEnderPearl model and texture are bound to the custom item; ordinary pearls remain vanilla.
 5. **Celestial Bow cloud balance — [REQUIRED: Phase 6].** The current configurable Wither/Poison effect, cloud lifetime (20-second default), and effect duration/strength are placeholders pending final balance decisions; retain the settings until then.
 6. **Collapsing Star Mace sparks — [OWNER VERIFICATION IN PHASE 5].** Local code and automated tests cover damage-based and consecutive-hit sparks with one health point of splash damage per spark. The correction stays open until the complete behavior is verified in game.
 7. **Wormhole Trident rift — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The trigger, paired reusable endpoints, opponent damage/effect on each passage, and 50-second lifetime beginning on opening are implemented. The exit is placed using the creator's facing direction at opening, up to the configured 20 blocks; obstructed or overlapping exits are rejected. Interaction radius is a configurable placeholder until owner review.
@@ -295,6 +295,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 
 ## 6. Changelog
 
+- 2026-11-11: Bound the supplied CrackEnderPearl model and texture to the Corrupt Ender Pearl; ordinary pearls are unchanged. In-game verification remains.
 - 2026-11-11: Changed ground clumping to recheck nearby eligible items every second, including full stacks and items already loaded. Added merge and partial-pickup regression tests; owner-reported Kuiper Ball clumping still needs an in-game retest.
 - 2026-11-11: Set the Celestial Bow cloud lifetime default to 20 seconds and moved final cloud effect/lifetime/strength balance from Phase 5 to Phase 6. Values remain configurable placeholders pending final decisions.
 - 2026-11-11: Added Ender Pearl-style cooldown sweeps for Kuiper Ball and Mass Orb and moved both maces and Nova Shield to separate custom-item cooldown groups. Restore persisted markers on login; in-game indicator and isolation checks remain.

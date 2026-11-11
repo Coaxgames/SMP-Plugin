@@ -398,8 +398,11 @@ def write_boots_equipment(output_dir):
     (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
-# Astral Sword: astral_sword_RotFix.bbmodel/.json replace astral_sword.
-MODEL_ALIASES = {"astral_sword_rotfix": "astral_sword"}
+# Map source filenames to their registered custom item models.
+MODEL_ALIASES = {
+    "astral_sword_rotfix": "astral_sword",
+    "crackenderpearl": "corrupt_ender_pearl",
+}
 SUPERSEDED_MODELS = {"astral_sword"}
 
 
