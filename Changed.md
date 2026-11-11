@@ -4,6 +4,8 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Separated plugin versions from pack release revisions: unchanged plugin JAR contents retain their version, pack-only releases update live, and packs requiring newer plugin code wait for restart. Existing servers need this updater installed first.
+- Corrected mace hit tracking for attacks received before arm-swing events, so successful hits are not mistaken for misses. Native Wind Burst still needs separate cooldown suppression and in-game verification.
 - Temporary GitHub Actions recovery test change.
 - GitHub Actions build for #39 reported successful steps but remained stuck in progress; cancellation returned an inconsistent status error.
 - Bound the supplied CrackEnderPearl model and texture to newly created Corrupt Ender Pearls. Ordinary Ender Pearls keep their vanilla appearance; verify in game.

@@ -33,16 +33,21 @@ public final class ResourcePackService implements Listener {
     }
 
     private final GalaxySmpPlugin plugin;
-    private final HttpClient http = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient http;
     private volatile Pack current;
     private boolean required;
     private Component prompt;
 
     public ResourcePackService(GalaxySmpPlugin plugin) {
+        this(plugin, HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(15))
+                .build());
+    }
+
+    ResourcePackService(GalaxySmpPlugin plugin, HttpClient http) {
         this.plugin = plugin;
+        this.http = http;
     }
 
     public void start() {
@@ -89,12 +94,32 @@ public final class ResourcePackService implements Listener {
         }
     }
 
-    private Pack fetchLatest(String repository) throws Exception {
+    Pack fetchLatest(String repository) throws Exception {
         String release = get("https://api.github.com/repos/" + repository + "/releases/latest");
+        String installed = plugin.getPluginMeta().getVersion();
+        String required = requiredPluginVersion(release);
+        if (PluginUpdateService.compareVersions(required, installed) != 0) {
+            if (!installed.matches("\\d+\\.\\d+\\.\\d+")) {
+                throw new IllegalStateException("Installed plugin version is not a numeric release version: " + installed);
+            }
+            plugin.getLogger().info("[ResourcePack] Latest pack requires plugin " + required
+                    + "; looking for the pack matching installed plugin " + installed + ".");
+            release = get("https://api.github.com/repos/" + repository + "/releases/tags/" + installed);
+            if (PluginUpdateService.compareVersions(requiredPluginVersion(release), installed) != 0) {
+                throw new IllegalStateException("The fallback release does not match installed plugin " + installed + ".");
+            }
+        }
         String zip = findAssetUrl(release, ".zip").orElseThrow(() -> new IllegalStateException("The latest release has no resource-pack ZIP."));
         String sidecar = findAssetUrl(release, ".zip.sha1").orElseThrow(() -> new IllegalStateException("The latest release has no resource-pack SHA-1 file."));
         String sha1 = parseSha1(get(sidecar)).orElseThrow(() -> new IllegalStateException("The SHA-1 file does not start with a 40-character hex digest."));
         return new Pack(zip, sha1);
+    }
+
+    static String requiredPluginVersion(String release) {
+        String jarUrl = PluginUpdateService.findJarUrl(release)
+                .orElseThrow(() -> new IllegalStateException("The release has no versioned plugin jar."));
+        return PluginUpdateService.pluginVersion(jarUrl)
+                .orElseThrow(() -> new IllegalStateException("The release plugin jar version is invalid."));
     }
 
     private String get(String url) throws Exception {

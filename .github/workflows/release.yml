@@ -136,6 +136,12 @@ jobs:
         with:
           gradle-version: "9.6.1"
 
+      - name: Test release versioning
+        working-directory: trusted
+        run: |
+          node --test scripts/release-version.test.mjs
+          python3 -m unittest discover -s scripts -p 'test_release_plugin_version.py'
+
       - name: Set release version
         id: version
         env:
@@ -154,12 +160,45 @@ jobs:
         working-directory: source
         run: bash gradlew clean build
 
+      - name: Determine plugin version
+        id: plugin-version
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/previous-galaxy-release"
+          gh release download --repo "$GITHUB_REPOSITORY" \
+            --pattern 'galaxy-smp-plugin-*.jar' --dir "$RUNNER_TEMP/previous-galaxy-release"
+          previous=("$RUNNER_TEMP"/previous-galaxy-release/galaxy-smp-plugin-*.jar)
+          if [ "${#previous[@]}" -ne 1 ] || [ ! -f "${previous[0]}" ]; then
+            echo "::error::The latest release must contain exactly one plugin jar."
+            exit 1
+          fi
+          cp "build/libs/galaxy-smp-plugin-${VERSION}.jar" "$RUNNER_TEMP/galaxy-candidate.jar"
+          python3 "$GITHUB_WORKSPACE/trusted/scripts/release-plugin-version.py" \
+            "build/libs/galaxy-smp-plugin-${VERSION}.jar" "${previous[0]}" src/main/resources/plugin.yml
+
+      - name: Rebuild with plugin version
+        working-directory: source
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plugin-version.outputs.plugin_version }}
+        run: |
+          bash gradlew build
+          python3 "$GITHUB_WORKSPACE/trusted/scripts/release-plugin-version.py" --verify \
+            "$RUNNER_TEMP/galaxy-candidate.jar" "build/libs/galaxy-smp-plugin-${VERSION}.jar" "$PLUGIN_VERSION"
+          if [ "$PLUGIN_VERSION" != "$VERSION" ]; then
+            cp "build/libs/galaxy-smp-plugin-${VERSION}.jar" "build/libs/galaxy-smp-plugin-${PLUGIN_VERSION}.jar"
+          fi
+
       - name: Verify release jar
         working-directory: source
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plugin-version.outputs.plugin_version }}
         run: |
-          test -f "build/libs/galaxy-smp-plugin-${VERSION}.jar"
+          test -f "build/libs/galaxy-smp-plugin-${PLUGIN_VERSION}.jar"
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip"
           test -f "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1"
 
@@ -199,6 +238,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plugin-version.outputs.plugin_version }}
           RELEASE_SHA: ${{ steps.publish-commit.outputs.release_sha }}
         run: |
           for attempt in 1 2 3 4; do
@@ -207,7 +247,7 @@ jobs:
               --jq ".[] | select(.draft and .tag_name == \"${VERSION}\") | .id" |
               while read -r id; do gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}" || true; done
             if gh release create "$VERSION" \
-              "build/libs/galaxy-smp-plugin-${VERSION}.jar" \
+              "build/libs/galaxy-smp-plugin-${PLUGIN_VERSION}.jar" \
               "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip" \
               "build/distributions/galaxy-smp-resource-pack-${VERSION}.zip.sha1" \
               --title "$VERSION" \

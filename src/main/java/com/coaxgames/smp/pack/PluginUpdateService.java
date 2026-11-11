@@ -1,10 +1,12 @@
 package com.coaxgames.smp.pack;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -27,6 +30,7 @@ import org.bukkit.scheduler.BukkitTask;
 public final class PluginUpdateService implements CommandExecutor {
     private static final Pattern TAG = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern ASSET_URL = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern JAR_VERSION = Pattern.compile("/galaxy-smp-plugin-(\\d+\\.\\d+\\.\\d+)\\.jar$");
     private static final Set<Integer> ANNOUNCE_SECONDS = Set.of(600, 300, 120, 60, 30, 10, 5, 4, 3, 2, 1);
 
     private final GalaxySmpPlugin plugin;
@@ -78,16 +82,20 @@ public final class PluginUpdateService implements CommandExecutor {
                 reply(requester, "Could not read the latest release version.");
                 return;
             }
-            String latest = tag.group(1);
+            String releaseVersion = tag.group(1);
+            String jarUrl = findJarUrl(release)
+                    .orElseThrow(() -> new IllegalStateException("Release " + releaseVersion + " has no plugin jar."));
+            String latest = pluginVersion(jarUrl)
+                    .orElseThrow(() -> new IllegalStateException("Release " + releaseVersion + " has an invalid plugin jar version."));
             String installed = plugin.getPluginMeta().getVersion();
             if (compareVersions(latest, installed) <= 0) {
-                plugin.getLogger().info("[Update] Up to date: latest release " + latest + ", installed " + installed + ".");
+                plugin.getLogger().info("[Update] Up to date: release " + releaseVersion
+                        + ", latest plugin " + latest + ", installed " + installed + ".");
                 reply(requester, "Galaxy SMP is up to date (" + installed + ").");
                 return;
             }
             plugin.getLogger().info("[Update] Newer release found: " + latest + " (installed " + installed + ").");
-            String jarUrl = findJarUrl(release).orElseThrow(() -> new IllegalStateException("Release " + latest + " has no plugin jar."));
-            stage(jarUrl);
+            stage(jarUrl, latest);
             plugin.getLogger().info("Plugin " + latest + " is staged in the update folder (installed: " + installed + ").");
             reply(requester, "Found " + latest + " (installed " + installed + "). Restart countdown started.");
             plugin.getServer().getScheduler().runTask(plugin, () -> scheduleRestart(latest));
@@ -116,7 +124,7 @@ public final class PluginUpdateService implements CommandExecutor {
         return true;
     }
 
-    private void stage(String jarUrl) throws Exception {
+    private void stage(String jarUrl, String expectedVersion) throws Exception {
         Path updateFolder = plugin.getServer().getUpdateFolderFile().toPath();
         Files.createDirectories(updateFolder);
         // Paper only replaces a plugin whose update-folder jar has the same file name as the installed jar.
@@ -127,14 +135,19 @@ public final class PluginUpdateService implements CommandExecutor {
                 .timeout(Duration.ofMinutes(5))
                 .header("User-Agent", "GalaxySMP-Updater")
                 .build();
-        HttpResponse<Path> response = http.send(request, HttpResponse.BodyHandlers.ofFile(temp));
-        if (response.statusCode() != 200 || !looksLikeJar(temp)) {
+        try {
+            HttpResponse<Path> response = http.send(request, HttpResponse.BodyHandlers.ofFile(temp));
+            if (response.statusCode() != 200) {
+                throw new IllegalStateException("Plugin jar download failed (HTTP " + response.statusCode() + ").");
+            }
+            if (!hasPluginVersion(temp, expectedVersion)) {
+                throw new IllegalStateException("Downloaded jar does not identify GalaxySMP " + expectedVersion + ".");
+            }
+            Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
             Files.deleteIfExists(temp);
-            plugin.getLogger().warning("[Update] Jar download from " + jarUrl + " failed (HTTP " + response.statusCode() + ").");
-            throw new IllegalStateException("Plugin jar download failed (HTTP " + response.statusCode() + ").");
         }
         plugin.getLogger().info("[Update] Downloaded " + jarUrl + " to " + target + ".");
-        Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private String installedJarName() throws Exception {
@@ -194,9 +207,17 @@ public final class PluginUpdateService implements CommandExecutor {
         return flat.length() > 200 ? flat.substring(0, 200) + "..." : flat;
     }
 
-    private static boolean looksLikeJar(Path file) throws java.io.IOException {
-        try (var input = Files.newInputStream(file)) {
-            return input.read() == 'P' && input.read() == 'K';
+    static boolean hasPluginVersion(Path file, String expectedVersion) throws java.io.IOException {
+        try (var jar = new ZipFile(file.toFile())) {
+            var entry = jar.getEntry("plugin.yml");
+            if (entry == null) {
+                return false;
+            }
+            try (var reader = new InputStreamReader(jar.getInputStream(entry), StandardCharsets.UTF_8)) {
+                var metadata = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(reader);
+                return expectedVersion.equals(metadata.getString("version"))
+                        && "GalaxySMP".equals(metadata.getString("name"));
+            }
         }
     }
 
@@ -210,11 +231,16 @@ public final class PluginUpdateService implements CommandExecutor {
         Matcher matcher = ASSET_URL.matcher(releaseJson);
         while (matcher.find()) {
             String url = matcher.group(1);
-            if (url.endsWith(".jar") && url.contains("plugin")) {
+            if (pluginVersion(url).isPresent()) {
                 return Optional.of(url);
             }
         }
         return Optional.empty();
+    }
+
+    static Optional<String> pluginVersion(String jarUrl) {
+        Matcher matcher = JAR_VERSION.matcher(jarUrl);
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
     }
 
     /** Compares dotted numeric versions; non-numeric parts count as 0. */
