@@ -4,6 +4,7 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- GitHub Actions build for #39 reported successful steps but remained stuck in progress; cancellation returned an inconsistent status error.
 - Bound the supplied CrackEnderPearl model and texture to newly created Corrupt Ender Pearls. Ordinary Ender Pearls keep their vanilla appearance; verify in game.
 - Added `/galaxy give <player|@p> all` to grant each registered item to a chosen online player. Existing grant limits apply; `/galaxy give all` still targets the sender.
 - Changed ground clumping to recheck nearby compatible items every second, including full stacks and items already loaded, after Kuiper Balls were reported to stack like vanilla. The 128-item ground count is stored on the entity while inventory stacks retain their normal limits. In-game retesting remains.
