@@ -653,7 +653,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         AreaEffectCloud cloud = world.spawn(impact, AreaEffectCloud.class);
         cloud.setRadius((float) number("phase-five.celestial-bow.cloud-radius", 3.0));
         cloud.setDuration((int) Math.min(Integer.MAX_VALUE,
-                number("phase-five.celestial-bow.cloud-duration-seconds", 10.0) * 20.0));
+                number("phase-five.celestial-bow.cloud-duration-seconds", 20.0) * 20.0));
         cloud.setWaitTime(0);
         cloud.setRadiusPerTick(-0.005F);
         PotionEffectType effect = switch (plugin.getConfig().getString(

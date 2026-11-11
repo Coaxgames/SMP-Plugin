@@ -148,6 +148,7 @@ class PluginMetadataTest {
             assertEquals(7.0, config.getDouble("phase-five.mace-damage-cap-hearts"));
             assertEquals(1.5, config.getDouble("phase-five.collapsing-star-mace.spark-radius"));
             assertEquals("WITHER", config.getString("phase-five.celestial-bow.cloud-effect"));
+            assertEquals(20.0, config.getDouble("phase-five.celestial-bow.cloud-duration-seconds"));
             assertEquals(4.0, config.getDouble("phase-five.celestial-bow.splash-radius"));
             assertEquals(20.0, config.getDouble("phase-five.wormhole-trident.creator-launch-distance"));
             assertEquals(2.0, config.getDouble("phase-five.wormhole-trident.interaction-radius"));

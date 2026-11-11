@@ -4,6 +4,8 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Changed ground clumping to recheck nearby compatible items every second, including full stacks and items already loaded, after Kuiper Balls were reported to stack like vanilla. The 128-item ground count is stored on the entity while inventory stacks retain their normal limits. In-game retesting remains.
+- Set the Celestial Bow cloud lifetime default to 20 seconds. Final cloud effect, lifetime and effect strength remain configurable placeholders and are deferred to Phase 6.
 - Added the same vanilla Ender Pearl-style cooldown indicator to Kuiper Ball, Mass Orb, both maces and Nova Shield. Each custom item uses its own cooldown group instead of the vanilla material group; persisted Kuiper, Mass Orb and mace markers restore on login. Verify visuals and ordinary-item isolation in game.
 - Corrected Star Mace so only a missed swing starts its 30-second cooldown and resets Wind Burst to I. Successful hits at V keep Wind Burst V and do not start a cooldown. In-game verification remains.
 - Removed Fire Aspect from new Astral Swords and Flame from new Celestial Bows. Existing identified protected items are cleaned of both enchantments and their generated lore on inventory refresh or pickup; ordinary vanilla items are unchanged. In-game verification remains.

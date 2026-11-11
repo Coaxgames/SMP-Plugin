@@ -91,10 +91,10 @@ phase-five:
     opponent-damage-hearts: 2.0
     opponent-wither-seconds: 20
   celestial-bow:
-    # Cloud effect and splash values are provisional until balance review.
+    # Cloud effect, lifetime and effect strength are provisional until Phase 6 balance review.
     cloud-effect: WITHER
     cloud-radius: 3.0
-    cloud-duration-seconds: 10
+    cloud-duration-seconds: 20
     cloud-effect-seconds: 5
     cloud-effect-amplifier: 0
     splash-radius: 4.0

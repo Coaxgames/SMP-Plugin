@@ -81,7 +81,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new EnderPearlStackListener(this), this);
-        getServer().getPluginManager().registerEvents(new DroppedItemClumpListener(this, legendaryItems), this);
+        DroppedItemClumpListener clumps = new DroppedItemClumpListener(this, legendaryItems);
+        getServer().getPluginManager().registerEvents(clumps, this);
+        clumps.start();
         LegendaryRulesListener legendaryRules = new LegendaryRulesListener(this);
         getServer().getPluginManager().registerEvents(legendaryRules, this);
         for (var online : getServer().getOnlinePlayers()) {
@@ -339,7 +341,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         validatePositiveSetting("phase-five.wormhole-trident.opponent-damage-hearts", 2.0);
         validatePositiveSetting("phase-five.wormhole-trident.opponent-wither-seconds", 20.0);
         validatePositiveSetting("phase-five.celestial-bow.cloud-radius", 3.0);
-        validatePositiveSetting("phase-five.celestial-bow.cloud-duration-seconds", 10.0);
+        validatePositiveSetting("phase-five.celestial-bow.cloud-duration-seconds", 20.0);
         validatePositiveSetting("phase-five.celestial-bow.cloud-effect-seconds", 5.0);
         validatePositiveSetting("phase-five.celestial-bow.splash-radius", 4.0);
         validatePositiveSetting("phase-five.celestial-bow.splash-damage", 2.0);

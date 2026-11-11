@@ -182,7 +182,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 - [ ] **Owner local test:** Verify Collapsing Star spark count from damage and consecutive hits, one-health-point splash damage per spark, streak resets, two-hit cooldown and configured radius
 - [x] Nebula Spear: register its recipe with native Lunge III only; count the target Paper API's successful `EntityLungeEvent`s and apply the fifth-lunge thrust, four-heart damage ceiling, and 45-second cooldown without relying on inferred movement/velocity
 - [x] Wormhole Trident: count successful Riptides and create two visible, reusable rift endpoints on every fifth; close both 50 seconds after opening, and apply two hearts plus Wither I for 20 seconds to non-owners on each passage
-- [x] Celestial Bow: register its recipe with Power V, Punch II, and Infinity without Flame; tag fully charged shots, apply configurable splash damage, and create a configurable lingering Wither-or-Poison cloud on impact
+- [x] Celestial Bow: register its recipe with Power V, Punch II, and Infinity without Flame; tag fully charged shots, apply configurable splash damage, and create a configurable lingering cloud on impact (currently defaults to a 20-second lifetime; final balance is deferred to Phase 6)
 - [x] Cosmic Crown: register its recipe with maximum helmet enchantments and unbreakable protection; retaliate every two damage hits and boost absorption from all sources, with golden apples set to four hearts and enchanted golden apples to ten hearts
 - [x] Singularity Boots: register Protection IV and a recipe requiring Corrupt Ender Pearls in the four corners, cancel fall damage, and create a creeper-sized explosion after a fall of at least 50 blocks
 - [x] Register the Nova Shield recipe and persisted totem-style rescue cooldown
@@ -230,7 +230,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 ##### Items, drops and limits
 1. ✅ Corrupt Ender Pearl: 5% Enderman drop, boots ingredient, and maximum stack size of 8. Uses vanilla pearl appearance until the owner supplies a texture/model; in-game verification remains.
 2. ⬜ Fix repeatable-item untracked-drop error spam.
-3. ✅ Nearby compatible repeatable custom items and ordinary Ender Pearls clump into one ground entity containing up to 128 items; pickup respects inventory stack limits. Paper gameplay verification remains.
+3. ⬜ Retest nearby compatible repeatable custom items and ordinary Ender Pearls clumping into one ground entity containing up to 128 items. A periodic scan now handles full stacks and items that meet after their initial spawn; pickup must respect inventory stack limits.
 4. ⬜ Verify legendary limit behavior after OP inventory removal, including freed player capacity and permanent mace craft records.
 5. ⬜ Verify Celestial Bow requires Galaxy String; the code already checks the slots.
 6. ⬜ Verify ordinary and Corrupt Ender Pearl stacks on Paper: loot, drops, inventory changes, creative and other acquisition paths must cap at 8 without a per-player total limit.
@@ -251,6 +251,8 @@ These statuses describe local implementation only; none of the ✅ items are cla
 
 ### Phase 6 – Item Lifecycle, Limits & Update Corrections
 
+- [ ] **Celestial Bow cloud balance:** Finalize the cloud effect, lifetime and effect duration/strength. Current configurable placeholders default to Wither, a 20-second cloud lifetime, and a 5-second effect at amplifier 0.
+- [ ] **Ground clumping retest:** The owner reported Kuiper Balls still stacking like vanilla. Nearby eligible items are now rechecked every second, including full stacks and already-loaded items, rather than only around spawn or on vanilla merge events. Verify 128 total in one ground entity and partial pickup on Paper.
 - [ ] **Repeatable drop errors:** Investigate and fix unknown-ID/untracked-drop spam for usable repeatable items such as Kuiper Balls; do not require unique UUID tracking for items that do not need it. Preserve legitimate diagnostics for genuinely untracked protected items.
 - [x] **Dropped-item buildup:** Add Clumps-inspired ground-item merging for compatible repeatable custom items and ordinary Ender Pearls, with up to 128 items represented by one entity. Partial pickup leaves the remainder on the ground, and inventory stack limits remain unchanged. Preserve protected legendary items separately.
 - [ ] **Owner local test:** Verify ground clumping and partial player/hopper pickup with full and partially full inventories, pearl stacks of 8, mixed item metadata, item ownership, despawn and chunk reload.
@@ -279,7 +281,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 2. **Lunar Leggings catch-up — [REQUIRED: Phase 4].** The trigger is confirmed as world time tick 13,500 in the 24,000-tick day, with a five-minute effect. Persist and resume an effect that was active at restart. Still decide whether a day whose tick 13,500 passed while the plugin/server was offline should grant the missed effect on startup, or wait for the next day's trigger. “Catch-up” here means only this missed-trigger decision, not resuming an already-active effect.
 3. **Mass Orb fall-damage formula — [OWNER VERIFICATION IN PHASE 4].** Direct fall-slams deal 0.25 hearts per block fallen to living targets, capped at 10 hearts before normal damage mitigation. The holder takes no slam damage but still takes reduced fall damage; the existing configurable Feather Falling XV reduction remains provisional.
 4. **Corrupt Ender Pearl — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Endermen have a 5% chance to drop the custom Corrupt Ender Pearl, required in all four Singularity Boots recipe corners. It currently uses the vanilla pearl appearance; the owner will provide a model later.
-5. **Celestial Bow effect — [REQUIRED: Phase 5].** The final cloud effect (Wither or Poison), duration, and strength are undecided. Use explicit configurable placeholders until chosen; do not treat either option as final.
+5. **Celestial Bow cloud balance — [REQUIRED: Phase 6].** The current configurable Wither/Poison effect, cloud lifetime (20-second default), and effect duration/strength are placeholders pending final balance decisions; retain the settings until then.
 6. **Collapsing Star Mace sparks — [OWNER VERIFICATION IN PHASE 5].** Local code and automated tests cover damage-based and consecutive-hit sparks with one health point of splash damage per spark. The correction stays open until the complete behavior is verified in game.
 7. **Wormhole Trident rift — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The trigger, paired reusable endpoints, opponent damage/effect on each passage, and 50-second lifetime beginning on opening are implemented. The exit is placed using the creator's facing direction at opening, up to the configured 20 blocks; obstructed or overlapping exits are rejected. Interaction radius is a configurable placeholder until owner review.
 8. **Nebula Spear lunge — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The source notes specify a Netherite spear with native Lunge III, a thrust after five lunges, Riptide II-like velocity, a four-heart maximum against Protection IV diamond, no other enchants, and a 45-second cooldown. The existing server uses Galaxy SMP and Head Drop only; no additional lunge plugin or redesign is involved. The listener counts Paper's successful `EntityLungeEvent`; verify behavior in the Phase 5 owner test.
@@ -293,6 +295,8 @@ These statuses describe local implementation only; none of the ✅ items are cla
 
 ## 6. Changelog
 
+- 2026-11-11: Changed ground clumping to recheck nearby eligible items every second, including full stacks and items already loaded. Added merge and partial-pickup regression tests; owner-reported Kuiper Ball clumping still needs an in-game retest.
+- 2026-11-11: Set the Celestial Bow cloud lifetime default to 20 seconds and moved final cloud effect/lifetime/strength balance from Phase 5 to Phase 6. Values remain configurable placeholders pending final decisions.
 - 2026-11-11: Added Ender Pearl-style cooldown sweeps for Kuiper Ball and Mass Orb and moved both maces and Nova Shield to separate custom-item cooldown groups. Restore persisted markers on login; in-game indicator and isolation checks remain.
 - 2026-11-11: Corrected Star Mace so its 30-second cooldown starts only on a miss, including at Wind Burst V; a successful hit at V no longer starts a cooldown. In-game verification remains.
 - 2026-11-11: Removed Fire Aspect from Astral Sword and Flame from Celestial Bow. Existing identified protected items have these enchants and their generated lore removed on player-inventory refresh or pickup; live verification remains.
