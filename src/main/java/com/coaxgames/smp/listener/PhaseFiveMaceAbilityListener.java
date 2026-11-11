@@ -37,6 +37,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
     private final Map<UUID, Integer> collapsingHitStreaks = new HashMap<>();
     private final Map<UUID, PendingStarSwing> pendingStarSwings = new HashMap<>();
     private final Map<UUID, Boolean> pendingCollapsingSwings = new HashMap<>();
+    private final Map<UUID, RecentMaceHit> recentMaceHits = new HashMap<>();
     private final Set<UUID> applyingSparkDamage = new HashSet<>();
 
     public PhaseFiveMaceAbilityListener(GalaxySmpPlugin plugin) {
@@ -48,6 +49,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         collapsingHitStreaks.remove(playerUuid);
         pendingStarSwings.remove(playerUuid);
         pendingCollapsingSwings.remove(playerUuid);
+        recentMaceHits.remove(playerUuid);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -66,11 +68,12 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         if (!COLLAPSING_STAR_MACE.equals(itemId)) {
             return;
         }
+        boolean hit = consumeRecentHit(player.getUniqueId(), itemId);
         if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), COLLAPSING_STAR_MACE)) {
             return;
         }
         UUID playerId = player.getUniqueId();
-        pendingCollapsingSwings.put(playerId, Boolean.FALSE);
+        pendingCollapsingSwings.put(playerId, hit);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (Boolean.FALSE.equals(pendingCollapsingSwings.remove(playerId))) {
                 collapsingHitStreaks.remove(playerId);
@@ -85,6 +88,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         int level = mace.getEnchantmentLevel(Enchantment.WIND_BURST);
         UUID maceUuid = plugin.getLegendaryItems().getUniqueId(mace).orElse(null);
         PendingStarSwing swing = new PendingStarSwing(maceUuid, level);
+        swing.hit = consumeRecentHit(player.getUniqueId(), STAR_MACE);
         pendingStarSwings.put(player.getUniqueId(), swing);
         if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), STAR_MACE)) {
             com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, STAR_MACE, plugin.getCooldownManager());
@@ -121,12 +125,17 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
 
         UUID playerId = attacker.getUniqueId();
         boolean onCooldown = plugin.getCooldownManager().isOnCooldown(playerId, itemId);
+        recordMaceHit(playerId, itemId);
 
         double cap = nonNegativeConfig("phase-five.mace-damage-cap-hearts", 7.0) * 2.0;
         event.setDamage(MaceDamage.capBaseDamage(event.getDamage(), cap));
         double damageDealt = Math.max(0.0, event.getFinalDamage());
 
         if (STAR_MACE.equals(itemId)) {
+            ItemStack mace = attacker.getInventory().getItemInMainHand();
+            if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
+                attacker.getInventory().setItemInMainHand(mace);
+            }
             handleStarMaceHit(attacker, damageDealt, onCooldown);
             return;
         }
@@ -227,6 +236,31 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         collapsingHitStreaks.remove(event.getPlayer().getUniqueId());
         pendingStarSwings.remove(event.getPlayer().getUniqueId());
         pendingCollapsingSwings.remove(event.getPlayer().getUniqueId());
+        recentMaceHits.remove(event.getPlayer().getUniqueId());
+    }
+
+    private void recordMaceHit(UUID playerId, String itemId) {
+        PendingStarSwing starSwing = pendingStarSwings.get(playerId);
+        if (STAR_MACE.equals(itemId) && starSwing != null) {
+            starSwing.hit = true;
+            return;
+        }
+        if (COLLAPSING_STAR_MACE.equals(itemId) && pendingCollapsingSwings.containsKey(playerId)) {
+            pendingCollapsingSwings.put(playerId, Boolean.TRUE);
+            return;
+        }
+        RecentMaceHit hit = new RecentMaceHit(itemId);
+        recentMaceHits.put(playerId, hit);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (recentMaceHits.get(playerId) == hit) {
+                recentMaceHits.remove(playerId);
+            }
+        }, 2L);
+    }
+
+    private boolean consumeRecentHit(UUID playerId, String itemId) {
+        RecentMaceHit hit = recentMaceHits.remove(playerId);
+        return hit != null && hit.itemId.equals(itemId);
     }
 
     private int incrementHitCount(UUID playerId, String itemId) {
@@ -283,6 +317,10 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             this.maceUuid = maceUuid;
             this.level = level;
         }
+
+    }
+
+    private record RecentMaceHit(String itemId) {
     }
 
     private static ItemStack createSparkParticleItem() {

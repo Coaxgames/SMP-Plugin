@@ -1,7 +1,9 @@
 build/
 gradle/
 oracleJdk-27/
-scripts/
+scripts/*
+!scripts/release-plugin-version.py
+!scripts/test_release_plugin_version.py
 .vscode/
 .gradle/
 
