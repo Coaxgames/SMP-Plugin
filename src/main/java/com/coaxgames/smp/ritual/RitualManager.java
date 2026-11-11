@@ -62,7 +62,7 @@ public final class RitualManager {
     }
 
     public boolean hasCapacityForDelivery(Player player, String itemId, UUID ritualItemUuid) {
-        return hasCapacity(player, itemId, 0, ritualItemUuid);
+        return hasCapacity(player, itemId, 1, ritualItemUuid);
     }
 
     public boolean isPending(UUID ritualItemUuid) {
@@ -101,7 +101,7 @@ public final class RitualManager {
                 crafterLocation.getZ(),
                 now,
                 completesAt,
-                item.craftOnce());
+                item.craftOnce() && (crafter == null || !crafter.isOp()));
         if (started && task == null) {
             resume();
         }
@@ -109,18 +109,21 @@ public final class RitualManager {
     }
 
     private boolean hasCapacity(Player player, String itemId, int additionalItems, UUID excludedRitual) {
-        int limit = plugin.getLegendaryItems().maxPerPlayer(itemId);
-        if (limit == 0) {
+        LegendaryItem definition = plugin.getLegendaryItems().get(itemId).orElseThrow();
+        if (player.isOp() || !definition.protectedFromLossAndStorage()) {
             return true;
         }
         int reserved = 0;
         for (RitualRecord ritual : plugin.getDataStore().getActiveRituals()) {
-            if (itemId.equals(ritual.itemId()) && player.getUniqueId().equals(ritual.crafterUuid())
+            if (plugin.getLegendaryItems().get(ritual.itemId())
+                    .map(LegendaryItem::protectedFromLossAndStorage).orElse(false)
+                    && player.getUniqueId().equals(ritual.crafterUuid())
                     && !ritual.itemUuid().equals(excludedRitual)) {
                 reserved++;
             }
         }
-        return plugin.getLegendaryItems().countForPlayer(player, itemId) + reserved + additionalItems <= limit;
+        return com.coaxgames.smp.item.LegendaryCarryLimit.allows(false, true,
+                plugin.getLegendaryItems().countLegendaryForPlayer(player), reserved, additionalItems);
     }
 
     private void tick() {

@@ -5,6 +5,8 @@ import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.util.ConfigNumbers;
 import com.coaxgames.smp.util.MaceDamage;
 import io.papermc.paper.event.entity.EntityLungeEvent;
+import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -39,6 +42,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -62,6 +66,7 @@ public final class PhaseFiveAbilityListener implements Listener {
     private static final String COSMIC_CROWN = "cosmic_crown";
     private static final String SINGULARITY_BOOTS = "singularity_boots";
     private static final String NOVA_SHIELD = "nova_shield";
+    static final int RIFT_WITHER_AMPLIFIER = 0;
     private static final NamespacedKey WORMHOLE_RIFT_MODEL =
             Objects.requireNonNull(NamespacedKey.fromString("galaxy:wormhole_rift"));
     private static final ItemStack NOVA_SHIELD_PARTICLE_ITEM = createNovaShieldParticleItem();
@@ -77,6 +82,7 @@ public final class PhaseFiveAbilityListener implements Listener {
     private final Map<UUID, Integer> riptideCounts = new HashMap<>();
     private final Map<UUID, Integer> crownHitCounts = new HashMap<>();
     private final Map<UUID, Integer> shieldAxeHitCounts = new HashMap<>();
+    private final Map<UUID, AttackCharge> attackCharges = new HashMap<>();
     private final Set<UUID> absorptionUpgradeInProgress = new HashSet<>();
     private final Set<ItemDisplay> rescueDisplays = new HashSet<>();
     private final List<Rift> rifts = new ArrayList<>();
@@ -171,7 +177,32 @@ public final class PhaseFiveAbilityListener implements Listener {
             riptideCounts.remove(playerId);
             Location location = event.getPlayer().getLocation();
             double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
-            rifts.add(new Rift(playerId, location, spawnRiftDisplay(location)));
+            Vector direction = location.getDirection().normalize();
+            double distance = number("phase-five.wormhole-trident.creator-launch-distance", 20.0);
+            var obstruction = location.getWorld().rayTraceBlocks(
+                    location, direction, distance, FluidCollisionMode.NEVER, true);
+            if (obstruction != null) {
+                distance = Math.max(0.0, location.toVector().distance(obstruction.getHitPosition()) - 0.5);
+            }
+            Location destination = location.clone().add(direction.multiply(distance));
+            if (distance <= radius * 2.0
+                    || !destination.getBlock().isPassable()
+                    || !destination.clone().add(0, 1, 0).getBlock().isPassable()) {
+                event.getPlayer().sendMessage(Component.text("The rift could not open: its exit is obstructed or too close."));
+                return;
+            }
+            long lifetimeMillis = Math.multiplyExact(
+                    (long) number("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50.0), 1_000L);
+            ItemDisplay entrance = spawnRiftDisplay(location);
+            ItemDisplay exit;
+            try {
+                exit = spawnRiftDisplay(destination);
+            } catch (RuntimeException exception) {
+                entrance.remove();
+                throw exception;
+            }
+            rifts.add(new Rift(playerId, location, destination, entrance, exit,
+                    System.currentTimeMillis() + lifetimeMillis));
             for (int point = 0; point < 24; point++) {
                 double angle = 2.0 * Math.PI * point / 24.0;
                 Location marker = location.clone().add(
@@ -327,29 +358,61 @@ public final class PhaseFiveAbilityListener implements Listener {
         });
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPreAttack(PrePlayerAttackEntityEvent event) {
+        if (!event.willAttack()) {
+            return;
+        }
+        UUID attacker = event.getPlayer().getUniqueId();
+        AttackCharge charge = new AttackCharge(event.getAttacked().getUniqueId(),
+                event.getPlayer().getCooledAttackStrength(0.0F));
+        attackCharges.put(attacker, charge);
+        Bukkit.getScheduler().runTask(plugin, () -> attackCharges.remove(attacker, charge));
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVanillaShieldDisable(PlayerShieldDisableEvent event) {
+        Player player = event.getPlayer();
+        if (player.hasActiveItem() && isItem(player.getActiveItem(), NOVA_SHIELD)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onShieldAxeHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player defender)
                 || !(event.getDamager() instanceof Player attacker)
-                || !isAxe(attacker.getInventory().getItemInMainHand().getType())
-                || !hasHeldItem(defender, NOVA_SHIELD)) {
+                || !defender.hasActiveItem() || !isItem(defender.getActiveItem(), NOVA_SHIELD)) {
+            return;
+        }
+        AttackCharge charge = attackCharges.remove(attacker.getUniqueId());
+        float strength = charge != null && charge.target().equals(defender.getUniqueId())
+                ? charge.strength() : 0.0F;
+        boolean blocked = event.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING)
+                && event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) < 0.0;
+        boolean qualifies = NovaShieldRules.qualifies(
+                isAxe(attacker.getInventory().getItemInMainHand().getType()),
+                event.isCritical(), strength, blocked,
+                defender.getCooldown(com.coaxgames.smp.util.ItemCooldownMarkers.group(NOVA_SHIELD)) > 0);
+        if (!qualifies) {
             return;
         }
         UUID defenderId = defender.getUniqueId();
-        if (shieldAxeHitCounts.merge(defenderId, 1, Integer::sum) < 2) {
+        int hits = NovaShieldRules.nextHitCount(shieldAxeHitCounts.getOrDefault(defenderId, 0), true);
+        if (hits < NovaShieldRules.HITS_TO_DISABLE) {
+            shieldAxeHitCounts.put(defenderId, hits);
             return;
         }
         shieldAxeHitCounts.remove(defenderId);
-        long ticks = Math.multiplyExact(
-                (long) number("phase-five.nova-shield.disable-seconds", 5.0), 20L);
-        defender.setCooldown(Material.SHIELD, Math.toIntExact(ticks));
+        defender.clearActiveItem();
+        com.coaxgames.smp.util.ItemCooldownMarkers.set(defender, NOVA_SHIELD, NovaShieldRules.DISABLE_TICKS);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onNovaRescue(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)
                 || event.getFinalDamage() < player.getHealth() + player.getAbsorptionAmount()
-                || !hasItem(player, NOVA_SHIELD)
+                || !isItem(player.getInventory().getItemInOffHand(), NOVA_SHIELD)
                 || plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), NOVA_SHIELD)) {
             return;
         }
@@ -371,6 +434,11 @@ public final class PhaseFiveAbilityListener implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 100, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 800, 0, true, true, true));
         player.setAbsorptionAmount(Math.max(player.getAbsorptionAmount(), 4.0));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onShieldHolderDeath(PlayerDeathEvent event) {
+        shieldAxeHitCounts.remove(event.getEntity().getUniqueId());
     }
 
     private void playNovaShieldRescueEffect(Player player) {
@@ -445,8 +513,9 @@ public final class PhaseFiveAbilityListener implements Listener {
         riptideCounts.remove(id);
         crownHitCounts.remove(id);
         shieldAxeHitCounts.remove(id);
+        attackCharges.remove(id);
         for (Rift rift : rifts) {
-            rift.inside.remove(id);
+            rift.traversal.leave(id);
         }
     }
 
@@ -475,48 +544,58 @@ public final class PhaseFiveAbilityListener implements Listener {
         while (iterator.hasNext()) {
             Rift rift = iterator.next();
             if (rift.expiresAtMillis <= now) {
-                rift.display.remove();
+                rift.entranceDisplay.remove();
+                rift.exitDisplay.remove();
                 iterator.remove();
                 continue;
             }
             Player creator = Bukkit.getPlayer(rift.creator);
-            if (!rift.creatorPassed && (creator == null || !creator.isOnline())) {
-                continue;
-            }
             double radius = number("phase-five.wormhole-trident.interaction-radius", 2.0);
-            World world = Bukkit.getWorld(rift.location.getWorld().getUID());
+            World world = Bukkit.getWorld(rift.entrance.getWorld().getUID());
             if (world == null) {
                 continue;
             }
             for (Player online : Bukkit.getOnlinePlayers()) {
                 if (!online.getWorld().equals(world)) {
-                    rift.inside.remove(online.getUniqueId());
+                    rift.traversal.leave(online.getUniqueId());
                 }
             }
 
-            world.spawnParticle(Particle.PORTAL, rift.location, 4, radius / 2, 0.5, radius / 2, 0.02);
+            world.spawnParticle(Particle.PORTAL, rift.entrance, 4, radius / 2, 0.5, radius / 2, 0.02);
+            world.spawnParticle(Particle.PORTAL, rift.exit, 4, radius / 2, 0.5, radius / 2, 0.02);
             for (Player player : world.getPlayers()) {
-                boolean inRift = player.getLocation().distanceSquared(rift.location) <= radius * radius;
-                if (!inRift) {
-                    boolean wasInside = rift.inside.remove(player.getUniqueId());
-                    if (player.equals(creator) && !rift.creatorPassed && wasInside) {
-                        launchRiftCreator(rift, player, now);
+                Location current = player.getLocation();
+                boolean inEntrance = current.distanceSquared(rift.entrance) <= radius * radius;
+                boolean inExit = current.distanceSquared(rift.exit) <= radius * radius;
+                RiftTraversal.Endpoint source = rift.traversal.enter(
+                        player.getUniqueId(), inEntrance, inExit);
+                if (source == null) {
+                    continue;
+                }
+                Location destination = (source == RiftTraversal.Endpoint.ENTRANCE ? rift.exit : rift.entrance).clone();
+                destination.setYaw(current.getYaw());
+                destination.setPitch(current.getPitch());
+                if (!destination.getBlock().isPassable()
+                        || !destination.clone().add(0, 1, 0).getBlock().isPassable()) {
+                    player.sendMessage(Component.text("The other rift is obstructed."));
+                    continue;
+                }
+                if (!player.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                    plugin.getLogger().warning("Could not teleport " + player.getUniqueId() + " through a Wormhole rift.");
+                    continue;
+                }
+                if (!player.getUniqueId().equals(rift.creator)) {
+                    double damage = number("phase-five.wormhole-trident.opponent-damage-hearts", 2.0) * 2.0;
+                    if (creator != null && creator.isOnline()) {
+                        player.damage(damage, creator);
+                    } else {
+                        player.damage(damage);
                     }
-                    continue;
-                }
-                rift.inside.add(player.getUniqueId());
-                if (player.equals(creator) && !rift.creatorPassed) {
-                    continue;
-                }
-                if (rift.creatorPassed && !player.equals(creator)
-                        && rift.affected.add(player.getUniqueId())) {
-                    player.damage(number("phase-five.wormhole-trident.opponent-damage-hearts", 2.0) * 2.0,
-                            creator);
                     player.addPotionEffect(new PotionEffect(
                             PotionEffectType.WITHER,
                             (int) Math.min(Integer.MAX_VALUE,
                                     number("phase-five.wormhole-trident.opponent-wither-seconds", 20.0) * 20.0),
-                            0,
+                            RIFT_WITHER_AMPLIFIER,
                             true,
                             true,
                             true));
@@ -556,7 +635,8 @@ public final class PhaseFiveAbilityListener implements Listener {
         }
         rescueDisplays.clear();
         for (Rift rift : rifts) {
-            rift.display.remove();
+            rift.entranceDisplay.remove();
+            rift.exitDisplay.remove();
         }
         rifts.clear();
     }
@@ -566,6 +646,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         riptideCounts.remove(playerUuid);
         crownHitCounts.remove(playerUuid);
         shieldAxeHitCounts.remove(playerUuid);
+        attackCharges.remove(playerUuid);
     }
 
     private void createCelestialCloud(World world, Location impact) {
@@ -586,28 +667,6 @@ public final class PhaseFiveAbilityListener implements Listener {
                 number("phase-five.celestial-bow.cloud-effect-seconds", 5.0) * 20.0);
         int amplifier = (int) number("phase-five.celestial-bow.cloud-effect-amplifier", 0.0);
         cloud.addCustomEffect(new PotionEffect(effect, effectTicks, amplifier, true, true, true), true);
-    }
-
-    private void launchRiftCreator(Rift rift, Player creator, long now) {
-        rift.creatorPassed = true;
-        rift.expiresAtMillis = now + Math.multiplyExact(
-                (long) number("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50.0),
-                1_000L);
-        Location origin = creator.getLocation();
-        Vector direction = origin.getDirection().normalize();
-        double distance = number("phase-five.wormhole-trident.creator-launch-distance", 20.0);
-        Location destination = origin.clone().add(direction.clone().multiply(distance));
-        var obstruction = origin.getWorld().rayTraceBlocks(
-                origin, direction, distance, FluidCollisionMode.NEVER, true);
-        if (obstruction != null) {
-            double safeDistance = Math.max(0.0,
-                    origin.toVector().distance(obstruction.getHitPosition()) - 0.5);
-            destination = origin.clone().add(direction.multiply(safeDistance));
-        }
-        if (!creator.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
-            plugin.getLogger().warning("Could not launch Wormhole Trident creator " + creator.getUniqueId()
-                    + " through the rift.");
-        }
     }
 
     private boolean isAxe(Material material) {
@@ -642,18 +701,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         return isItem(item, itemId);
     }
 
-    private boolean hasItem(Player player, String itemId) {
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (isItem(stack, itemId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasHeldItem(Player player, String itemId) {
-        return isItem(player.getInventory().getItemInMainHand(), itemId)
-                || isItem(player.getInventory().getItemInOffHand(), itemId);
+    private record AttackCharge(UUID target, float strength) {
     }
 
     private double number(String path, double fallback) {
@@ -666,18 +714,22 @@ public final class PhaseFiveAbilityListener implements Listener {
 
     private static final class Rift {
         private final UUID creator;
-        private final Location location;
-        private final ItemDisplay display;
-        private final Set<UUID> inside = new HashSet<>();
-        private final Set<UUID> affected = new HashSet<>();
-        private boolean creatorPassed;
-        private long expiresAtMillis = Long.MAX_VALUE;
+        private final Location entrance;
+        private final Location exit;
+        private final ItemDisplay entranceDisplay;
+        private final ItemDisplay exitDisplay;
+        private final RiftTraversal traversal;
+        private final long expiresAtMillis;
 
-        private Rift(UUID creator, Location location, ItemDisplay display) {
+        private Rift(UUID creator, Location entrance, Location exit, ItemDisplay entranceDisplay,
+                ItemDisplay exitDisplay, long expiresAtMillis) {
             this.creator = creator;
-            this.location = location.clone();
-            this.display = display;
-            inside.add(creator);
+            this.entrance = entrance.clone();
+            this.exit = exit.clone();
+            this.entranceDisplay = entranceDisplay;
+            this.exitDisplay = exitDisplay;
+            this.expiresAtMillis = expiresAtMillis;
+            traversal = new RiftTraversal(creator);
         }
     }
 }

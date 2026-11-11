@@ -30,22 +30,29 @@ class PluginMetadataTest {
                 "phase-four.combo-window-seconds",
                 "phase-four.astral-sword.attack-speed-seconds",
                 "phase-four.daily-trigger-tick",
+                "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",
                 "phase-four.kuiper-ball.freeze-seconds",
+                "phase-four.kuiper-ball.cooldown-millis",
                 "phase-four.mass-orb.feather-falling-level",
                 "phase-four.mass-orb.passive-refresh-ticks",
-                "phase-five.collapsing-star-mace.spark-count-per-hit",
-                "phase-five.nova-shield.disable-seconds",
                 "cooldowns.star_mace",
                 "cooldowns.collapsing_star_mace",
+                "cooldowns.mass_orb",
                 "cooldowns.nebula_spear",
                 "cooldowns.nova_shield")) {
             assertTrue(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, path), path);
         }
         assertFalse(com.coaxgames.smp.util.ConfigNumbers.isWholeNumber(config, "phase-four.kuiper-ball.burst-radius"));
+        assertTrue(config.isBoolean("phase-four.kuiper-ball.target-players"));
+        assertTrue(config.isBoolean("phase-four.kuiper-ball.target-mobs"));
+        assertTrue(config.isBoolean("phase-four.kuiper-ball.target-items"));
+        assertTrue(config.isBoolean("phase-four.kuiper-ball.target-projectiles"));
         for (String path : java.util.List.of(
                 "phase-four.kuiper-ball.burst-radius",
                 "phase-four.kuiper-ball.burst-strength",
+                "phase-four.kuiper-ball.burst-vertical-boost",
+                "phase-four.kuiper-ball.burst-minimum-vertical",
                 "phase-four.mass-orb.free-fall-distance",
                 "phase-four.mass-orb.damage-per-block",
                 "phase-four.mass-orb.maximum-damage",
@@ -93,7 +100,7 @@ class PluginMetadataTest {
                 "nebula_spear", "star_mace", "collapsing_star_mace", "astral_sword", "void_sword",
                 "celestial_bow", "wormhole_trident", "cosmic_crown", "singularity_boots",
                 "solstice_chestplate", "lunar_leggings", "nova_shield", "galaxy_string",
-                "kuiper_ball", "mass_orb"
+                "kuiper_ball", "mass_orb", "corrupt_ender_pearl"
         );
         try (var configStream = getClass().getResourceAsStream("/config.yml")) {
             assertNotNull(configStream);
@@ -122,20 +129,29 @@ class PluginMetadataTest {
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.galaxy_string"));
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.kuiper_ball"));
             assertEquals(0, config.getInt("legendary-items.max-per-player.items.mass_orb"));
+            assertEquals(0, config.getInt("legendary-items.max-per-player.items.corrupt_ender_pearl"));
             assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
             assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
+            assertEquals(6_000L, config.getLong("phase-four.solstice-chestplate.trigger-tick"));
             assertEquals(30L, config.getLong("cooldowns.star_mace"));
             assertEquals(30L, config.getLong("cooldowns.collapsing_star_mace"));
+            assertEquals(20L, config.getLong("cooldowns.mass_orb"));
+            assertEquals(1_500L, config.getLong("phase-four.kuiper-ball.cooldown-millis"));
+            assertEquals(4.0, config.getDouble("phase-four.kuiper-ball.burst-radius"));
+            assertEquals(1.5, config.getDouble("phase-four.kuiper-ball.burst-strength"));
+            assertEquals(0.35, config.getDouble("phase-four.kuiper-ball.burst-vertical-boost"));
+            assertEquals(0.35, config.getDouble("phase-four.kuiper-ball.burst-minimum-vertical"));
+            assertTrue(config.getBoolean("phase-four.kuiper-ball.target-players"));
+            assertTrue(config.getBoolean("phase-four.kuiper-ball.target-mobs"));
+            assertFalse(config.getBoolean("phase-four.kuiper-ball.target-items"));
+            assertFalse(config.getBoolean("phase-four.kuiper-ball.target-projectiles"));
             assertEquals(7.0, config.getDouble("phase-five.mace-damage-cap-hearts"));
-            assertEquals(1, config.getInt("phase-five.collapsing-star-mace.spark-count-per-hit"));
             assertEquals(1.5, config.getDouble("phase-five.collapsing-star-mace.spark-radius"));
-            assertEquals(2.0, config.getDouble("phase-five.collapsing-star-mace.spark-damage"));
             assertEquals("WITHER", config.getString("phase-five.celestial-bow.cloud-effect"));
             assertEquals(4.0, config.getDouble("phase-five.celestial-bow.splash-radius"));
             assertEquals(20.0, config.getDouble("phase-five.wormhole-trident.creator-launch-distance"));
             assertEquals(2.0, config.getDouble("phase-five.wormhole-trident.interaction-radius"));
             assertEquals(50.0, config.getDouble("phase-five.singularity-boots.explosion-fall-distance"));
-            assertEquals(5L, config.getLong("phase-five.nova-shield.disable-seconds"));
             assertEquals(300L, config.getLong("phase-four.daily-effect-seconds"));
             assertEquals(15, config.getInt("phase-four.mass-orb.feather-falling-level"));
             assertFalse(config.getBoolean("phase-four.lunar-leggings.catch-up-if-offline"));

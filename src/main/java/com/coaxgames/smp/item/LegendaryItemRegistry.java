@@ -31,6 +31,7 @@ public final class LegendaryItemRegistry {
 
     private final NamespacedKey itemIdKey;
     private final NamespacedKey itemUuidKey;
+    private final NamespacedKey starMaceProgressionKey;
     private final Plugin plugin;
     private final Map<String, LegendaryItem> items = new HashMap<>();
     private final Map<NamespacedKey, LegendaryItem> recipes = new HashMap<>();
@@ -39,6 +40,7 @@ public final class LegendaryItemRegistry {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         itemIdKey = Objects.requireNonNull(NamespacedKey.fromString("galaxy:item_id"), "itemIdKey");
         itemUuidKey = Objects.requireNonNull(NamespacedKey.fromString("galaxy:uuid"), "itemUuidKey");
+        starMaceProgressionKey = new NamespacedKey(plugin, "star-mace-progression-v1");
     }
 
     public void register(LegendaryItem item) {
@@ -184,6 +186,9 @@ public final class LegendaryItemRegistry {
         org.bukkit.plugin.java.JavaPlugin javaPlugin = (org.bukkit.plugin.java.JavaPlugin) plugin;
         String namePath = "legendary-items.display-names." + itemId;
         if (!javaPlugin.getConfig().contains(namePath + ".text")) {
+            if (itemId.equals("corrupt_ender_pearl")) {
+                return Component.text("Corrupt Ender Pearl");
+            }
             return Component.text(itemId);
         }
         return LegendaryItemBuilder.gradientComponent(
@@ -206,8 +211,19 @@ public final class LegendaryItemRegistry {
         if (additionalItems < 0) {
             throw new IllegalArgumentException("additionalItems cannot be negative.");
         }
-        int limit = maxPerPlayer(itemId);
-        return limit == 0 || countForPlayer(player, itemId) + additionalItems <= limit;
+        LegendaryItem definition = get(itemId).orElseThrow();
+        return LegendaryCarryLimit.allows(player.isOp(), definition.protectedFromLossAndStorage(),
+                countLegendaryForPlayer(player), 0, additionalItems);
+    }
+
+    public int countLegendaryForPlayer(Player player) {
+        int total = 0;
+        for (LegendaryItem definition : getAll()) {
+            if (definition.protectedFromLossAndStorage()) {
+                total += countForPlayer(player, definition.id());
+            }
+        }
+        return total;
     }
 
     public int countItems(ItemStack[] stacks, String itemId) {
@@ -276,6 +292,221 @@ public final class LegendaryItemRegistry {
         return createItem(id, UUID.randomUUID());
     }
 
+    public boolean upgradeVoidSword(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("void_sword")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        int level = meta.getEnchantLevel(Enchantment.SHARPNESS);
+        if (level != 4) {
+            return false;
+        }
+        meta.addEnchant(Enchantment.SHARPNESS, 5, true);
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            for (int i = 0; i < updatedLore.size(); i++) {
+                if (net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(updatedLore.get(i)).equals("- Sharpness IV")) {
+                    updatedLore.set(i, Component.text("- Sharpness V", NamedTextColor.GRAY));
+                }
+            }
+            meta.lore(updatedLore);
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not upgrade Void Sword enchantment.");
+        }
+        return true;
+    }
+
+    public boolean removeWeaponFireEnchantments(ItemStack item) {
+        LegendaryItem definition = identify(item).orElse(null);
+        if (definition == null || !definition.protectedFromLossAndStorage()) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        boolean fireAspect = meta.hasEnchant(Enchantment.FIRE_ASPECT);
+        boolean flame = meta.hasEnchant(Enchantment.FLAME);
+        if (!fireAspect && !flame) {
+            return false;
+        }
+        meta.removeEnchant(Enchantment.FIRE_ASPECT);
+        meta.removeEnchant(Enchantment.FLAME);
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            updatedLore.removeIf(line -> {
+                String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(line);
+                return text.startsWith("- Fire Aspect ") || text.startsWith("- Flame ");
+            });
+            meta.lore(updatedLore);
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not remove fire enchantments from " + definition.id() + ".");
+        }
+        return true;
+    }
+
+    public boolean upgradeLunarLeggings(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("lunar_leggings")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta.getEnchantLevel(Enchantment.SWIFT_SNEAK) >= 3) {
+            return false;
+        }
+        meta.addEnchant(Enchantment.SWIFT_SNEAK, 3, true);
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            boolean replaced = false;
+            for (int i = 0; i < updatedLore.size(); i++) {
+                String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(updatedLore.get(i));
+                if (line.startsWith("- Swift Sneak ")) {
+                    updatedLore.set(i, Component.text("- Swift Sneak III", NamedTextColor.GRAY));
+                    replaced = true;
+                }
+            }
+            if (!replaced) {
+                updatedLore.add(Component.text("- Swift Sneak III", NamedTextColor.GRAY));
+            }
+            meta.lore(updatedLore);
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not upgrade Lunar Leggings enchantment.");
+        }
+        return true;
+    }
+
+    public boolean refreshDailyEffectLore(ItemStack item) {
+        String id = identify(item).map(LegendaryItem::id).orElse("");
+        if (!id.equals("solstice_chestplate") && !id.equals("lunar_leggings")) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        String newLine = abilityLore(id).getFirst();
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (line.startsWith("At world time ") && line.endsWith(" seconds while worn.")
+                    && !line.equals(newLine)) {
+                updatedLore.set(i, Component.text(newLine, NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update daily effect lore for " + id + ".");
+            }
+        }
+        return changed;
+    }
+
+    public boolean initializeStarMaceProgression(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta.getPersistentDataContainer().has(starMaceProgressionKey, PersistentDataType.BYTE)) {
+            return false;
+        }
+        meta.addEnchant(Enchantment.WIND_BURST, 1, true);
+        meta.getPersistentDataContainer().set(starMaceProgressionKey, PersistentDataType.BYTE, (byte) 1);
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not initialize Star Mace Wind Burst progression.");
+        }
+        updateStarMaceWindBurstLore(item, 1);
+        return true;
+    }
+
+    public boolean refreshStarMaceCooldownLore(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
+            return false;
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean removed = updatedLore.removeIf(line ->
+                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(line).equals("A successful swing at Wind Burst V starts a 30-second cooldown."));
+        if (removed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Star Mace cooldown lore.");
+            }
+        }
+        return removed;
+    }
+
+    public boolean refreshCooldownGroup(ItemStack item) {
+        String id = identify(item).map(LegendaryItem::id).orElse("");
+        if (!com.coaxgames.smp.util.ItemCooldownMarkers.supported(id)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (!com.coaxgames.smp.util.ItemCooldownMarkers.configure(meta, id)) {
+            return false;
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not update cooldown group for " + id + ".");
+        }
+        return true;
+    }
+
+    public boolean setStarMaceWindBurstLevel(ItemStack item, int level) {
+        if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
+            return false;
+        }
+        if (level < 1 || level > 5) {
+            throw new IllegalArgumentException("Star Mace Wind Burst level must be between I and V.");
+        }
+        ItemMeta meta = item.getItemMeta();
+        meta.addEnchant(Enchantment.WIND_BURST, level, true);
+        meta.getPersistentDataContainer().set(starMaceProgressionKey, PersistentDataType.BYTE, (byte) 1);
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not update Star Mace Wind Burst level.");
+        }
+        updateStarMaceWindBurstLore(item, level);
+        return true;
+    }
+
+    private void updateStarMaceWindBurstLore(ItemStack item, int level) {
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return;
+        }
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (line.startsWith("- Wind Burst ")) {
+                updatedLore.set(i, Component.text("- Wind Burst " + romanNumeral(level), NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Star Mace Wind Burst lore.");
+            }
+        }
+    }
+
     public ItemStack createItem(String id, UUID itemUuid) {
         LegendaryItem definition = get(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown legendary item: " + id));
@@ -313,6 +544,7 @@ public final class LegendaryItemRegistry {
         Component displayName = configuredDisplayName(id);
         meta.itemName(displayName);
         meta.displayName(displayName);
+        com.coaxgames.smp.util.ItemCooldownMarkers.configure(meta, id);
         List<Component> lore = new ArrayList<>();
         abilityLore(id).forEach(line -> lore.add(Component.text(line, NamedTextColor.GRAY)));
         if (!item.getEnchantments().isEmpty()) {
@@ -335,9 +567,16 @@ public final class LegendaryItemRegistry {
     private List<String> abilityLore(String id) {
         return switch (id) {
             case "galaxy_string" -> List.of("Special crafting ingredient for the Celestial Bow.");
-            case "kuiper_ball" -> List.of("Throw to freeze a hit target and launch nearby entities.");
+            case "corrupt_ender_pearl" -> List.of("Crafting ingredient for Singularity Boots.");
+            case "kuiper_ball" -> List.of(
+                    "Throw to freeze a hit target and launch configured nearby targets.",
+                    "Burst targeting is configurable for players, mobs, dropped items, and projectiles.",
+                    "Cooldown: " + configLong("phase-four.kuiper-ball.cooldown-millis", 1_500)
+                            + " milliseconds per throw.");
             case "mass_orb" -> List.of(
                     "While carried, greatly reduces fall damage.",
+                    "While held, falling onto enemies deals 1/4 heart per block, up to 10 hearts.",
+                    "A slam attempt starts a " + configLong("cooldowns.mass_orb", 20) + "-second cooldown.",
                     "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
                             + " health points.");
             case "astral_sword" -> List.of(
@@ -346,24 +585,29 @@ public final class LegendaryItemRegistry {
             case "void_sword" -> List.of(
                     "Every 4 consecutive hits: inflict Slowness I and Wither I for 10 seconds.");
             case "solstice_chestplate" -> List.of(
-                    "At world time 13,500: Speed III, Strength II, and Resistance I for "
+                    "At world time " + configLong("phase-four.solstice-chestplate.trigger-tick", 6_000)
+                            + ": Speed III, Strength II, and Resistance I for "
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "lunar_leggings" -> List.of(
-                    "At world time 13,500: Speed I, Strength I, and Resistance II for "
+                    "At world time " + configLong("phase-four.daily-trigger-tick", 13_500)
+                            + ": Speed I, Strength I, and Resistance II for "
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "star_mace" -> List.of(
-                    "After 2 successful hits: 30-second cooldown.",
+                    "Wind Burst rises by one on each hit, up to V.",
+                    "A miss resets Wind Burst to I and starts a 30-second cooldown.",
                     "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.");
             case "collapsing_star_mace" -> List.of(
-                    "Above 5 hearts of pre-cap damage: create a damaging spark.",
+                    "One spark per full heart of mace damage; consecutive hits add sparks.",
+                    "Each spark deals 1 damage point in a small splash radius.",
                     "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.",
                     "Cooldown: 30 seconds after 2 successful hits.");
             case "nebula_spear" -> List.of(
                     "Every 5 successful Lunge activations: thrust forward and damage targets ahead.",
                     "Cooldown: " + configLong("cooldowns.nebula_spear", 45) + " seconds.");
             case "wormhole_trident" -> List.of(
-                    "Every 5 successful Riptides: open a rift.",
-                    "Passing through launches you forward; opponents take damage and Wither.");
+                    "Every 5 successful Riptides: open two reusable rifts for "
+                            + configLong("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50) + " seconds.",
+                    "Travel between the rifts; non-owners take damage and Wither I.");
             case "celestial_bow" -> List.of(
                     "Fully charged shots deal splash damage and create a lingering "
                             + plugin.getConfig().getString("phase-five.celestial-bow.cloud-effect", "Wither")
@@ -376,8 +620,8 @@ public final class LegendaryItemRegistry {
                     "Falls of " + configNumber("phase-five.singularity-boots.explosion-fall-distance", 50.0)
                             + " blocks or more cause an explosion.");
             case "nova_shield" -> List.of(
-                    "After 2 axe hits: disable this shield briefly.",
-                    "Prevents one lethal hit; rescue cooldown: "
+                    "2 fully charged axe critical hits disable blocking for 10 seconds.",
+                    "In the offhand, prevents one lethal hit; rescue cooldown: "
                             + configLong("cooldowns.nova_shield", 600) + " seconds.");
             default -> List.of();
         };

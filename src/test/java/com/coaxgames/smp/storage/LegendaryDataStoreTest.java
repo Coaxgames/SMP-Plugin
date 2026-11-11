@@ -188,6 +188,39 @@ class LegendaryDataStoreTest {
     }
 
     @Test
+    void operatorCopiesDoNotConsumeNonOperatorMaceSlots() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID operatorCopy = UUID.randomUUID();
+        UUID playerCopy = UUID.randomUUID();
+        assertTrue(store.startRitual("star_mace", 1, operatorCopy, UUID.randomUUID(), "Operator",
+                "world", 0, 64, 0, 0, 64, 0, 1_000L, 2_000L, false));
+        assertEquals(0, store.getCraftCount("star_mace"));
+        assertNull(store.getNonOperatorMace("star_mace"));
+        assertTrue(store.startRitual("star_mace", 1, playerCopy, UUID.randomUUID(), "Player",
+                "world", 0, 64, 0, 0, 64, 0, 1_000L, 2_000L, true));
+        assertEquals(playerCopy, store.getNonOperatorMace("star_mace"));
+        assertFalse(store.claimNonOperatorMace("star_mace", operatorCopy));
+        assertTrue(store.claimNonOperatorMace("star_mace", playerCopy));
+        assertNull(store.getNonOperatorMace("collapsing_star_mace"));
+        assertEquals(playerCopy, new LegendaryDataStore(dataDirectory).getNonOperatorMace("star_mace"));
+    }
+
+    @Test
+    void droppedOperatorMaceCanClaimEmptySlotAndFailedRitualReleasesReservation() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID operatorCopy = UUID.randomUUID();
+        assertTrue(store.claimNonOperatorMace("star_mace", operatorCopy));
+        assertEquals(1, store.getCraftCount("star_mace"));
+        assertFalse(store.claimNonOperatorMace("star_mace", UUID.randomUUID()));
+        UUID ritual = UUID.randomUUID();
+        assertTrue(store.startRitual("collapsing_star_mace", 1, ritual, UUID.randomUUID(), "Player",
+                "world", 0, 64, 0, 0, 64, 0, 1_000L, 2_000L, true));
+        assertTrue(store.abortRitual(ritual));
+        assertNull(store.getNonOperatorMace("collapsing_star_mace"));
+        assertEquals(0, store.getCraftCount("collapsing_star_mace"));
+    }
+
+    @Test
     void abortingFailedRitualConsumptionRestoresCraftAllowance() throws Exception {
         LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
         UUID itemUuid = UUID.randomUUID();

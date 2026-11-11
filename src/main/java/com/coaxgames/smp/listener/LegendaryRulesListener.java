@@ -134,22 +134,6 @@ public final class LegendaryRulesListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot >= event.getView().getTopInventory().getSize())
-                && event.getWhoClicked() instanceof Player player) {
-            var definition = items.identify(event.getOldCursor()).orElse(null);
-            if (definition != null) {
-                int incomingAmount = event.getNewItems().values().stream()
-                        .filter(stack -> items.identify(stack)
-                                .map(item -> item.id().equals(definition.id())).orElse(false))
-                        .mapToInt(ItemStack::getAmount)
-                        .sum();
-                if (incomingAmount > 0
-                        && !items.hasCapacity(player, definition.id(), incomingAmount)) {
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-        }
         if (isLegendary(event.getOldCursor())
                 && event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot < event.getView().getTopInventory().getSize())) {
             event.setCancelled(true);
@@ -184,6 +168,9 @@ public final class LegendaryRulesListener implements Listener {
         if (!definition.protectedFromLossAndStorage()
                 && !definition.trackUniqueInstance()
                 && !definition.hasPerPlayerCarryLimit()) {
+            if (items.refreshCooldownGroup(stack)) {
+                event.getItem().setItemStack(stack);
+            }
             return;
         }
         if (definition.trackUniqueInstance() && isPendingRitualItem(stack)) {
@@ -197,21 +184,64 @@ public final class LegendaryRulesListener implements Listener {
             return;
         }
         if (definition.hasPerPlayerCarryLimit()
-                && !items.hasCapacity(player, definition.id(), stack.getAmount())) {
+                && !plugin.getRitualManager().hasCapacity(player, definition.id(), stack.getAmount())) {
             event.setCancelled(true);
             return;
+        }
+        if (!player.isOp() && com.coaxgames.smp.storage.LegendaryDataStore.isLimitedMace(definition.id())) {
+            UUID uuid = items.getUniqueId(stack).orElse(null);
+            if (uuid == null) {
+                event.setCancelled(true);
+                plugin.getLogger().severe("Denied pickup of " + definition.id() + " without a valid item UUID.");
+                return;
+            }
+            try {
+                if (!plugin.getDataStore().claimNonOperatorMace(definition.id(), uuid)) {
+                    event.setCancelled(true);
+                    return;
+                }
+            } catch (IOException exception) {
+                event.setCancelled(true);
+                plugin.getLogger().log(Level.SEVERE, "Could not reserve the server-wide mace slot.", exception);
+                return;
+            }
         }
         if (!items.isLegendary(stack)) {
             return;
         }
         if (!persistOwnerAndLocation(stack, player.getUniqueId(), player.getLocation())) {
             event.setCancelled(true);
+            return;
+        }
+        boolean itemUpdated = items.upgradeVoidSword(stack);
+        itemUpdated |= items.upgradeLunarLeggings(stack);
+        itemUpdated |= items.removeWeaponFireEnchantments(stack);
+        itemUpdated |= items.refreshDailyEffectLore(stack);
+        itemUpdated |= items.initializeStarMaceProgression(stack);
+        itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+        itemUpdated |= items.refreshCooldownGroup(stack);
+        if (itemUpdated) {
+            event.getItem().setItemStack(stack);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerDrop(PlayerDropItemEvent event) {
         ItemStack stack = event.getItemDrop().getItemStack();
+        var definition = items.identify(stack).orElse(null);
+        if (event.getPlayer().isOp() && definition != null
+                && com.coaxgames.smp.storage.LegendaryDataStore.isLimitedMace(definition.id())) {
+            UUID occupied = plugin.getDataStore().getNonOperatorMace(definition.id());
+            if (occupied != null) {
+                var location = event.getItemDrop().getLocation();
+                event.setCancelled(true);
+                plugin.getLogger().warning("Returned " + definition.id() + " dropped by operator "
+                        + event.getPlayer().getName() + " at " + location.getWorld().getName() + " "
+                        + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
+                        + "; the non-operator mace slot is occupied.");
+                return;
+            }
+        }
         if (items.containsProtectedItem(stack) && !items.isLegendary(stack)) {
             event.setCancelled(true);
             return;
@@ -265,14 +295,27 @@ public final class LegendaryRulesListener implements Listener {
         }
         enforceCarryingCaps(player);
         refreshItemModels(player.getInventory());
+        for (String id : com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS) {
+            com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, id, plugin.getCooldownManager());
+        }
     }
 
     // Items created before a model was assigned keep stale metadata, so backfill the expected item model.
-    private void refreshItemModels(Inventory inventory) {
+    public void refreshItemModels(Inventory inventory) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
             if (stack == null || stack.getType().isAir()) {
                 continue;
+            }
+            boolean itemUpdated = items.upgradeVoidSword(stack);
+            itemUpdated |= items.upgradeLunarLeggings(stack);
+            itemUpdated |= items.removeWeaponFireEnchantments(stack);
+            itemUpdated |= items.refreshDailyEffectLore(stack);
+            itemUpdated |= items.initializeStarMaceProgression(stack);
+            itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+            itemUpdated |= items.refreshCooldownGroup(stack);
+            if (itemUpdated) {
+                inventory.setItem(slot, stack);
             }
             items.identify(stack).ifPresent(definition -> {
                 var expected = definition.createBaseItem().getItemMeta();
@@ -280,6 +323,7 @@ public final class LegendaryRulesListener implements Listener {
                 if (expected == null || meta == null || !expected.hasItemModel()) {
                     return;
                 }
+
                 boolean changed = false;
                 if (!expected.getItemModel().equals(meta.hasItemModel() ? meta.getItemModel() : null)) {
                     meta.setItemModel(expected.getItemModel());
@@ -486,6 +530,9 @@ public final class LegendaryRulesListener implements Listener {
     }
 
     private boolean exceedsItemLimit(Player player, InventoryClickEvent event) {
+        if (player.isOp()) {
+            return false;
+        }
         var definition = items.identify(event.getCurrentItem()).orElse(null);
         if (definition == null) {
             return false;
@@ -521,9 +568,9 @@ public final class LegendaryRulesListener implements Listener {
         } else if (event.getAction() == InventoryAction.SWAP_WITH_CURSOR) {
             outgoingAmount = matchingAmount(event.getCursor(), definition.id());
         }
-        int limit = items.maxPerPlayer(definition.id());
-        return limit > 0 && items.countForPlayer(player, definition.id())
-                + incomingAmount - outgoingAmount > limit;
+        return definition.protectedFromLossAndStorage()
+                && items.countLegendaryForPlayer(player) + incomingAmount - outgoingAmount
+                > com.coaxgames.smp.item.LegendaryCarryLimit.MAX_ITEMS;
     }
 
     private int matchingAmount(ItemStack stack, String itemId) {
@@ -534,12 +581,14 @@ public final class LegendaryRulesListener implements Listener {
     }
 
     private void enforceCarryingCaps(Player player) {
+        if (player.isOp()) {
+            return;
+        }
         for (var definition : items.getAll()) {
-            int limit = items.maxPerPlayer(definition.id());
-            if (limit == 0) {
+            if (!definition.protectedFromLossAndStorage()) {
                 continue;
             }
-            int excess = items.countForPlayer(player, definition.id()) - limit;
+            int excess = items.countLegendaryForPlayer(player) - com.coaxgames.smp.item.LegendaryCarryLimit.MAX_ITEMS;
             if (excess <= 0) {
                 continue;
             }
@@ -595,7 +644,11 @@ public final class LegendaryRulesListener implements Listener {
         if (!items.isLegendary(stack)) {
             return true;
         }
-        String itemId = items.identify(stack).map(definition -> definition.id()).orElse(null);
+        var definition = items.identify(stack);
+        if (definition.isPresent() && !definition.get().trackUniqueInstance()) {
+            return true;
+        }
+        String itemId = definition.map(item -> item.id()).orElse(null);
         UUID itemUuid = items.getUniqueId(stack).orElse(null);
         if (itemId == null || itemUuid == null) {
             plugin.getLogger().severe("Encountered a legendary item with invalid identity; transfer was denied.");
@@ -613,6 +666,10 @@ public final class LegendaryRulesListener implements Listener {
 
     private boolean persistLocation(ItemStack stack, org.bukkit.Location location) {
         if (!items.isLegendary(stack)) {
+            return true;
+        }
+        var definition = items.identify(stack);
+        if (definition.isPresent() && !definition.get().trackUniqueInstance()) {
             return true;
         }
         UUID itemUuid = items.getUniqueId(stack).orElse(null);

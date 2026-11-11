@@ -1,7 +1,33 @@
 package com.coaxgames.smp.util;
 
+import org.bukkit.util.BoundingBox;
+
 public final class MassOrbDamage {
     private MassOrbDamage() {
+    }
+
+    public static double slamDamage(double fallDistance) {
+        if (!Double.isFinite(fallDistance) || fallDistance < 0) {
+            throw new IllegalArgumentException("Fall distance must be finite and non-negative.");
+        }
+        return Math.min(20.0, fallDistance * 0.5);
+    }
+
+    public static double impactFraction(
+            double fromX, double fromY, double fromZ,
+            double toX, double toY, double toZ,
+            double playerWidth, BoundingBox target
+    ) {
+        if (toY >= fromY || target.getMaxY() > fromY || target.getMaxY() < toY) {
+            return -1.0;
+        }
+        double fraction = (fromY - target.getMaxY()) / (fromY - toY);
+        double x = fromX + (toX - fromX) * fraction;
+        double z = fromZ + (toZ - fromZ) * fraction;
+        double halfWidth = playerWidth / 2.0;
+        return x + halfWidth > target.getMinX() && x - halfWidth < target.getMaxX()
+                && z + halfWidth > target.getMinZ() && z - halfWidth < target.getMaxZ()
+                ? fraction : -1.0;
     }
 
     public static double calculate(

@@ -1,6 +1,9 @@
 package com.coaxgames.smp.util;
 
 public final class MaceDamage {
+    public static final int STAR_MACE_MIN_WIND_BURST = 1;
+    public static final int STAR_MACE_MAX_WIND_BURST = 5;
+
     private MaceDamage() {
     }
 
@@ -10,9 +13,28 @@ public final class MaceDamage {
         return Math.min(baseDamage, maximumDamage);
     }
 
-    public static boolean exceedsSparkThreshold(double finalDamage) {
-        validate(finalDamage, "finalDamage");
-        return finalDamage > 10.0;
+    public static int nextStarMaceWindBurst(int currentLevel, boolean hit) {
+        if (currentLevel < STAR_MACE_MIN_WIND_BURST || currentLevel > STAR_MACE_MAX_WIND_BURST) {
+            throw new IllegalArgumentException("currentLevel must be between I and V.");
+        }
+        return hit ? Math.min(STAR_MACE_MAX_WIND_BURST, currentLevel + 1) : STAR_MACE_MIN_WIND_BURST;
+    }
+
+    public static boolean startsStarMaceCooldown(int currentLevel, boolean hit) {
+        if (currentLevel < STAR_MACE_MIN_WIND_BURST || currentLevel > STAR_MACE_MAX_WIND_BURST) {
+            throw new IllegalArgumentException("currentLevel must be between I and V.");
+        }
+        return !hit;
+    }
+
+    public static int collapsingSparkCount(double maceDamageHealthPoints, int consecutiveHits) {
+        validate(maceDamageHealthPoints, "maceDamageHealthPoints");
+        if (consecutiveHits < 1) {
+            throw new IllegalArgumentException("consecutiveHits must be at least one.");
+        }
+        long sparksFromDamage = (long) Math.floor(maceDamageHealthPoints / 2.0);
+        long count = Math.addExact(sparksFromDamage, consecutiveHits - 1L);
+        return Math.toIntExact(count);
     }
 
     private static void validate(double value, String name) {

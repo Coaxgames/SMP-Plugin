@@ -137,8 +137,20 @@ public final class ReclaimableItemService {
             return true;
         }
         if (!plugin.getRitualManager().hasCapacity(player, record.itemId(), 1)) {
-            player.sendMessage("You already hold the configured maximum of " + record.itemId() + ".");
+            player.sendMessage("You already hold the maximum of two legendary items.");
             return true;
+        }
+        if (!player.isOp() && com.coaxgames.smp.storage.LegendaryDataStore.isLimitedMace(record.itemId())) {
+            try {
+                if (!plugin.getDataStore().claimNonOperatorMace(record.itemId(), itemUuid)) {
+                    player.sendMessage("The server-wide limit for " + record.itemId() + " has been reached.");
+                    return true;
+                }
+            } catch (IOException exception) {
+                plugin.getLogger().log(Level.SEVERE, "Could not reserve the server-wide mace slot.", exception);
+                player.sendMessage("The item could not be claimed because its limit could not be saved.");
+                return true;
+            }
         }
         ItemStack item = plugin.getLegendaryItems().createItem(record.itemId(), itemUuid);
         barrel.getPersistentDataContainer().remove(itemUuidKey);

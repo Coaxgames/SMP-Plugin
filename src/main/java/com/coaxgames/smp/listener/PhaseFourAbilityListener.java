@@ -4,20 +4,26 @@ import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.util.HitCounter;
 import com.coaxgames.smp.util.MassOrbDamage;
+import com.coaxgames.smp.util.ItemCooldownMarkers;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
@@ -29,11 +35,15 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+import org.bukkit.util.BoundingBox;
 
 public final class PhaseFourAbilityListener implements Listener {
     private final GalaxySmpPlugin plugin;
@@ -42,6 +52,7 @@ public final class PhaseFourAbilityListener implements Listener {
     private final HitCounter astralHits;
     private final HitCounter voidHits;
     private final Map<UUID, AttributeModifier> astralModifiers = new HashMap<>();
+    private final Map<UUID, MassOrbFall> massOrbFalls = new HashMap<>();
 
     public PhaseFourAbilityListener(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -56,6 +67,7 @@ public final class PhaseFourAbilityListener implements Listener {
     public void resetAbilityProgress(UUID playerUuid) {
         astralHits.clear(playerUuid);
         voidHits.clear(playerUuid);
+        massOrbFalls.remove(playerUuid);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -92,7 +104,19 @@ public final class PhaseFourAbilityListener implements Listener {
                 || !isItem(event.getItemStack(), "kuiper_ball")) {
             return;
         }
+        Player player = event.getPlayer();
+        if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), "kuiper_ball")
+                || !startKuiperCooldown(player)) {
+            event.setCancelled(true);
+            event.setShouldConsume(false);
+            return;
+        }
         snowball.getPersistentDataContainer().set(kuiperProjectileKey, PersistentDataType.BYTE, (byte) 1);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                ItemCooldownMarkers.sync(player, "kuiper_ball", plugin.getCooldownManager());
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -104,9 +128,12 @@ public final class PhaseFourAbilityListener implements Listener {
         }
         double radius = nonNegativeConfig("phase-four.kuiper-ball.burst-radius", 4.0);
         double strength = nonNegativeConfig("phase-four.kuiper-ball.burst-strength", 1.5);
+        double verticalBoost = nonNegativeConfig("phase-four.kuiper-ball.burst-vertical-boost", 0.35);
+        double minimumVertical = nonNegativeConfig("phase-four.kuiper-ball.burst-minimum-vertical", 0.35);
         for (org.bukkit.entity.Entity nearby : projectile.getWorld().getNearbyEntities(
                 projectile.getLocation(), radius, radius, radius)) {
-            if (nearby.equals(projectile) || nearby.equals(projectile.getShooter())) {
+            if (nearby.equals(projectile) || nearby.equals(projectile.getShooter())
+                    || !isKuiperBurstTarget(nearby)) {
                 continue;
             }
             if (nearby instanceof LivingEntity living && event.getHitEntity() == living) {
@@ -120,10 +147,56 @@ public final class PhaseFourAbilityListener implements Listener {
             if (direction.lengthSquared() == 0) {
                 direction = new Vector(0, 1, 0);
             } else {
-                direction.normalize().setY(Math.max(0.35, direction.getY() + 0.35));
+                direction.normalize().setY(Math.max(
+                        minimumVertical, direction.getY() + verticalBoost));
             }
             nearby.setVelocity(direction.multiply(strength));
         }
+    }
+
+    private boolean startKuiperCooldown(Player player) {
+        long cooldownMillis = positiveConfig("phase-four.kuiper-ball.cooldown-millis", 1_500L);
+        try {
+            boolean started = plugin.getCooldownManager().start(
+                    player.getUniqueId(), "kuiper_ball", Duration.ofMillis(cooldownMillis));
+            if (started) {
+                ItemCooldownMarkers.sync(player, "kuiper_ball", plugin.getCooldownManager());
+            }
+            return started;
+        } catch (IOException | ArithmeticException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not persist Kuiper Ball cooldown for " + player.getUniqueId()
+                            + "; the projectile launch was cancelled.",
+                    exception);
+            return false;
+        }
+    }
+
+    private boolean isKuiperBurstTarget(org.bukkit.entity.Entity entity) {
+        if (entity instanceof Player) {
+            return booleanConfig("phase-four.kuiper-ball.target-players", true);
+        }
+        if (entity instanceof Mob) {
+            return booleanConfig("phase-four.kuiper-ball.target-mobs", true);
+        }
+        if (entity instanceof Item) {
+            return booleanConfig("phase-four.kuiper-ball.target-items", false);
+        }
+        if (entity instanceof Projectile) {
+            return booleanConfig("phase-four.kuiper-ball.target-projectiles", false);
+        }
+        return false;
+    }
+
+    private boolean booleanConfig(String path, boolean fallback) {
+        if (!plugin.getConfig().contains(path)) {
+            return fallback;
+        }
+        Object value = plugin.getConfig().get(path);
+        if (!(value instanceof Boolean enabled)) {
+            throw new IllegalStateException(path + " must be true or false.");
+        }
+        return enabled;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -147,6 +220,110 @@ public final class PhaseFourAbilityListener implements Listener {
             event.setCancelled(true);
         } else {
             event.setDamage(scaledDamage);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMassOrbMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (event instanceof PlayerTeleportEvent || to == null || !from.getWorld().equals(to.getWorld())
+                || player.isFlying() || player.isGliding() || player.isInsideVehicle()
+                || player.isInWater()
+                || (!isItem(player.getInventory().getItemInMainHand(), "mass_orb")
+                && !isItem(player.getInventory().getItemInOffHand(), "mass_orb"))) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
+        if (plugin.getCooldownManager().isOnCooldown(playerId, "mass_orb")) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
+        double descent = from.getY() - to.getY();
+        if (descent < 0) {
+            massOrbFalls.remove(playerId);
+            return;
+        }
+        if (descent == 0) {
+            if (player.isOnGround()) {
+                massOrbFalls.remove(playerId);
+            }
+            return;
+        }
+
+        MassOrbFall fall = massOrbFalls.computeIfAbsent(playerId,
+                ignored -> new MassOrbFall(Math.max(0.0, player.getFallDistance() - descent)));
+        double halfWidth = player.getWidth() / 2.0;
+        BoundingBox path = new BoundingBox(
+                Math.min(from.getX(), to.getX()) - halfWidth,
+                to.getY() - 0.01,
+                Math.min(from.getZ(), to.getZ()) - halfWidth,
+                Math.max(from.getX(), to.getX()) + halfWidth,
+                from.getY() + 0.01,
+                Math.max(from.getZ(), to.getZ()) + halfWidth);
+        for (var entity : player.getWorld().getNearbyEntities(path)) {
+            if (!(entity instanceof LivingEntity target) || target.equals(player)
+                    || fall.hitEntities.contains(target.getUniqueId())) {
+                continue;
+            }
+            if (plugin.getCooldownManager().isOnCooldown(playerId, "mass_orb")) {
+                break;
+            }
+            double fraction = MassOrbDamage.impactFraction(
+                    from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ(),
+                    player.getWidth(), target.getBoundingBox());
+            if (fraction < 0) {
+                continue;
+            }
+            double damage = MassOrbDamage.slamDamage(fall.distance + descent * fraction);
+            if (damage > 0) {
+                if (!startMassOrbCooldown(player)) {
+                    break;
+                }
+                fall.hitEntities.add(target.getUniqueId());
+                target.damage(damage, player);
+            }
+        }
+        fall.distance += descent;
+        if (player.isOnGround()) {
+            massOrbFalls.remove(playerId);
+        }
+    }
+
+    private boolean startMassOrbCooldown(Player player) {
+        try {
+            boolean started = plugin.getCooldownManager().start(player.getUniqueId(), "mass_orb");
+            if (started) {
+                ItemCooldownMarkers.sync(player, "mass_orb", plugin.getCooldownManager());
+            }
+            return started;
+        } catch (IOException | ArithmeticException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Could not persist Mass Orb cooldown for " + player.getUniqueId()
+                            + "; the slam was cancelled.",
+                    exception);
+            return false;
+        }
+    }
+
+    @EventHandler
+    public void onMassOrbQuit(PlayerQuitEvent event) {
+        massOrbFalls.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMassOrbTeleport(PlayerTeleportEvent event) {
+        massOrbFalls.remove(event.getPlayer().getUniqueId());
+    }
+
+    private static final class MassOrbFall {
+        private double distance;
+        private final Set<UUID> hitEntities = new HashSet<>();
+
+        private MassOrbFall(double distance) {
+            this.distance = distance;
         }
     }
 

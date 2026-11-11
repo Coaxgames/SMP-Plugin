@@ -21,24 +21,44 @@ cooldowns:
   default-seconds: 0
   star_mace: 30
   collapsing_star_mace: 30
+  # Starts when the held Mass Orb attempts a fall-slam.
+  mass_orb: 20
   nebula_spear: 45
   nova_shield: 600
 
 phase-four:
   combo-window-seconds: 3
+  # Lunar Leggings retain this legacy setting, including on existing servers.
   daily-trigger-tick: 13500
+  solstice-chestplate:
+    trigger-tick: 6000
   daily-effect-seconds: 300
   astral-sword:
     attack-speed-seconds: 30
+  # Kuiper Ball ability controls. Values are read from the plugin config at runtime.
+  # Edit these values on the server, then reload/restart the plugin for changes to take effect.
   kuiper-ball:
+    # Freeze duration for the directly hit player or mob.
     freeze-seconds: 30
+    # Burst reach in blocks and outward velocity multiplier.
     burst-radius: 4.0
     burst-strength: 1.5
+    # Cooldown starts when a Kuiper Ball throw is attempted.
+    cooldown-millis: 1500
+    # Entity categories affected by the burst; items/projectiles are off by default.
+    target-players: true
+    target-mobs: true
+    target-items: false
+    target-projectiles: false
+    # Vertical impulse added to the normalized outward direction and its minimum Y component.
+    burst-vertical-boost: 0.35
+    burst-minimum-vertical: 0.35
   mass-orb:
     passive-refresh-ticks: 40
-    # Provisional height-scaled damage: max(0, fall-distance - 3) * damage-per-block,
+    # Holder fall damage: max(0, fall-distance - 3) * damage-per-block,
     # capped at maximum-damage, then reduced by the configured Feather Falling XV placeholder.
-    # Damage is in Minecraft health points.
+    # Damage is in Minecraft health points. Enemy slam damage is separate: 0.5 points
+    # per block fallen, up to 20 points, when the holder falls onto an entity.
     free-fall-distance: 3.0
     damage-per-block: 1.0
     maximum-damage: 40.0
@@ -53,11 +73,9 @@ phase-five:
   # Damage limits use health points converted from hearts.
   mace-damage-cap-hearts: 7.0
   collapsing-star-mace:
-    # Provisional spark count and radius; owner balance decisions remain open.
-    spark-count-per-hit: 1
+    # Each full heart dealt by the mace creates one spark; each spark deals 1 health point.
+    # Consecutive mace hits add one additional spark per hit in the streak.
     spark-radius: 1.5
-    # One heart per spark maximum; configurable below that limit.
-    spark-damage: 2.0
   nebula-spear:
     # Provisional impulse and hitbox around the successful fifth lunge.
     thrust-velocity: 2.5
@@ -66,6 +84,8 @@ phase-five:
   wormhole-trident:
     # The radius is intentionally provisional pending owner confirmation.
     interaction-radius: 2.0
+    # Exit distance and lifetime retain their existing config keys for upgrades.
+    # The exit is placed when the rifts open; the lifetime starts at that time.
     creator-launch-distance: 20
     lifetime-after-passage-seconds: 50
     opponent-damage-hearts: 2.0
@@ -87,10 +107,6 @@ phase-five:
     # Galaxy cloud particles: 0 disables them, 100 is the default amount, 200 doubles it.
     # Applies to both the worn effect and the explosion cloud.
     particle-percent: 100
-  nova-shield:
-    # Shield disable period is provisional pending balance review.
-    disable-seconds: 5
-
 rituals:
   duration-seconds: 180
   reveal-interval-seconds: 180
@@ -160,12 +176,16 @@ legendary-items:
       text: "Mass Orb"
       start-color: "#434343"
       end-color: "#A8A8A8"
+    corrupt_ender_pearl:
+      text: "Corrupt Ender Pearl"
+      start-color: "#54276B"
+      end-color: "#9E63C7"
   max-per-player:
+    # Legacy settings retained for config compatibility; the active limit is two
+    # legendary items total for non-operators. Usables and operators are exempt.
     default: 1
-    # Zero disables the per-item limit.
     items:
       galaxy_string: 0
       kuiper_ball: 0
       mass_orb: 0
-      # Example: allow two Astral Swords per player.
-      # astral_sword: 2
+      corrupt_ender_pearl: 0
