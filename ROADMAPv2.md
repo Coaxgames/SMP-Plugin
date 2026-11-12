@@ -23,9 +23,9 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 | Item | Base | Key Ability / Rules | Recipe (from notes) |
 |---|---|---|---|
 | Nebula Spear | Netherite spear | Damage + cooldown, unbreakable; every 5 lunges → thrust (riptide-like velocity), max 4 hearts vs prot 4 diamond; comes with Lunge III, no other enchants; attribute swapping ineffective; 45s CD | Corners: player head; top: trident; middle: netherite spear; bottom: redstone block; sides: gold blocks |
-| Star Mace | Mace | Wind Burst starts at I and rises by one on hits to V; any miss resets to I, but only a miss at V starts a 30s cooldown; Density II; damage cap 7 hearts | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
+| Star Mace | Mace | Wind Burst starts at I and rises by one on hits to V; resets after 20s without use or any miss, but only a miss at V starts a 30s cooldown; Density II; damage cap 7 hearts | Corners: heads; top: nether star; sides: wither skulls; bottom: netherite; middle: heavy core |
 | Collapsing Star Mace | Mace | Breach 3 + Wind Burst 2; damage cap 7 hearts; one spark per full heart of actual mace damage, plus one spark per consecutive hit after the first; each spark deals 1 health point of splash damage | Sides: heavy cores; corners: heads; middle: nether star; top: deepslate coal ore; bottom: breeze rod |
-| Astral Sword | Netherite sword | Sharpness 6, Looting 3, no Fire Aspect; no enchanting; 4-hit combo → sword-only attack speed boost for 30 seconds, without refresh during the boost | Corners: heads; top+middle: netherite ingot; bottom: breeze rod; sides: diamond blocks |
+| Astral Sword | Netherite sword | Sharpness 6, Looting 3, no Fire Aspect; each hit multiplies sword speed by 1.35, up to four hits within 10 seconds from the first; resets for a 30-second effect cooldown without blocking attacks | Corners: heads; top+middle: netherite ingot; bottom: breeze rod; sides: diamond blocks |
 | Void Sword | Netherite sword | Unbreakable, Sharpness V, Looting III; 4-hit combo → Slowness I + Wither I for 10s | Corners: heads; middle: netherite sword; edges: wither roses |
 | Celestial Bow | Bow | Power V, Punch II, Infinity, no Flame; fully charged → splash damage + lingering potion/cloud of Wither or Poison | Left-middle end rod, bottom blaze rod, top breeze rod, left corners heads, right column Galaxy String x3, middle end crystal |
 | Wormhole Trident | Trident | Every 5 Riptides creates a pair of reusable rifts; the exit is placed 20 blocks forward in the creator's look direction when opened, and both close after 50s; non-owners passing through either end take 2 hearts + Wither I for 20s | Top/bottom: trident; corners: heads; middle: netherite ingot; left/right: wither skeleton skulls |
@@ -85,7 +85,7 @@ Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total p
 
 ### 3.4 Abilities (implementation notes)
 - **Damage caps:** `EntityDamageByEntityEvent` – compute the bounded value from `getFinalDamage()` and verify the applied result after armor/protection modifiers; do not assume `setDamage()` directly sets final damage. Test against prot 4 diamond.
-- **Combo counters:** per-attacker tracking for Void Sword, Star Mace progression and Cosmic Crown. Void Sword hits do not expire; its fourth hit applies effects to that hit's target. Star Mace progression resets on a missed swing, not inactivity.
+- **Combo counters:** per-attacker tracking for Void Sword, Star Mace progression and Cosmic Crown. Void Sword hits do not expire; its fourth hit applies effects to that hit's target. Star Mace progression resets on a missed swing or after 20 seconds without use.
 - **Lunge/Riptide counting:** use the native spear Lunge enchantment already confirmed working on the existing server; implement Nebula Spear's fifth-successful-lunge trigger using the Paper API available in the target setup. No third-party lunge integration is expected. Count trident Riptides for Wormhole Trident.
 - **Rift (Wormhole):** `Location` + radius, particle task, `BukkitScheduler`/Folia-safe scheduler; 50s lifetime; entry check by proximity.
 - **Time-based buffs (Solstice/Lunar):** Solstice at tick 6000; Lunar at tick 13500, once per Minecraft day.
@@ -158,9 +158,9 @@ Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total p
 ### Phase 4 – Simple Items (first playable)
 The checked entries below describe the earlier implementation, not acceptance of the newer corrections in Phase 5.
 - [x] Galaxy String: shaped, repeatable recipe; plain crafting component, no ability or craft quota; stack-compatible item identity with no unique-instance UUID
-- [x] Kuiper Ball: shaped recipe yields 10, custom stack maximum 64; marked thrown snowballs freeze a direct hit and create a configurable velocity burst; cooldown, radius, strength, vertical impulse, and player/mob/item/projectile targeting are host-configurable; repeatable with normal stack merging and no per-player carrying limit
+- [x] Kuiper Ball: shaped recipe yields 10, custom stack maximum 64; marked thrown snowballs freeze eligible living targets in a configurable velocity burst; cooldown, radius, strength, vertical impulse, and player/mob/item/projectile targeting are host-configurable; repeatable with normal stack merging and no per-player carrying limit
 - [x] Mass Orb: repeatable recipe, Slowness IV while held, and direct fall-slams on living targets at 0.25 hearts per block fallen, capped at 10 hearts before normal damage mitigation; the holder is exempt from slam damage but retains the existing configurable fall-damage reduction
-- [x] Astral Sword: recipe, Sharpness VI/Looting III without Fire Aspect, no-enchant protection, and temporary 1.65x attack-speed multiplier for 30 seconds after four hits
+- [x] Astral Sword: recipe, Sharpness VI/Looting III without Fire Aspect, no-enchant protection, and sword-only stacking attack speed with a 10-second window and 30-second effect cooldown
 - [x] Void Sword: recipe, Unbreakable/Sharpness IV/Looting III, no-enchant protection, and Slowness I plus Wither I for 10 seconds after four hits
 - [ ] **Owner local test:** Verify the Void Sword applies Slowness I and Wither I for 10 seconds to the target of every fourth hit, without a time limit between hits.
 - [x] Solstice Chestplate: register Protection IV; grant Speed III, Strength II, Resistance I for five minutes when world time crosses tick 13,500; persist daily trigger
@@ -168,8 +168,8 @@ The checked entries below describe the earlier implementation, not acceptance of
 - [x] Add automated tests for daily-effect persistence and Mass Orb damage formula/cap placeholder; `gradlew test build` passes
 - [ ] **Owner local test:** Verify all seven shaped recipes' exact ingredients and outputs; Head Drop heads work and ordinary player heads are rejected
 - [ ] **Owner local test:** Verify Galaxy String and Kuiper Ball stacking, Kuiper Ball output of 10/stack size 64, multiple Kuiper Balls/Mass Orbs remain carried without being dropped or capped, and repeatable crafts do not start rituals or consume craft-once quota
-- [ ] **Owner local test:** Verify Astral/Void four-hit combos, effect targets and durations, Astral's 30-second sword-only attack-speed multiplier, no refresh during the boost, and switching to another weapon.
-- [ ] **Owner local test:** Verify Kuiper Ball freeze and burst; Mass Orb direct slams at 10, 20 and 40+ blocks, the 20-second cooldown on attempted slam, target selection, Slowness IV, and the holder's reduced fall damage
+- [ ] **Owner local test:** Verify Astral speed compounds 1.35x per hit up to four hits during 10 seconds from the first, resets for 30 seconds without blocking attacks, and never affects another weapon. Verify Void Sword effects and duration.
+- [ ] **Owner local test:** Verify Kuiper Ball freezes all eligible living burst targets; Mass Orb direct slams at 10, 20 and 40+ blocks, the 20-second cooldown on attempted slam, target selection, Slowness IV, and the holder's reduced fall damage
 - [ ] **Owner local test:** Wear Solstice Chestplate at tick 6000 and Lunar Leggings at tick 13500, check effect amplifiers/duration and once-per-day behavior plus the plugin grant log, restart during an active effect, and decide Lunar missed-trigger catch-up behavior
 - [ ] Verify Phase 4 items on Paper 26.3, including protection/enchant rules, craft/ritual lifecycle, persistence and recovery; no texture pack is required for mechanics testing
 
@@ -179,8 +179,8 @@ The checked entries below describe the earlier implementation, not acceptance of
 - [x] Register separate Star Mace and Collapsing Star Mace recipes with their specified base enchantments and independent one-ever craft allowances
 - [x] Add automated coverage for mace damage capping, Star Mace hit/miss progression and cooldown conditions, damage-based Collapsing Star sparks, and confirm the existing datastore test covers independent permanent craft records
 - [ ] **Owner local test:** Verify each mace recipe, Head Drop head-marker requirement, output enchantments/unbreakable status, and separate permanent craft-once records; confirm the vanilla mace recipe is unavailable
-- [ ] **Owner local test:** Star Mace progression works per owner confirmation; verify misses reset to I, only a miss at V starts cooldown, blocked attacks and native Wind Burst during cooldown, and the seven-heart damage ceiling against unarmored and Protection IV diamond targets.
-- [ ] **Owner local test:** Verify Collapsing Star spark count from damage and consecutive hits, more visible spark bursts (including lethal hits), one-health-point splash damage per spark to nearby entities, streak resets, three-hit cooldown, blocked attacks and native Wind Burst during cooldown, and configured radius. Spark damage now bypasses and restores each victim's damage-immunity timer; verify in game.
+- [ ] **Owner local test:** Star Mace progression works per owner confirmation; verify reset to I after 20 seconds without use or on a miss, only a miss at V starts cooldown, blocked attacks and native Wind Burst during cooldown, and the seven-heart damage ceiling against unarmored and Protection IV diamond targets.
+- [ ] **Owner local test:** Verify Collapsing Star spark count from damage and consecutive hits, larger spark displays (including lethal hits), one-health-point splash damage per spark to nearby entities, streak resets, three-hit cooldown, blocked attacks and native Wind Burst during cooldown, and configured radius. Spark damage now bypasses and restores each victim's damage-immunity timer; verify in game.
 - [x] Nebula Spear: register its recipe with native Lunge III only; count the target Paper API's successful `EntityLungeEvent`s and apply the fifth-lunge thrust, four-heart damage ceiling, and 45-second cooldown without relying on inferred movement/velocity
 - [x] Wormhole Trident: count successful Riptides and create two visible, reusable rift endpoints on every fifth; close both 50 seconds after opening, and apply two hearts plus Wither I for 20 seconds to non-owners on each passage
 - [x] Celestial Bow: register its recipe with Power V, Punch II, and Infinity without Flame; tag fully charged shots, apply configurable splash damage, and create a configurable lingering cloud on impact (currently defaults to a 20-second lifetime; final balance is deferred to Phase 6)
@@ -225,7 +225,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 6. ✅ Lunar Leggings remain at tick 13500.
 7. ⬜ Collapsing Star Mace growing sparks and splash damage: local implementation and automated coverage exist; verify the complete mechanic in game before closing.
 8. ✅ Mass Orb fall-scaled slam damage.
-9. ⬜ Star Mace progression confirmed working by owner; verify misses reset to I, only a miss at V starts cooldown, and attacks are blocked during cooldown.
+9. ⬜ Star Mace progression confirmed working by owner; verify 20-second inactivity and misses reset to I, only a miss at V starts cooldown, and attacks are blocked during cooldown.
 10. ✅ Depth Strider III on newly created Singularity Boots; in-game verification remains.
 
 ##### Items, drops and limits
@@ -240,7 +240,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 9. ✅ Hide crafting output and block recipe-book autofill when a limit is reached; return an operator's dropped mace if its non-operator slot is occupied and log operator and coordinates. A non-operator can claim an operator's dropped mace when that slot is free. In-game verification remains.
 
 ##### Updates
-1. ⬜ Verify and correct pack-only update restart behavior.
+1. ⬜ Verify matching release/plugin/pack versions and restart-free pack-only updates after installing the content-comparing updater; a running plugin's reported version changes only on restart.
 
 These statuses describe local implementation only; none of the ✅ items are claimed as verified in game. Changes remain local and unpushed.
 
@@ -288,8 +288,8 @@ These statuses describe local implementation only; none of the ✅ items are cla
 8. **Nebula Spear lunge — [IMPLEMENTED; OWNER VERIFICATION IN PHASE 5].** The source notes specify a Netherite spear with native Lunge III, a thrust after five lunges, Riptide II-like velocity, a four-heart maximum against Protection IV diamond, no other enchants, and a 45-second cooldown. The existing server uses Galaxy SMP and Head Drop only; no additional lunge plugin or redesign is involved. The listener counts Paper's successful `EntityLungeEvent`; verify behavior in the Phase 5 owner test.
 9. **Cosmic Crown thorns — [OWNER VERIFICATION IN PHASE 5].** The Crown retaliates against the attacker on every second damaging hit. Vanilla Thorns is removed from the Crown so it cannot trigger independently; verify in game.
 10. **Mace limits — [IMPLEMENTED LOCALLY; OWNER VERIFICATION REQUIRED].** There are two custom mace types, with a server-wide maximum of one Star Mace and one Collapsing Star Mace for non-operators. Each has an independent permanent craft record, and both count toward the non-operator player's two-legendary total. Operators are exempt. This is not an open question.
-11. **Astral Sword attack-speed balance — [REQUIRED: Phase 7].** Use a temporary 1.65x attack-speed multiplier for 30 seconds after the four-hit combo. Keep the final value open for balance review; clarify whether “1.65 boost” is intended as a multiplier if testing exposes any ambiguity.
-12. **Star Mace progression — [OWNER VERIFICATION IN PHASE 5].** Any miss resets Wind Burst to I; only a miss at V starts the 30-second cooldown. A successful hit at V does not start the cooldown. Verify the corrected behavior in game.
+11. **Astral Sword attack-speed balance — [REQUIRED: Phase 7].** Verify the requested 1.35x compounded speed per hit, up to four hits, and review balance in game.
+12. **Star Mace progression — [OWNER VERIFICATION IN PHASE 5].** Wind Burst resets to I after 20 seconds without use or on any miss; only a miss at V starts the 30-second cooldown. A successful hit at V does not start the cooldown. Verify the corrected behavior in game.
 13. **Cooldown UI — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** All five custom items use the same vanilla Ender Pearl-style sweep with separate cooldown groups. Ordinary snowballs, heavy cores, maces and shields do not share these groups. Persisted Kuiper, Mass Orb and mace cooldowns restore their markers on login; verify in game.
 14. **Swift Sneak — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Lunar Leggings receive Swift Sneak III; existing identified leggings are upgraded on inventory refresh or pickup. Kuiper Ball settings remain under `phase-four.kuiper-ball`.
 15. **Dropped repeatables and limits — [OWNER VERIFICATION IN PHASE 6].** The owner chose ground clumps of up to 128 items, unpacked according to inventory stack limits. The owner has confirmed the two-legendary player limit and separate one-of-each-mace server limits; removal must not silently overturn permanent craft-once records.

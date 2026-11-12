@@ -11,21 +11,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public final class PhaseFiveMaceAbilityListener implements Listener {
     private static final String STAR_MACE = "star_mace";
@@ -39,9 +47,52 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
     private final Map<UUID, Boolean> pendingCollapsingSwings = new HashMap<>();
     private final Map<UUID, RecentMaceHit> recentMaceHits = new HashMap<>();
     private final Set<UUID> applyingSparkDamage = new HashSet<>();
+    private final Set<ItemDisplay> sparkDisplays = new HashSet<>();
 
     public PhaseFiveMaceAbilityListener(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            long now = System.currentTimeMillis();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                refreshInactiveMaces(player, now);
+            }
+        }, 20L, 20L);
+    }
+
+    public void shutdown() {
+        sparkDisplays.forEach(ItemDisplay::remove);
+        sparkDisplays.clear();
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        refreshInactiveMaces(event.getPlayer(), System.currentTimeMillis());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        ItemStack item = event.getItem().getItemStack();
+        if (plugin.getLegendaryItems().resetInactiveStarMace(item, System.currentTimeMillis())) {
+            event.getItem().setItemStack(item);
+        }
+    }
+
+    private void refreshInactiveMaces(Player player, long now) {
+        var inventory = player.getInventory();
+        ItemStack[] contents = inventory.getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            if (item != null && plugin.getLegendaryItems().resetInactiveStarMace(item, now)) {
+                inventory.setItem(slot, item);
+            }
+        }
+    }
+
+    private void recordStarMaceUse(Player player, ItemStack mace) {
+        long now = System.currentTimeMillis();
+        plugin.getLegendaryItems().resetInactiveStarMace(mace, now);
+        plugin.getLegendaryItems().recordStarMaceUse(mace, now);
+        player.getInventory().setItemInMainHand(mace);
     }
 
     public void resetAbilityProgress(UUID playerUuid) {
@@ -82,6 +133,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
     }
 
     private void onStarMaceSwing(Player player, ItemStack mace) {
+        recordStarMaceUse(player, mace);
         if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
             player.getInventory().setItemInMainHand(mace);
         }
@@ -145,6 +197,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
 
         if (STAR_MACE.equals(itemId)) {
             ItemStack mace = attacker.getInventory().getItemInMainHand();
+            recordStarMaceUse(attacker, mace);
             if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
                 attacker.getInventory().setItemInMainHand(mace);
             }
@@ -300,6 +353,26 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
                 world.spawnParticle(
                         Particle.ITEM, location, 5, 0.35, 0.35, 0.35, 0.08,
                         SPARK_PARTICLE_ITEM);
+                var random = ThreadLocalRandom.current();
+                var sparkLocation = location.clone().add(
+                        random.nextDouble(-0.35, 0.35),
+                        random.nextDouble(-0.35, 0.35),
+                        random.nextDouble(-0.35, 0.35));
+                ItemDisplay display = world.spawn(sparkLocation, ItemDisplay.class);
+                display.setItemStack(SPARK_PARTICLE_ITEM.clone());
+                display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                display.setBillboard(Display.Billboard.CENTER);
+                display.setTransformation(new Transformation(
+                        new Vector3f(), new Quaternionf(), new Vector3f(1.5F), new Quaternionf()));
+                display.setGravity(false);
+                display.setInvulnerable(true);
+                display.setSilent(true);
+                display.setPersistent(false);
+                sparkDisplays.add(display);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    display.remove();
+                    sparkDisplays.remove(display);
+                }, 10L);
                 double radiusSquared = radius * radius;
                 for (var entity : world.getNearbyEntities(location, radius, radius, radius)) {
                     if (!(entity instanceof LivingEntity living)

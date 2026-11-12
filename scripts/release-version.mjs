@@ -39,7 +39,7 @@ export function nextReleaseVersion(gradleVersion, pluginVersion, tags) {
     return formatVersion(baseVersion);
 }
 
-export function updateReleaseVersion(root, tags) {
+export function updateReleaseVersion(root, tags, recoveryVersion = null) {
     const gradlePath = resolve(root, "build.gradle");
     const pluginPath = resolve(root, "src/main/resources/plugin.yml");
     const gradle = readFileSync(gradlePath, "utf8");
@@ -53,7 +53,13 @@ export function updateReleaseVersion(root, tags) {
         throw new Error("Could not find the Gradle and plugin.yml version declarations.");
     }
 
-    const version = nextReleaseVersion(gradleMatch[1], pluginMatch[1], tags);
+    if (recoveryVersion !== null && !/^\d+\.\d+\.\d+$/.test(recoveryVersion)) {
+        throw new Error("Recovery version must use major.minor.patch format.");
+    }
+    if (!parseVersion(gradleMatch[1]) || !parseVersion(pluginMatch[1])) {
+        throw new Error("Gradle and plugin.yml versions must use major.minor.patch format.");
+    }
+    const version = recoveryVersion ?? nextReleaseVersion(gradleMatch[1], pluginMatch[1], tags);
     writeFileSync(gradlePath, gradle.replace(gradlePattern, `version = '${version}'`));
     writeFileSync(pluginPath, plugin.replace(pluginPattern, `version: '${version}'`));
     return version;
@@ -62,7 +68,7 @@ export function updateReleaseVersion(root, tags) {
 function main() {
     const root = process.env.SOURCE_ROOT ?? process.cwd();
     const tags = (process.env.RELEASE_TAGS ?? "").split(/\r?\n/).filter(Boolean);
-    const version = updateReleaseVersion(root, tags);
+    const version = updateReleaseVersion(root, tags, process.env.RECOVER_VERSION || null);
     const output = process.env.GITHUB_OUTPUT;
     if (output) {
         appendFileSync(output, `version=${version}${process.platform === "win32" ? "\r\n" : "\n"}`);

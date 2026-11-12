@@ -134,6 +134,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         if (phaseFiveAbilityListener != null) {
             phaseFiveAbilityListener.shutdown();
         }
+        if (phaseFiveMaceAbilityListener != null) {
+            phaseFiveMaceAbilityListener.shutdown();
+        }
         if (ritualManager != null) {
             ritualManager.shutdown();
         }
@@ -177,7 +180,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             com.coaxgames.smp.util.ItemCooldownMarkers.set(player, id, 0);
         }
         com.coaxgames.smp.util.ItemCooldownMarkers.set(player, "nova_shield", 0);
-        phaseFourAbilityListener.resetAbilityProgress(player.getUniqueId());
+        clearedCooldowns += phaseFourAbilityListener.resetAbilityProgress(player);
         phaseFiveMaceAbilityListener.resetAbilityProgress(player.getUniqueId());
         phaseFiveAbilityListener.resetAbilityProgress(player.getUniqueId());
         return clearedCooldowns;
@@ -252,8 +255,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     private void validatePhaseFourSettings() {
         for (String path : java.util.List.of(
-                "phase-four.combo-window-seconds",
-                "phase-four.astral-sword.attack-speed-seconds",
                 "phase-four.daily-trigger-tick",
                 "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",
@@ -267,8 +268,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             }
 
         }
-        validateMaximumLong("phase-four.combo-window-seconds", Long.MAX_VALUE / 1_000L);
-        validateMaximumLong("phase-four.astral-sword.attack-speed-seconds", Long.MAX_VALUE / 1_000L);
         validateMaximumLong("phase-four.daily-effect-seconds", Long.MAX_VALUE / 1_000L);
         validateMaximumLong("phase-four.kuiper-ball.freeze-seconds", Integer.MAX_VALUE / 20L);
         validateMaximumLong("phase-four.mass-orb.feather-falling-level", Integer.MAX_VALUE);

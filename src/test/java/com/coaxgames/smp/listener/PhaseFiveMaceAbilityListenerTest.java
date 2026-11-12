@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -36,13 +37,20 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.util.Transformation;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 
 class PhaseFiveMaceAbilityListenerTest {
@@ -61,7 +69,94 @@ class PhaseFiveMaceAbilityListenerTest {
 
         org.junit.jupiter.api.Assertions.assertTrue(registry.refreshStarMaceCooldownLore(mace));
         verify(meta).lore(List.of(Component.text(
-                "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.", NamedTextColor.GRAY)));
+                "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.", NamedTextColor.GRAY),
+                Component.text("Wind Burst resets to I after 20 seconds without use.", NamedTextColor.GRAY)));
+    }
+
+    @Test
+    void refreshesExistingKuiperBallLore() {
+        LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class, CALLS_REAL_METHODS);
+        LegendaryItem definition = mock(LegendaryItem.class);
+        when(definition.id()).thenReturn("kuiper_ball");
+        ItemStack ball = mock(ItemStack.class);
+        ItemMeta meta = mock(ItemMeta.class);
+        doReturn(Optional.of(definition)).when(registry).identify(ball);
+        when(ball.getItemMeta()).thenReturn(meta);
+        when(meta.lore()).thenReturn(List.of(
+                Component.text("Throw to freeze a hit target and launch configured nearby targets.")));
+        when(ball.setItemMeta(meta)).thenReturn(true);
+
+        org.junit.jupiter.api.Assertions.assertTrue(registry.refreshKuiperBallLore(ball));
+        verify(meta).lore(List.of(Component.text(
+                "Throw to freeze and launch configured nearby targets.", NamedTextColor.GRAY)));
+    }
+
+    @Test
+    void starMaceInactivityFollowsItemAndResetsAtTwentySeconds() {
+        LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class, CALLS_REAL_METHODS);
+        LegendaryItem definition = mock(LegendaryItem.class);
+        when(definition.id()).thenReturn("star_mace");
+        ItemStack mace = mock(ItemStack.class);
+        ItemMeta meta = mock(ItemMeta.class);
+        PersistentDataContainer data = mock(PersistentDataContainer.class);
+        AtomicReference<Long> lastUse = new AtomicReference<>();
+        doReturn(Optional.of(definition)).when(registry).identify(mace);
+        doReturn(true).when(registry).setStarMaceWindBurstLevel(mace, 1);
+        when(mace.getItemMeta()).thenReturn(meta);
+        when(mace.setItemMeta(meta)).thenReturn(true);
+        when(meta.getPersistentDataContainer()).thenReturn(data);
+        when(data.get(any(), eq(PersistentDataType.LONG))).thenAnswer(call -> lastUse.get());
+        doAnswer(call -> {
+            lastUse.set(call.getArgument(2));
+            return null;
+        }).when(data).set(any(), eq(PersistentDataType.LONG), anyLong());
+        org.junit.jupiter.api.Assertions.assertTrue(registry.resetInactiveStarMace(mace, 1_000L));
+        org.junit.jupiter.api.Assertions.assertFalse(registry.resetInactiveStarMace(mace, 1_001L));
+        registry.recordStarMaceUse(mace, 1_000L);
+        org.junit.jupiter.api.Assertions.assertFalse(registry.resetInactiveStarMace(mace, 20_999L));
+        registry.recordStarMaceUse(mace, 20_999L);
+        org.junit.jupiter.api.Assertions.assertFalse(registry.resetInactiveStarMace(mace, 40_998L));
+        org.junit.jupiter.api.Assertions.assertTrue(registry.resetInactiveStarMace(mace, 40_999L));
+        org.junit.jupiter.api.Assertions.assertFalse(registry.resetInactiveStarMace(mace, 41_000L));
+        verify(registry, times(2)).setStarMaceWindBurstLevel(mace, 1);
+    }
+
+    @Test
+    void pickupRefreshesInactiveMaceWithoutStartingCooldown() throws Exception {
+        try (var items = mockConstruction(ItemStack.class, (item, context) ->
+                    when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)));
+             var bukkit = mockStatic(Bukkit.class)) {
+            Fixture fixture = new Fixture("star_mace", bukkit);
+            Item dropped = mock(Item.class);
+            EntityPickupItemEvent event = mock(EntityPickupItemEvent.class);
+            when(event.getItem()).thenReturn(dropped);
+            when(dropped.getItemStack()).thenReturn(fixture.mace);
+            when(fixture.registry.resetInactiveStarMace(eq(fixture.mace), anyLong())).thenReturn(true);
+
+            fixture.listener.onPickup(event);
+
+            verify(dropped).setItemStack(fixture.mace);
+            verify(fixture.cooldowns, never()).start(any(), any(), any());
+        }
+    }
+
+    @Test
+    void periodicRefreshUpdatesInventoryWithoutStartingCooldown() throws Exception {
+        try (var items = mockConstruction(ItemStack.class, (item, context) ->
+                    when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)));
+             var bukkit = mockStatic(Bukkit.class)) {
+            Fixture fixture = new Fixture("star_mace", bukkit);
+            bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(fixture.player));
+            when(fixture.inventory.getContents()).thenReturn(new ItemStack[] {fixture.mace});
+            when(fixture.registry.resetInactiveStarMace(eq(fixture.mace), anyLong())).thenReturn(true);
+            ArgumentCaptor<Runnable> refresh = ArgumentCaptor.forClass(Runnable.class);
+            verify(fixture.scheduler).runTaskTimer(eq(fixture.plugin), refresh.capture(), eq(20L), eq(20L));
+
+            refresh.getValue().run();
+
+            verify(fixture.inventory).setItem(0, fixture.mace);
+            verify(fixture.cooldowns, never()).start(any(), any(), any());
+        }
     }
 
     @Test
@@ -132,6 +227,8 @@ class PhaseFiveMaceAbilityListenerTest {
             when(fixture.cooldowns.start(fixture.playerId, "collapsing_star_mace")).thenReturn(true);
             when(fixture.target.isValid()).thenReturn(true);
             World world = mock(World.class);
+            ItemDisplay display = mock(ItemDisplay.class);
+            when(world.spawn(any(Location.class), eq(ItemDisplay.class))).thenReturn(display);
             when(fixture.target.getWorld()).thenReturn(world);
             when(fixture.target.getLocation()).thenReturn(new Location(world, 0, 0, 0));
             LivingEntity victim = mock(LivingEntity.class);
@@ -178,6 +275,15 @@ class PhaseFiveMaceAbilityListenerTest {
             verify(fixture.cooldowns).start(fixture.playerId, "collapsing_star_mace");
             verify(world, times(9)).spawnParticle(eq(Particle.ITEM), any(Location.class), eq(5),
                     eq(0.35), eq(0.35), eq(0.35), eq(0.08), any(ItemStack.class));
+            verify(world, times(9)).spawn(any(Location.class), eq(ItemDisplay.class));
+            ArgumentCaptor<Transformation> transformation = ArgumentCaptor.forClass(Transformation.class);
+            verify(display, times(9)).setTransformation(transformation.capture());
+            org.junit.jupiter.api.Assertions.assertEquals(1.5F, transformation.getValue().getScale().x);
+            ArgumentCaptor<Runnable> removal = ArgumentCaptor.forClass(Runnable.class);
+            verify(fixture.scheduler, times(9)).runTaskLater(eq(fixture.plugin), removal.capture(), eq(10L));
+            removal.getAllValues().get(0).run();
+            verify(display).remove();
+            fixture.listener.shutdown();
             verify(victim, times(9)).damage(1.0, fixture.player);
             verify(nearby, times(9)).damage(1.0, fixture.player);
             verify(outside, never()).damage(anyDouble(), any(Entity.class));
@@ -195,6 +301,7 @@ class PhaseFiveMaceAbilityListenerTest {
              var bukkit = mockStatic(Bukkit.class)) {
             Fixture fixture = new Fixture("collapsing_star_mace", bukkit);
             World world = mock(World.class);
+            when(world.spawn(any(Location.class), eq(ItemDisplay.class))).thenReturn(mock(ItemDisplay.class));
             when(fixture.target.getWorld()).thenReturn(world);
             when(fixture.target.getLocation()).thenReturn(new Location(world, 0, 0, 0));
             when(fixture.target.isDead()).thenReturn(true);
@@ -224,10 +331,10 @@ class PhaseFiveMaceAbilityListenerTest {
         final PlayerArmSwingEvent swing = mock(PlayerArmSwingEvent.class);
         final UUID playerId = UUID.randomUUID();
         final List<Runnable> tasks = new ArrayList<>();
+        final BukkitScheduler scheduler = mock(BukkitScheduler.class);
         final PhaseFiveMaceAbilityListener listener;
 
         Fixture(String id, org.mockito.MockedStatic<Bukkit> bukkit) {
-            BukkitScheduler scheduler = mock(BukkitScheduler.class);
             bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
             when(scheduler.runTaskLater(eq(plugin), any(Runnable.class), anyLong()))
                     .thenAnswer(call -> {

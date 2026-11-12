@@ -35,7 +35,6 @@ class VoidSwordAbilityTest {
             when(plugin.namespace()).thenReturn("galaxysmp");
             FileConfiguration config = mock(FileConfiguration.class);
             when(plugin.getConfig()).thenReturn(config);
-            when(config.getLong("phase-four.combo-window-seconds", 3)).thenReturn(3L);
             LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
             when(plugin.getLegendaryItems()).thenReturn(registry);
             ItemStack sword = mock(ItemStack.class);

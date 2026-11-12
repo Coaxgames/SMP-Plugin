@@ -28,6 +28,8 @@ import org.bukkit.inventory.Recipe;
 
 public final class LegendaryItemRegistry {
     private static final Pattern VALID_ID = Pattern.compile("[a-z0-9]+(?:_[a-z0-9]+)*");
+    private static final NamespacedKey STAR_MACE_LAST_USE = new NamespacedKey("galaxy", "star_mace_last_use");
+    private static final long STAR_MACE_IDLE = -1L;
 
     private final NamespacedKey itemIdKey;
     private final NamespacedKey itemUuidKey;
@@ -450,8 +452,9 @@ public final class LegendaryItemRegistry {
             String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                     .serialize(updatedLore.get(i));
             if ((line.startsWith("Every 4 consecutive hits: gain increased attack speed for ")
-                    || line.startsWith("Every 4 consecutive hits: this sword gains attack speed for "))
-                    && line.endsWith(" seconds.") && !line.equals(newLine)) {
+                    || line.startsWith("Every 4 consecutive hits: this sword gains attack speed for ")
+                    || line.startsWith("Hits increase sword speed by 1.35x"))
+                    && !line.equals(newLine)) {
                 updatedLore.set(i, Component.text(newLine, NamedTextColor.GRAY));
                 changed = true;
             }
@@ -482,6 +485,63 @@ public final class LegendaryItemRegistry {
         return true;
     }
 
+    public void recordStarMaceUse(ItemStack item, long nowMillis) {
+        ItemMeta meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(STAR_MACE_LAST_USE, PersistentDataType.LONG, nowMillis);
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not record Star Mace use.");
+        }
+    }
+
+    public boolean resetInactiveStarMace(ItemStack item, long nowMillis) {
+        if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        Long lastUse = meta.getPersistentDataContainer().get(STAR_MACE_LAST_USE, PersistentDataType.LONG);
+        if (lastUse != null && (lastUse < 0 || nowMillis < lastUse || nowMillis - lastUse < 20_000L)) {
+            return false;
+        }
+        if (!setStarMaceWindBurstLevel(item, 1)) {
+            throw new IllegalStateException("Could not reset inactive Star Mace.");
+        }
+        meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(STAR_MACE_LAST_USE, PersistentDataType.LONG, STAR_MACE_IDLE);
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not clear Star Mace inactivity timer.");
+        }
+        return true;
+    }
+
+    public boolean refreshKuiperBallLore(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("kuiper_ball")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (text.equals("Throw to freeze a hit target and launch configured nearby targets.")) {
+                updatedLore.set(i, Component.text(
+                        "Throw to freeze and launch configured nearby targets.", NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Kuiper Ball lore.");
+            }
+        }
+        return changed;
+    }
+
     public boolean refreshStarMaceCooldownLore(ItemStack item) {
         if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
             return false;
@@ -496,6 +556,14 @@ public final class LegendaryItemRegistry {
         boolean changed = updatedLore.removeIf(line ->
                 net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                         .serialize(line).equals("A successful swing at Wind Burst V starts a 30-second cooldown."));
+        String inactivityLine = "Wind Burst resets to I after 20 seconds without use.";
+        boolean hasInactivityLine = updatedLore.stream().anyMatch(line ->
+                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(line).equals(inactivityLine));
+        if (!hasInactivityLine) {
+            updatedLore.add(Component.text(inactivityLine, NamedTextColor.GRAY));
+            changed = true;
+        }
         for (int i = 0; i < updatedLore.size(); i++) {
             String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                     .serialize(updatedLore.get(i));
@@ -663,7 +731,7 @@ public final class LegendaryItemRegistry {
             case "galaxy_string" -> List.of("Special crafting ingredient for the Celestial Bow.");
             case "corrupt_ender_pearl" -> List.of("Crafting ingredient for Singularity Boots.");
             case "kuiper_ball" -> List.of(
-                    "Throw to freeze a hit target and launch configured nearby targets.",
+                    "Throw to freeze and launch configured nearby targets.",
                     "Burst targeting is configurable for players, mobs, dropped items, and projectiles.",
                     "Cooldown: " + configLong("phase-four.kuiper-ball.cooldown-millis", 1_500)
                             + " milliseconds per throw.");
@@ -674,8 +742,7 @@ public final class LegendaryItemRegistry {
                     "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
                             + " health points.");
             case "astral_sword" -> List.of(
-                    "Every 4 consecutive hits: this sword gains attack speed for "
-                            + configLong("phase-four.astral-sword.attack-speed-seconds", 30) + " seconds.");
+                    "Hits increase sword speed by 1.35x (max 4); 10s effect, then 30s cooldown.");
             case "void_sword" -> List.of(
                     "Every 4 consecutive hits: inflict Slowness I and Wither I for 10 seconds.");
             case "solstice_chestplate" -> List.of(
@@ -688,6 +755,7 @@ public final class LegendaryItemRegistry {
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "star_mace" -> List.of(
                     "Wind Burst rises by one on each hit, up to V.",
+                    "Wind Burst resets to I after 20 seconds without use.",
                     "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.",
                     "Attacks are blocked during cooldown.",
                     "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.");

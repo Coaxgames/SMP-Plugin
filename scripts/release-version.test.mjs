@@ -36,11 +36,28 @@ test("updates both Gradle and plugin metadata together", () => {
         writeFileSync(join(root, "build.gradle"), "version = '1.2.3'\n");
         const resources = join(root, "src", "main", "resources");
         mkdirSync(resources, { recursive: true });
-        writeFileSync(join(resources, "plugin.yml"), "version: '1.2.3'\n");
+        writeFileSync(join(resources, "plugin.yml"), "version: '1.2.1'\n");
 
         assert.equal(updateReleaseVersion(root, ["1.2.3"]), "1.2.4");
         assert.match(readFileSync(join(root, "build.gradle"), "utf8"), /version = '1\.2\.4'/);
         assert.match(readFileSync(join(resources, "plugin.yml"), "utf8"), /version: '1\.2\.4'/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test("recovery restores the same release version to both files", () => {
+    const root = mkdtempSync(join(tmpdir(), "galaxy-release-recovery-"));
+    try {
+        writeFileSync(join(root, "build.gradle"), "version = '2.22.38'\n");
+        const resources = join(root, "src", "main", "resources");
+        mkdirSync(resources, { recursive: true });
+        writeFileSync(join(resources, "plugin.yml"), "version: '2.22.37'\n");
+
+        assert.equal(updateReleaseVersion(root, ["2.22.38"], "2.22.38"), "2.22.38");
+        assert.match(readFileSync(join(root, "build.gradle"), "utf8"), /version = '2\.22\.38'/);
+        assert.match(readFileSync(join(resources, "plugin.yml"), "utf8"), /version: '2\.22\.38'/);
+        assert.throws(() => updateReleaseVersion(root, [], "bad"), /Recovery version/);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

@@ -34,15 +34,20 @@ public final class PluginUpdateService implements CommandExecutor {
     private static final Set<Integer> ANNOUNCE_SECONDS = Set.of(600, 300, 120, 60, 30, 10, 5, 4, 3, 2, 1);
 
     private final GalaxySmpPlugin plugin;
-    private final HttpClient http = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient http;
     private boolean restartScheduled;
     private BukkitTask countdown;
 
     public PluginUpdateService(GalaxySmpPlugin plugin) {
+        this(plugin, HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(15))
+                .build());
+    }
+
+    PluginUpdateService(GalaxySmpPlugin plugin, HttpClient http) {
         this.plugin = plugin;
+        this.http = http;
     }
 
     public void start() {
@@ -95,7 +100,12 @@ public final class PluginUpdateService implements CommandExecutor {
                 return;
             }
             plugin.getLogger().info("[Update] Newer release found: " + latest + " (installed " + installed + ").");
-            stage(jarUrl, latest);
+            if (!stage(jarUrl, latest)) {
+                plugin.getLogger().info("[Update] Release " + releaseVersion
+                        + " changes only the plugin version; no restart is needed.");
+                reply(requester, "Plugin contents are up to date; no restart is needed.");
+                return;
+            }
             plugin.getLogger().info("Plugin " + latest + " is staged in the update folder (installed: " + installed + ").");
             reply(requester, "Found " + latest + " (installed " + installed + "). Restart countdown started.");
             plugin.getServer().getScheduler().runTask(plugin, () -> scheduleRestart(latest));
@@ -124,7 +134,7 @@ public final class PluginUpdateService implements CommandExecutor {
         return true;
     }
 
-    private void stage(String jarUrl, String expectedVersion) throws Exception {
+    boolean stage(String jarUrl, String expectedVersion) throws Exception {
         Path updateFolder = plugin.getServer().getUpdateFolderFile().toPath();
         Files.createDirectories(updateFolder);
         // Paper only replaces a plugin whose update-folder jar has the same file name as the installed jar.
@@ -143,11 +153,16 @@ public final class PluginUpdateService implements CommandExecutor {
             if (!hasPluginVersion(temp, expectedVersion)) {
                 throw new IllegalStateException("Downloaded jar does not identify GalaxySMP " + expectedVersion + ".");
             }
+            if (PluginJarComparison.sameContents(PluginJarComparison.installedJar(),
+                    Files.readAllBytes(temp), expectedVersion)) {
+                return false;
+            }
             Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
         } finally {
             Files.deleteIfExists(temp);
         }
         plugin.getLogger().info("[Update] Downloaded " + jarUrl + " to " + target + ".");
+        return true;
     }
 
     private String installedJarName() throws Exception {

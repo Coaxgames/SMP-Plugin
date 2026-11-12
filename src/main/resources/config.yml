@@ -27,19 +27,15 @@ cooldowns:
   nova_shield: 600
 
 phase-four:
-  # Astral Sword's hit-combo window; Void Sword hits do not expire.
-  combo-window-seconds: 3
   # Lunar Leggings retain this legacy setting, including on existing servers.
   daily-trigger-tick: 13500
   solstice-chestplate:
     trigger-tick: 6000
   daily-effect-seconds: 300
-  astral-sword:
-    attack-speed-seconds: 30
   # Kuiper Ball ability controls. Values are read from the plugin config at runtime.
   # Edit these values on the server, then reload/restart the plugin for changes to take effect.
   kuiper-ball:
-    # Freeze duration for the directly hit player or mob.
+    # Freeze duration for each player or mob affected by the burst.
     freeze-seconds: 30
     # Burst reach in blocks and outward velocity multiplier.
     burst-radius: 4.0
