@@ -4,6 +4,17 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Moved the Astral Sword's 30-second attack-speed boost onto the sword itself, limited to its main-hand use. Hits cannot refresh the boost while it is active; old player-wide boosts are cleaned up and existing sword lore is refreshed. In-game verification remains.
+- Removed the Void Sword's three-second hit timeout: every fourth counted hit applies Slowness I and Wither I to that hit's target for 10 seconds. Astral Sword's configured combo window is unchanged; in-game verification remains.
+- Added the vanilla totem pop overlay to the Nova Shield's lethal-damage rescue, alongside its existing shield particles and display. In-game verification remains.
+- Set the shared ordinary and Corrupt Ender Pearl use cooldown to 1.5 seconds; in-game verification remains.
+- Corrupt Ender Pearls now have a 15% chance per landing to give their thrower Wither II for 10 seconds. Ordinary pearls are unaffected; in-game verification remains.
+- Removed vanilla Thorns from Cosmic Crowns, including existing identified crowns, so their custom retaliation triggers only on every second damaging hit. Other armor's Thorns is unchanged; in-game verification remains.
+- Corrected Collapsing Star sparks to apply each spark's splash damage even when victims have damage-immunity ticks, including to nearby entities after a lethal hit. The attacker's excluded and the existing radius is unchanged; in-game verification remains.
+- Star Mace misses reset Wind Burst to I at every level, but only a miss at V starts its cooldown; successful hits at V do not start one.
+- Collapsing Star Mace now starts its cooldown after three damaging hits instead of two; existing item lore is refreshed on inventory refresh or pickup. The owner confirmed Star Mace progression works.
+- Both custom maces now cancel attacks while their own cooldown is active. The hit that starts Collapsing Star's cooldown still lands; verify attack and native Wind Burst suppression in game.
+- Made Collapsing Star Mace sparks more visible with a wider burst of existing spark particles, including on lethal hits; spark damage and cooldown remain unchanged. In-game visual verification is pending.
 - Separated plugin versions from pack release revisions: unchanged plugin JAR contents retain their version, pack-only releases update live, and packs requiring newer plugin code wait for restart. Existing servers need this updater installed first.
 - Corrected mace hit tracking for attacks received before arm-swing events, so successful hits are not mistaken for misses. Native Wind Burst still needs separate cooldown suppression and in-game verification.
 - Temporary GitHub Actions recovery test change.

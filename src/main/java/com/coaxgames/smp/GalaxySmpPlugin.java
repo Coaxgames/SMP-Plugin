@@ -12,6 +12,7 @@ import com.coaxgames.smp.listener.PhaseFiveAbilityListener;
 import com.coaxgames.smp.listener.PhaseFiveMaceAbilityListener;
 import com.coaxgames.smp.listener.LegendaryRulesListener;
 import com.coaxgames.smp.listener.EnderPearlStackListener;
+import com.coaxgames.smp.listener.EnderPearlCooldownListener;
 import com.coaxgames.smp.listener.DroppedItemClumpListener;
 import com.coaxgames.smp.listener.ReclaimableItemService;
 import com.coaxgames.smp.ritual.RitualManager;
@@ -81,6 +82,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new EnderPearlStackListener(this), this);
+        getServer().getPluginManager().registerEvents(new EnderPearlCooldownListener(), this);
         DroppedItemClumpListener clumps = new DroppedItemClumpListener(this, legendaryItems);
         getServer().getPluginManager().registerEvents(clumps, this);
         clumps.start();
@@ -266,7 +268,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
         }
         validateMaximumLong("phase-four.combo-window-seconds", Long.MAX_VALUE / 1_000L);
-        validateMaximumLong("phase-four.astral-sword.attack-speed-seconds", Long.MAX_VALUE / 20L);
+        validateMaximumLong("phase-four.astral-sword.attack-speed-seconds", Long.MAX_VALUE / 1_000L);
         validateMaximumLong("phase-four.daily-effect-seconds", Long.MAX_VALUE / 1_000L);
         validateMaximumLong("phase-four.kuiper-ball.freeze-seconds", Integer.MAX_VALUE / 20L);
         validateMaximumLong("phase-four.mass-orb.feather-falling-level", Integer.MAX_VALUE);

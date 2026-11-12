@@ -24,7 +24,7 @@ public final class MaceDamage {
         if (currentLevel < STAR_MACE_MIN_WIND_BURST || currentLevel > STAR_MACE_MAX_WIND_BURST) {
             throw new IllegalArgumentException("currentLevel must be between I and V.");
         }
-        return !hit;
+        return !hit && currentLevel == STAR_MACE_MAX_WIND_BURST;
     }
 
     public static int collapsingSparkCount(double maceDamageHealthPoints, int consecutiveHits) {

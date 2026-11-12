@@ -15,7 +15,7 @@ class MaceDamageTest {
     }
 
     @Test
-    void starMaceProgressionIncreasesOnHitsAndOnlyMissesStartCooldown() {
+    void starMaceMissesResetProgressionAndOnlyAMissAtFiveStartsCooldown() {
         assertEquals(2, MaceDamage.nextStarMaceWindBurst(1, true));
         assertEquals(5, MaceDamage.nextStarMaceWindBurst(4, true));
         assertEquals(5, MaceDamage.nextStarMaceWindBurst(5, true));
@@ -24,7 +24,10 @@ class MaceDamageTest {
         assertFalse(MaceDamage.startsStarMaceCooldown(4, true));
         assertFalse(MaceDamage.startsStarMaceCooldown(5, true));
         assertTrue(MaceDamage.startsStarMaceCooldown(5, false));
-        assertTrue(MaceDamage.startsStarMaceCooldown(1, false));
+        for (int level = 1; level < 5; level++) {
+            assertEquals(1, MaceDamage.nextStarMaceWindBurst(level, false));
+            assertFalse(MaceDamage.startsStarMaceCooldown(level, false));
+        }
         assertThrows(IllegalArgumentException.class,
                 () -> MaceDamage.nextStarMaceWindBurst(0, true));
     }

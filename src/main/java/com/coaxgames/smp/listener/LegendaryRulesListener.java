@@ -216,9 +216,12 @@ public final class LegendaryRulesListener implements Listener {
         boolean itemUpdated = items.upgradeVoidSword(stack);
         itemUpdated |= items.upgradeLunarLeggings(stack);
         itemUpdated |= items.removeWeaponFireEnchantments(stack);
+        itemUpdated |= items.removeCrownVanillaThorns(stack);
         itemUpdated |= items.refreshDailyEffectLore(stack);
+        itemUpdated |= items.refreshAstralSwordSpeedLore(stack);
         itemUpdated |= items.initializeStarMaceProgression(stack);
         itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+        itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
         itemUpdated |= items.refreshCooldownGroup(stack);
         if (itemUpdated) {
             event.getItem().setItemStack(stack);
@@ -310,9 +313,12 @@ public final class LegendaryRulesListener implements Listener {
             boolean itemUpdated = items.upgradeVoidSword(stack);
             itemUpdated |= items.upgradeLunarLeggings(stack);
             itemUpdated |= items.removeWeaponFireEnchantments(stack);
+            itemUpdated |= items.removeCrownVanillaThorns(stack);
             itemUpdated |= items.refreshDailyEffectLore(stack);
+            itemUpdated |= items.refreshAstralSwordSpeedLore(stack);
             itemUpdated |= items.initializeStarMaceProgression(stack);
             itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+            itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
             itemUpdated |= items.refreshCooldownGroup(stack);
             if (itemUpdated) {
                 inventory.setItem(slot, stack);

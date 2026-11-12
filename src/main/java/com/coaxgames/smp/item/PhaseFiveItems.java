@@ -2,17 +2,28 @@ package com.coaxgames.smp.item;
 
 import java.util.Objects;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+import java.util.function.IntSupplier;
+import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Enderman;
+import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public final class PhaseFiveItems {
     public static final int CORRUPT_PEARL_STACK_LIMIT =
@@ -70,7 +81,6 @@ public final class PhaseFiveItems {
                 new EnchantmentLevel(Enchantment.PROTECTION, 4),
                 new EnchantmentLevel(Enchantment.RESPIRATION, 3),
                 new EnchantmentLevel(Enchantment.AQUA_AFFINITY, 1),
-                new EnchantmentLevel(Enchantment.THORNS, 3),
                 new EnchantmentLevel(Enchantment.UNBREAKING, 3),
                 new EnchantmentLevel(Enchantment.MENDING, 1)));
         registry.register(item(plugin, "singularity_boots", Material.NETHERITE_BOOTS,
@@ -143,10 +153,20 @@ public final class PhaseFiveItems {
     }
 
     public static final class CorruptEnderPearl implements LegendaryItem {
+        private static final NamespacedKey PROJECTILE_KEY = new NamespacedKey("galaxy", "corrupt_pearl_projectile");
         private final LegendaryItemRegistry registry;
+        private final IntSupplier landingRoll;
+        private final Consumer<Player> applyWither;
 
         CorruptEnderPearl(LegendaryItemRegistry registry) {
-            this.registry = registry;
+            this(registry, () -> ThreadLocalRandom.current().nextInt(100),
+                    player -> player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 200, 1)));
+        }
+
+        CorruptEnderPearl(LegendaryItemRegistry registry, IntSupplier landingRoll, Consumer<Player> applyWither) {
+            this.registry = Objects.requireNonNull(registry, "registry");
+            this.landingRoll = Objects.requireNonNull(landingRoll, "landingRoll");
+            this.applyWither = Objects.requireNonNull(applyWither, "applyWither");
         }
 
         @Override
@@ -184,10 +204,41 @@ public final class PhaseFiveItems {
         @EventHandler
         public void onEndermanDeath(EntityDeathEvent event) {
             if (event.getEntity() instanceof Enderman
-                    && isCorruptPearlDropRoll(java.util.concurrent.ThreadLocalRandom.current().nextInt(20))) {
+                    && isCorruptPearlDropRoll(ThreadLocalRandom.current().nextInt(20))) {
                 event.getDrops().add(registry.createItem(id()));
             }
         }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onPearlLaunch(PlayerLaunchProjectileEvent event) {
+            if (event.getProjectile() instanceof EnderPearl pearl
+                    && registry.identify(event.getItemStack()).map(item -> id().equals(item.id())).orElse(false)) {
+                pearl.getPersistentDataContainer().set(PROJECTILE_KEY, PersistentDataType.BYTE, (byte) 1);
+            }
+        }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onPearlLanding(ProjectileHitEvent event) {
+            if (!(event.getEntity() instanceof EnderPearl pearl)) {
+                return;
+            }
+            var data = pearl.getPersistentDataContainer();
+            if (!Byte.valueOf((byte) 1).equals(data.get(PROJECTILE_KEY, PersistentDataType.BYTE))) {
+                return;
+            }
+            data.remove(PROJECTILE_KEY);
+            if (pearl.getShooter() instanceof Player thrower
+                    && isCorruptPearlWitherRoll(landingRoll.getAsInt())) {
+                applyWither.accept(thrower);
+            }
+        }
+    }
+
+    static boolean isCorruptPearlWitherRoll(int roll) {
+        if (roll < 0 || roll >= 100) {
+            throw new IllegalArgumentException("Wither roll must be between 0 and 99.");
+        }
+        return roll < 15;
     }
 
     static boolean isCorruptPearlDropRoll(int roll) {
