@@ -294,6 +294,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 14. **Swift Sneak — [IMPLEMENTED LOCALLY; OWNER VERIFICATION IN PHASE 5].** Lunar Leggings receive Swift Sneak III; existing identified leggings are upgraded on inventory refresh or pickup. Kuiper Ball settings remain under `phase-four.kuiper-ball`.
 15. **Dropped repeatables and limits — [OWNER VERIFICATION IN PHASE 6].** The owner chose ground clumps of up to 128 items, unpacked according to inventory stack limits. The owner has confirmed the two-legendary player limit and separate one-of-each-mace server limits; removal must not silently overturn permanent craft-once records.
 
+
 ## 6. Changelog
 
 - 2026-11-11: Bound the supplied CrackEnderPearl model and texture to the Corrupt Ender Pearl; ordinary pearls are unchanged. In-game verification remains.
