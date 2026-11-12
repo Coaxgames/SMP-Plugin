@@ -1,5 +1,5 @@
 name: GalaxySMP
-version: '2.22.36'
+version: '2.22.37'
 main: com.coaxgames.smp.GalaxySmpPlugin
 api-version: '26.3'
 description: Galaxy SMP legendary items, recipes, and protection rules.
