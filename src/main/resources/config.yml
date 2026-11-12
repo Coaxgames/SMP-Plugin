@@ -27,6 +27,7 @@ cooldowns:
   nova_shield: 600
 
 phase-four:
+  # Astral Sword's hit-combo window; Void Sword hits do not expire.
   combo-window-seconds: 3
   # Lunar Leggings retain this legacy setting, including on existing servers.
   daily-trigger-tick: 13500

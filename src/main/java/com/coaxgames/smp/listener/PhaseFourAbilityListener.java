@@ -10,10 +10,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -32,6 +35,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -39,6 +43,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlotGroup;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -50,23 +56,46 @@ public final class PhaseFourAbilityListener implements Listener {
     private final LegendaryItemRegistry items;
     private final NamespacedKey kuiperProjectileKey;
     private final HitCounter astralHits;
-    private final HitCounter voidHits;
-    private final Map<UUID, AttributeModifier> astralModifiers = new HashMap<>();
+    private final Map<UUID, Integer> voidHits = new HashMap<>();
+    private final Consumer<LivingEntity> applyVoidEffects;
+    private final Supplier<Attribute> attackSpeedAttribute;
+    private final NamespacedKey astralBoostKey;
+    private final NamespacedKey astralExpiryKey;
     private final Map<UUID, MassOrbFall> massOrbFalls = new HashMap<>();
 
     public PhaseFourAbilityListener(GalaxySmpPlugin plugin) {
+        this(plugin, target -> {
+            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 200, 0, true, true, true));
+            target.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 200, 0, true, true, true));
+        });
+    }
+
+    PhaseFourAbilityListener(GalaxySmpPlugin plugin, Consumer<LivingEntity> applyVoidEffects) {
+        this(plugin, applyVoidEffects, () -> Attribute.ATTACK_SPEED);
+    }
+
+    PhaseFourAbilityListener(GalaxySmpPlugin plugin, Consumer<LivingEntity> applyVoidEffects,
+            Supplier<Attribute> attackSpeedAttribute) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.applyVoidEffects = Objects.requireNonNull(applyVoidEffects, "applyVoidEffects");
+        this.attackSpeedAttribute = Objects.requireNonNull(attackSpeedAttribute, "attackSpeedAttribute");
         items = plugin.getLegendaryItems();
         kuiperProjectileKey = new NamespacedKey(plugin, "kuiper-projectile");
+        astralBoostKey = new NamespacedKey(plugin, "astral-sword-speed");
+        astralExpiryKey = new NamespacedKey(plugin, "astral-sword-speed-expires");
         long comboWindow = positiveConfig("phase-four.combo-window-seconds", 3);
         astralHits = new HitCounter(Duration.ofSeconds(comboWindow));
-        voidHits = new HitCounter(Duration.ofSeconds(comboWindow));
         Bukkit.getScheduler().runTaskTimer(plugin, () -> applyMassOrbPassive(), 1L, 20L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::expireHeldAstralBoosts, 1L, 1L);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            removeLegacyAstralBoost(player);
+            expireAstralInventoryBoosts(player);
+        }
     }
 
     public void resetAbilityProgress(UUID playerUuid) {
         astralHits.clear(playerUuid);
-        voidHits.clear(playerUuid);
+        voidHits.remove(playerUuid);
         massOrbFalls.remove(playerUuid);
     }
 
@@ -76,24 +105,29 @@ public final class PhaseFourAbilityListener implements Listener {
                 || !(event.getEntity() instanceof LivingEntity target)) {
             return;
         }
-        String itemId = items.identify(attacker.getInventory().getItemInMainHand())
+        ItemStack weapon = attacker.getInventory().getItemInMainHand();
+        String itemId = items.identify(weapon)
                 .map(definition -> definition.id()).orElse(null);
         if ("astral_sword".equals(itemId)) {
-            voidHits.clear(attacker.getUniqueId());
-            if (astralHits.record(attacker.getUniqueId()) >= 4) {
+            voidHits.remove(attacker.getUniqueId());
+            if (expireAstralBoost(weapon)) {
+                attacker.getInventory().setItemInMainHand(weapon);
+            }
+            if (hasAstralBoost(weapon)) {
                 astralHits.clear(attacker.getUniqueId());
-                applyAstralSpeed(attacker);
+            } else if (astralHits.record(attacker.getUniqueId()) >= 4) {
+                astralHits.clear(attacker.getUniqueId());
+                applyAstralSpeed(attacker, weapon);
             }
         } else if ("void_sword".equals(itemId)) {
             astralHits.clear(attacker.getUniqueId());
-            if (voidHits.record(attacker.getUniqueId()) >= 4) {
-                voidHits.clear(attacker.getUniqueId());
-                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 200, 0, true, true, true));
-                target.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 200, 0, true, true, true));
+            if (voidHits.merge(attacker.getUniqueId(), 1, Integer::sum) >= 4) {
+                voidHits.remove(attacker.getUniqueId());
+                applyVoidEffects.accept(target);
             }
         } else {
             astralHits.clear(attacker.getUniqueId());
-            voidHits.clear(attacker.getUniqueId());
+            voidHits.remove(attacker.getUniqueId());
         }
     }
 
@@ -311,6 +345,7 @@ public final class PhaseFourAbilityListener implements Listener {
     @EventHandler
     public void onMassOrbQuit(PlayerQuitEvent event) {
         massOrbFalls.remove(event.getPlayer().getUniqueId());
+        voidHits.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -332,41 +367,112 @@ public final class PhaseFourAbilityListener implements Listener {
         plugin.getServer().getScheduler().runTask(plugin, () -> applyMassOrbPassive(event.getPlayer()));
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onAstralHeldSlotChange(PlayerItemHeldEvent event) {
+        var inventory = event.getPlayer().getInventory();
+        ItemStack stack = inventory.getItem(event.getNewSlot());
+        if (expireAstralBoost(stack)) {
+            inventory.setItem(event.getNewSlot(), stack);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onAstralPickup(EntityPickupItemEvent event) {
+        ItemStack stack = event.getItem().getItemStack();
+        if (expireAstralBoost(stack)) {
+            event.getItem().setItemStack(stack);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
+        removeLegacyAstralBoost(event.getPlayer());
+        expireAstralInventoryBoosts(event.getPlayer());
         applyMassOrbPassive(event.getPlayer());
     }
 
-    private void applyAstralSpeed(Player player) {
-        var attribute = player.getAttribute(Attribute.ATTACK_SPEED);
-        if (attribute == null) {
-            plugin.getLogger().warning("Cannot apply Astral Sword attack-speed effect to " + player.getUniqueId()
-                    + ": the attack-speed attribute is unavailable.");
-            return;
+    private void applyAstralSpeed(Player player, ItemStack sword) {
+        ItemMeta meta = sword.getItemMeta();
+        if (!meta.hasAttributeModifiers()) {
+            meta.setAttributeModifiers(sword.getType().getDefaultAttributeModifiers());
         }
-        AttributeModifier previous = astralModifiers.remove(player.getUniqueId());
-        if (previous != null) {
-            attribute.removeModifier(previous);
+        AttributeModifier modifier = new AttributeModifier(
+                astralBoostKey, 0.65, AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.MAINHAND);
+        if (!meta.addAttributeModifier(attackSpeedAttribute.get(), modifier)) {
+            throw new IllegalStateException("Could not add Astral Sword attack-speed modifier.");
+        }
+        long durationMillis = Math.multiplyExact(
+                positiveConfig("phase-four.astral-sword.attack-speed-seconds", 30), 1_000L);
+        meta.getPersistentDataContainer().set(astralExpiryKey, PersistentDataType.LONG,
+                Math.addExact(System.currentTimeMillis(), durationMillis));
+        if (!sword.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not apply Astral Sword attack-speed boost.");
+        }
+        player.getInventory().setItemInMainHand(sword);
+    }
+
+    private boolean hasAstralBoost(ItemStack sword) {
+        ItemMeta meta = sword.getItemMeta();
+        return meta != null && meta.getPersistentDataContainer().has(astralExpiryKey, PersistentDataType.LONG);
+    }
+
+    private boolean expireAstralBoost(ItemStack stack) {
+        if (stack == null || stack.getType() != Material.NETHERITE_SWORD) {
+            return false;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        Long expiry = meta.getPersistentDataContainer().get(astralExpiryKey, PersistentDataType.LONG);
+        if (expiry == null || expiry > System.currentTimeMillis()) {
+            return false;
+        }
+        Attribute attribute = attackSpeedAttribute.get();
+        var modifiers = meta.getAttributeModifiers(attribute);
+        if (modifiers != null) {
+            for (AttributeModifier modifier : List.copyOf(modifiers)) {
+                if (modifier.getKey().equals(astralBoostKey)) {
+                    meta.removeAttributeModifier(attribute, modifier);
+                }
+            }
+        }
+        meta.getPersistentDataContainer().remove(astralExpiryKey);
+        if (!stack.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not remove expired Astral Sword attack-speed boost.");
+        }
+        return true;
+    }
+
+    private void expireHeldAstralBoosts() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ItemStack held = player.getInventory().getItemInMainHand();
+            if (expireAstralBoost(held)) {
+                player.getInventory().setItemInMainHand(held);
+            }
+        }
+    }
+
+    private void expireAstralInventoryBoosts(Player player) {
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (expireAstralBoost(stack)) {
+                inventory.setItem(slot, stack);
+            }
+        }
+    }
+
+    private void removeLegacyAstralBoost(Player player) {
+        var attribute = player.getAttribute(attackSpeedAttribute.get());
+        if (attribute == null) {
+            return;
         }
         NamespacedKey key = new NamespacedKey(plugin, "astral-speed-" + player.getUniqueId());
         AttributeModifier existing = attribute.getModifier(key);
         if (existing != null) {
             attribute.removeModifier(key);
         }
-        AttributeModifier modifier = new AttributeModifier(
-                key, 0.65, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
-        attribute.addTransientModifier(modifier);
-        astralModifiers.put(player.getUniqueId(), modifier);
-        long duration = positiveConfig("phase-four.astral-sword.attack-speed-seconds", 30);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (astralModifiers.get(player.getUniqueId()) == modifier) {
-                astralModifiers.remove(player.getUniqueId());
-                var currentAttribute = player.getAttribute(Attribute.ATTACK_SPEED);
-                if (currentAttribute != null) {
-                    currentAttribute.removeModifier(modifier);
-                }
-            }
-        }, Math.multiplyExact(duration, 20L));
     }
 
     private void applyMassOrbPassive() {

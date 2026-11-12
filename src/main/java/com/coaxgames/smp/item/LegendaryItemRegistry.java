@@ -348,6 +348,29 @@ public final class LegendaryItemRegistry {
         return true;
     }
 
+    public boolean removeCrownVanillaThorns(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("cosmic_crown")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (!meta.hasEnchant(Enchantment.THORNS)) {
+            return false;
+        }
+        meta.removeEnchant(Enchantment.THORNS);
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            updatedLore.removeIf(line ->
+                    net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                            .serialize(line).startsWith("- Thorns "));
+            meta.lore(updatedLore);
+        }
+        if (!item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not remove vanilla Thorns from Cosmic Crown.");
+        }
+        return true;
+    }
+
     public boolean upgradeLunarLeggings(ItemStack item) {
         if (identify(item).map(definition -> !definition.id().equals("lunar_leggings")).orElse(true)) {
             return false;
@@ -411,6 +434,37 @@ public final class LegendaryItemRegistry {
         return changed;
     }
 
+    public boolean refreshAstralSwordSpeedLore(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("astral_sword")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        String newLine = abilityLore("astral_sword").getFirst();
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String line = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if ((line.startsWith("Every 4 consecutive hits: gain increased attack speed for ")
+                    || line.startsWith("Every 4 consecutive hits: this sword gains attack speed for "))
+                    && line.endsWith(" seconds.") && !line.equals(newLine)) {
+                updatedLore.set(i, Component.text(newLine, NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Astral Sword attack-speed lore.");
+            }
+        }
+        return changed;
+    }
+
     public boolean initializeStarMaceProgression(ItemStack item) {
         if (identify(item).map(definition -> !definition.id().equals("star_mace")).orElse(true)) {
             return false;
@@ -439,16 +493,26 @@ public final class LegendaryItemRegistry {
             return false;
         }
         List<Component> updatedLore = new ArrayList<>(lore);
-        boolean removed = updatedLore.removeIf(line ->
+        boolean changed = updatedLore.removeIf(line ->
                 net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                         .serialize(line).equals("A successful swing at Wind Burst V starts a 30-second cooldown."));
-        if (removed) {
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (text.equals("A miss resets Wind Burst to I and starts a 30-second cooldown.")) {
+                updatedLore.set(i, Component.text(
+                        "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.",
+                        NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
             meta.lore(updatedLore);
             if (!item.setItemMeta(meta)) {
                 throw new IllegalStateException("Could not update Star Mace cooldown lore.");
             }
         }
-        return removed;
+        return changed;
     }
 
     public boolean refreshCooldownGroup(ItemStack item) {
@@ -464,6 +528,36 @@ public final class LegendaryItemRegistry {
             throw new IllegalStateException("Could not update cooldown group for " + id + ".");
         }
         return true;
+    }
+
+    public boolean refreshCollapsingStarCooldownLore(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("collapsing_star_mace")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (text.equals("Cooldown: 30 seconds after 2 successful hits.")
+                    || text.equals("Cooldown: 30 seconds after 2 successful hits; attacks are blocked.")) {
+                updatedLore.set(i, Component.text(
+                        "Cooldown: 30 seconds after 3 successful hits; attacks are blocked.", NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Collapsing Star Mace cooldown lore.");
+            }
+        }
+        return changed;
     }
 
     public boolean setStarMaceWindBurstLevel(ItemStack item, int level) {
@@ -580,7 +674,7 @@ public final class LegendaryItemRegistry {
                     "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
                             + " health points.");
             case "astral_sword" -> List.of(
-                    "Every 4 consecutive hits: gain increased attack speed for "
+                    "Every 4 consecutive hits: this sword gains attack speed for "
                             + configLong("phase-four.astral-sword.attack-speed-seconds", 30) + " seconds.");
             case "void_sword" -> List.of(
                     "Every 4 consecutive hits: inflict Slowness I and Wither I for 10 seconds.");
@@ -594,13 +688,14 @@ public final class LegendaryItemRegistry {
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "star_mace" -> List.of(
                     "Wind Burst rises by one on each hit, up to V.",
-                    "A miss resets Wind Burst to I and starts a 30-second cooldown.",
+                    "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.",
+                    "Attacks are blocked during cooldown.",
                     "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.");
             case "collapsing_star_mace" -> List.of(
                     "One spark per full heart of mace damage; consecutive hits add sparks.",
                     "Each spark deals 1 damage point in a small splash radius.",
                     "Damage cap: " + configNumber("phase-five.mace-damage-cap-hearts", 7.0) + " hearts.",
-                    "Cooldown: 30 seconds after 2 successful hits.");
+                    "Cooldown: 30 seconds after 3 successful hits; attacks are blocked.");
             case "nebula_spear" -> List.of(
                     "Every 5 successful Lunge activations: thrust forward and damage targets ahead.",
                     "Cooldown: " + configLong("cooldowns.nebula_spear", 45) + " seconds.");

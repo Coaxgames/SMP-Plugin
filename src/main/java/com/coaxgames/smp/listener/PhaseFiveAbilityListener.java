@@ -22,6 +22,7 @@ import java.util.logging.Level;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -265,6 +266,10 @@ public final class PhaseFiveAbilityListener implements Listener {
                 || !wears(wearer, COSMIC_CROWN)) {
             return;
         }
+        ItemStack crown = wearer.getInventory().getHelmet();
+        if (items.removeCrownVanillaThorns(crown)) {
+            wearer.getInventory().setHelmet(crown);
+        }
         LivingEntity attacker = damagingLivingEntity(event.getDamager());
         if (attacker == null || attacker.equals(wearer)) {
             return;
@@ -429,7 +434,6 @@ public final class PhaseFiveAbilityListener implements Listener {
         player.setHealth(1.0);
         player.setFireTicks(0);
         playNovaShieldRescueEffect(player);
-        player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1.0F, 1.0F);
         player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 900, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 100, 1, true, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 800, 0, true, true, true));
@@ -441,7 +445,8 @@ public final class PhaseFiveAbilityListener implements Listener {
         shieldAxeHitCounts.remove(event.getEntity().getUniqueId());
     }
 
-    private void playNovaShieldRescueEffect(Player player) {
+    void playNovaShieldRescueEffect(Player player) {
+        player.playEffect(EntityEffect.PROTECTED_FROM_DEATH);
         Location center = player.getLocation().add(0.0, player.getHeight() / 2.0, 0.0);
         World world = player.getWorld();
         world.spawnParticle(Particle.ITEM, center, 32, 0.45, 0.75, 0.45, 0.12,

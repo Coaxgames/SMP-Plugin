@@ -96,19 +96,19 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             return;
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (pendingStarSwings.remove(player.getUniqueId(), swing)
-                    && MaceDamage.startsStarMaceCooldown(swing.level, swing.hit)) {
+            if (pendingStarSwings.remove(player.getUniqueId(), swing) && !swing.hit) {
                 updateStarMaceLevel(player, swing.maceUuid,
                         MaceDamage.nextStarMaceWindBurst(swing.level, false));
-                startStarMaceCooldown(player);
+                if (MaceDamage.startsStarMaceCooldown(swing.level, false)) {
+                    startStarMaceCooldown(player);
+                }
             }
         }, 1L);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMaceDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker)
-                || !(event.getEntity() instanceof LivingEntity target)) {
+        if (!(event.getDamager() instanceof Player attacker)) {
             return;
         }
         if (applyingSparkDamage.contains(attacker.getUniqueId())) {
@@ -125,6 +125,18 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
 
         UUID playerId = attacker.getUniqueId();
         boolean onCooldown = plugin.getCooldownManager().isOnCooldown(playerId, itemId);
+        if (onCooldown) {
+            recordMaceHit(playerId, itemId);
+            event.setCancelled(true);
+            if (COLLAPSING_STAR_MACE.equals(itemId)) {
+                clearHitCount(playerId, itemId);
+                collapsingHitStreaks.remove(playerId);
+            }
+            return;
+        }
+        if (!(event.getEntity() instanceof LivingEntity target)) {
+            return;
+        }
         recordMaceHit(playerId, itemId);
 
         double cap = nonNegativeConfig("phase-five.mace-damage-cap-hearts", 7.0) * 2.0;
@@ -136,27 +148,22 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
                 attacker.getInventory().setItemInMainHand(mace);
             }
-            handleStarMaceHit(attacker, damageDealt, onCooldown);
+            handleStarMaceHit(attacker, damageDealt);
             return;
         }
         pendingCollapsingSwings.computeIfPresent(attacker.getUniqueId(), (ignored, hit) -> Boolean.TRUE);
-        if (onCooldown) {
-            clearHitCount(playerId, itemId);
-            collapsingHitStreaks.remove(playerId);
-            return;
-        }
         int sparkCount = 0;
         if (damageDealt > 0.0) {
             int streak = collapsingHitStreaks.merge(playerId, 1, Integer::sum);
             sparkCount = MaceDamage.collapsingSparkCount(damageDealt, streak);
         }
-        if (damageDealt > 0.0 && incrementHitCount(playerId, itemId) >= 2) {
+        if (damageDealt > 0.0 && incrementHitCount(playerId, itemId) >= 3) {
             clearHitCount(playerId, itemId);
             try {
                 if (!plugin.getCooldownManager().start(playerId, itemId)) {
                     event.setCancelled(true);
                     plugin.getLogger().severe("Could not start the 30-second " + itemId
-                            + " cooldown for " + playerId + "; the second hit was cancelled.");
+                            + " cooldown for " + playerId + "; the third hit was cancelled.");
                     collapsingHitStreaks.remove(playerId);
                     return;
                 }
@@ -164,7 +171,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
                 event.setCancelled(true);
                 collapsingHitStreaks.remove(playerId);
                 plugin.getLogger().log(Level.SEVERE, "Could not persist the " + itemId
-                        + " cooldown for " + playerId + "; the second hit was cancelled.", exception);
+                        + " cooldown for " + playerId + "; the third hit was cancelled.", exception);
                 return;
             }
             com.coaxgames.smp.util.ItemCooldownMarkers.sync(attacker, itemId, plugin.getCooldownManager());
@@ -175,14 +182,14 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         }
     }
 
-    private void handleStarMaceHit(Player attacker, double damageDealt, boolean onCooldown) {
+    private void handleStarMaceHit(Player attacker, double damageDealt) {
         PendingStarSwing swing = pendingStarSwings.get(attacker.getUniqueId());
         ItemStack mace = attacker.getInventory().getItemInMainHand();
         UUID maceUuid = plugin.getLegendaryItems().getUniqueId(mace).orElse(null);
         if (swing != null && Objects.equals(swing.maceUuid, maceUuid)) {
             swing.hit = true;
         }
-        if (onCooldown || damageDealt <= 0.0) {
+        if (damageDealt <= 0.0) {
             return;
         }
         int level = mace.getEnchantmentLevel(Enchantment.WIND_BURST);
@@ -293,20 +300,24 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
                 world.spawnParticle(
                         Particle.ITEM, location, 5, 0.35, 0.35, 0.35, 0.08,
                         SPARK_PARTICLE_ITEM);
-                if (!damageEligible) {
-                    continue;
-                }
                 double radiusSquared = radius * radius;
                 for (var entity : world.getNearbyEntities(location, radius, radius, radius)) {
                     if (!(entity instanceof LivingEntity living)
                             || living.equals(attacker)
+                            || living.isDead()
                             || living.getLocation().distanceSquared(location) > radiusSquared) {
                         continue;
                     }
                     applyingSparkDamage.add(attacker.getUniqueId());
+                    int previousNoDamageTicks = living.getNoDamageTicks();
+                    double previousLastDamage = living.getLastDamage();
                     try {
+                        // Each spark is separate damage, without consuming the victim's existing immunity window.
+                        living.setNoDamageTicks(0);
                         living.damage(1.0, attacker);
                     } finally {
+                        living.setLastDamage(previousLastDamage);
+                        living.setNoDamageTicks(previousNoDamageTicks);
                         applyingSparkDamage.remove(attacker.getUniqueId());
                     }
                 }
