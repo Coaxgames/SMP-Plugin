@@ -39,6 +39,34 @@ class CorruptPearlPackTests(unittest.TestCase):
             self.assertFalse((output / "assets" / "minecraft" / "items" / "ender_pearl.json").exists())
 
 
+class GalaxyStringPackTests(unittest.TestCase):
+    def test_supplied_model_texture_and_animation_are_bound(self):
+        assets = SCRIPT_PATH.parent.parent / "Textures"
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "source"
+            source.mkdir()
+            for name in (
+                "CrackEnderPearl.bbmodel", "CrackEnderPearl.json",
+                "galaxy_string.json", "galaxy_string.png", "galaxy_string.png.mcmeta",
+            ):
+                shutil.copy2(assets / name, source / name)
+            output = root / "pack"
+            MODULE.main(source, output)
+
+            galaxy = output / "assets" / "galaxy"
+            item = MODULE.read_json(galaxy / "items" / "galaxy_string.json")
+            model = MODULE.read_json(galaxy / "models" / "item" / "galaxy_string.json")
+            texture = galaxy / "textures" / "item" / "galaxy_string" / "galaxy_string.png"
+            self.assertEqual(item["model"]["model"], "galaxy:item/galaxy_string")
+            self.assertEqual(model["textures"]["layer0"], "galaxy:item/galaxy_string/galaxy_string")
+            self.assertEqual(texture.read_bytes(), (assets / "galaxy_string.png").read_bytes())
+            self.assertEqual(
+                texture.with_suffix(".png.mcmeta").read_bytes(),
+                (assets / "galaxy_string.png.mcmeta").read_bytes(),
+            )
+
+
 class SplitSharedTextureIdsTests(unittest.TestCase):
     def test_faces_keep_their_own_texture_when_ids_are_shared(self):
         source = {

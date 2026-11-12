@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItem;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
+import com.coaxgames.smp.storage.LegendaryDataStore;
 import com.coaxgames.smp.util.CooldownManager;
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
 import java.time.Duration;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -197,6 +199,71 @@ class PhaseFiveMaceAbilityListenerTest {
                 fixture.listener.onMaceDamage(nonLivingAttack);
                 verify(nonLivingAttack).setCancelled(true);
             }
+        }
+    }
+
+    @Test
+    void starMaceSwingsDuringCooldownDoNotRestartCooldownOrItsIndicator() throws Exception {
+        try (var items = mockConstruction(ItemStack.class, (item, context) ->
+                    when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)));
+             var bukkit = mockStatic(Bukkit.class)) {
+            Fixture fixture = new Fixture("star_mace", bukkit);
+            when(fixture.cooldowns.isOnCooldown(fixture.playerId, "star_mace")).thenReturn(true);
+
+            fixture.listener.onArmSwing(fixture.swing);
+            fixture.listener.onMaceDamage(fixture.damage);
+            fixture.listener.onArmSwing(fixture.swing);
+            fixture.listener.onArmSwing(fixture.swing);
+
+            verify(fixture.damage).setCancelled(true);
+            verify(fixture.cooldowns, never()).start(any(), any(), any());
+            verify(fixture.cooldowns, never()).getRemaining(any(), any());
+            verify(fixture.player, never()).setCooldown(any(org.bukkit.NamespacedKey.class), anyInt());
+            verify(fixture.registry, never()).recordStarMaceUse(any(), anyLong());
+            verify(fixture.scheduler, never()).runTaskLater(eq(fixture.plugin), any(Runnable.class), eq(1L));
+        }
+    }
+
+    @Test
+    void starMaceAttacksAreUnblockedAfterOriginalCooldownDespiteSwings() throws Exception {
+        try (var items = mockConstruction(ItemStack.class, (item, context) ->
+                    when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)));
+             var bukkit = mockStatic(Bukkit.class)) {
+            Fixture fixture = new Fixture("star_mace", bukkit);
+            LegendaryDataStore data = mock(LegendaryDataStore.class);
+            AtomicLong expiry = new AtomicLong();
+            when(data.getCooldownExpiry(fixture.playerId, "star_mace")).thenAnswer(call -> expiry.get());
+            doAnswer(call -> {
+                expiry.set(call.getArgument(2));
+                return null;
+            }).when(data).setCooldownExpiry(eq(fixture.playerId), eq("star_mace"), anyLong());
+            CooldownManager cooldowns = new CooldownManager(
+                    mock(FileConfiguration.class), data, fixture.registry);
+            when(fixture.plugin.getCooldownManager()).thenReturn(cooldowns);
+
+            long before = System.currentTimeMillis();
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    cooldowns.start(fixture.playerId, "star_mace", Duration.ofSeconds(30)));
+            long originalExpiry = expiry.get();
+            org.junit.jupiter.api.Assertions.assertTrue(originalExpiry >= before + 30_000L);
+            org.junit.jupiter.api.Assertions.assertTrue(originalExpiry <= System.currentTimeMillis() + 30_000L);
+
+            fixture.listener.onArmSwing(fixture.swing);
+            fixture.listener.onMaceDamage(fixture.damage);
+            fixture.listener.onArmSwing(fixture.swing);
+            verify(fixture.damage).setCancelled(true);
+            org.junit.jupiter.api.Assertions.assertEquals(originalExpiry, expiry.get());
+            verify(data, times(1)).setCooldownExpiry(eq(fixture.playerId), eq("star_mace"), anyLong());
+
+            expiry.set(System.currentTimeMillis() - 1L);
+            EntityDamageByEntityEvent afterExpiry = mock(EntityDamageByEntityEvent.class);
+            when(afterExpiry.getDamager()).thenReturn(fixture.player);
+            when(afterExpiry.getEntity()).thenReturn(fixture.target);
+            when(afterExpiry.getDamage()).thenReturn(4.0);
+            fixture.listener.onMaceDamage(afterExpiry);
+
+            verify(afterExpiry, never()).setCancelled(true);
+            verify(afterExpiry).setDamage(4.0);
         }
     }
 
