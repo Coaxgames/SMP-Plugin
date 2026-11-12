@@ -168,7 +168,9 @@ public final class LegendaryRulesListener implements Listener {
         if (!definition.protectedFromLossAndStorage()
                 && !definition.trackUniqueInstance()
                 && !definition.hasPerPlayerCarryLimit()) {
-            if (items.refreshCooldownGroup(stack)) {
+            boolean itemUpdated = items.refreshCooldownGroup(stack);
+            itemUpdated |= refreshItemModel(stack);
+            if (itemUpdated) {
                 event.getItem().setItemStack(stack);
             }
             return;
@@ -322,33 +324,38 @@ public final class LegendaryRulesListener implements Listener {
             itemUpdated |= items.refreshKuiperBallLore(stack);
             itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
             itemUpdated |= items.refreshCooldownGroup(stack);
+            itemUpdated |= refreshItemModel(stack);
             if (itemUpdated) {
                 inventory.setItem(slot, stack);
             }
-            items.identify(stack).ifPresent(definition -> {
-                var expected = definition.createBaseItem().getItemMeta();
-                var meta = stack.getItemMeta();
-                if (expected == null || meta == null || !expected.hasItemModel()) {
-                    return;
-                }
-
-                boolean changed = false;
-                if (!expected.getItemModel().equals(meta.hasItemModel() ? meta.getItemModel() : null)) {
-                    meta.setItemModel(expected.getItemModel());
-                    changed = true;
-                }
-                if (expected.hasEquippable()
-                        && (!meta.hasEquippable()
-                        || !java.util.Objects.equals(
-                                expected.getEquippable().getModel(), meta.getEquippable().getModel()))) {
-                    meta.setEquippable(expected.getEquippable());
-                    changed = true;
-                }
-                if (changed) {
-                    stack.setItemMeta(meta);
-                }
-            });
         }
+    }
+
+    private boolean refreshItemModel(ItemStack stack) {
+        var definition = items.identify(stack).orElse(null);
+        if (definition == null) {
+            return false;
+        }
+        var expected = definition.createBaseItem().getItemMeta();
+        var meta = stack.getItemMeta();
+        if (expected == null || meta == null || !expected.hasItemModel()) {
+            return false;
+        }
+        boolean changed = false;
+        if (!expected.getItemModel().equals(meta.hasItemModel() ? meta.getItemModel() : null)) {
+            meta.setItemModel(expected.getItemModel());
+            changed = true;
+        }
+        if (expected.hasEquippable()
+                && (!meta.hasEquippable()
+                || !Objects.equals(expected.getEquippable().getModel(), meta.getEquippable().getModel()))) {
+            meta.setEquippable(expected.getEquippable());
+            changed = true;
+        }
+        if (changed && !stack.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not update item model for " + definition.id() + ".");
+        }
+        return changed;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -491,7 +498,9 @@ public final class LegendaryRulesListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (isLegendary(event.getItemInHand())) {
+        ItemStack item = event.getItemInHand();
+        if (isLegendary(item)
+                || items.identify(item).map(definition -> definition.id().equals("mass_orb")).orElse(false)) {
             event.setCancelled(true);
         }
     }

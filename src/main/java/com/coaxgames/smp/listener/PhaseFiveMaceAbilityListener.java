@@ -133,6 +133,12 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
     }
 
     private void onStarMaceSwing(Player player, ItemStack mace) {
+        UUID playerId = player.getUniqueId();
+        if (plugin.getCooldownManager().isOnCooldown(playerId, STAR_MACE)) {
+            consumeRecentHit(playerId, STAR_MACE);
+            pendingStarSwings.remove(playerId);
+            return;
+        }
         recordStarMaceUse(player, mace);
         if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
             player.getInventory().setItemInMainHand(mace);
@@ -142,11 +148,6 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         PendingStarSwing swing = new PendingStarSwing(maceUuid, level);
         swing.hit = consumeRecentHit(player.getUniqueId(), STAR_MACE);
         pendingStarSwings.put(player.getUniqueId(), swing);
-        if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), STAR_MACE)) {
-            com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, STAR_MACE, plugin.getCooldownManager());
-            pendingStarSwings.remove(player.getUniqueId(), swing);
-            return;
-        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (pendingStarSwings.remove(player.getUniqueId(), swing) && !swing.hit) {
                 updateStarMaceLevel(player, swing.maceUuid,
@@ -252,8 +253,9 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
     private void startStarMaceCooldown(Player player) {
         UUID playerId = player.getUniqueId();
         try {
-            plugin.getCooldownManager().start(playerId, STAR_MACE, Duration.ofSeconds(30));
-            com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, STAR_MACE, plugin.getCooldownManager());
+            if (plugin.getCooldownManager().start(playerId, STAR_MACE, Duration.ofSeconds(30))) {
+                com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, STAR_MACE, plugin.getCooldownManager());
+            }
         } catch (IOException | ArithmeticException exception) {
             plugin.getLogger().log(Level.SEVERE,
                     "Could not persist Star Mace cooldown for " + playerId + ".", exception);

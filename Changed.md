@@ -2,6 +2,11 @@
 
 Human-readable record of project work. Current owner-feedback status and remaining checks are tracked in [ROADMAPv2.md](./ROADMAPv2.md); earlier entries are historical and may describe behavior since corrected.
 
+## Latest local changes – 2026-11-12
+
+- Bound the supplied animated Galaxy String texture and model to Galaxy Strings, including refreshing older items in player inventories and on ordinary pickup. In-game verification remains.
+- Prevented Mass Orbs from being placed as blocks without affecting ordinary Heavy Cores. Star Mace swings during cooldown no longer reset its cooldown indicator or restart its cooldown. In-game verification remains.
+
 ## Latest local changes – 2026-11-11
 
 - Star Mace Wind Burst resets to I after 20 seconds without use, without starting a cooldown; existing maces without a recorded timer reset once when refreshed. Kuiper Ball freezes all eligible living targets in its burst, and Collapsing Star uses larger spark displays alongside its existing particles and splash damage. In-game verification remains.
