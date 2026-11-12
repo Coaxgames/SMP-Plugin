@@ -221,6 +221,7 @@ public final class LegendaryRulesListener implements Listener {
         itemUpdated |= items.refreshAstralSwordSpeedLore(stack);
         itemUpdated |= items.initializeStarMaceProgression(stack);
         itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+        itemUpdated |= items.refreshKuiperBallLore(stack);
         itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
         itemUpdated |= items.refreshCooldownGroup(stack);
         if (itemUpdated) {
@@ -318,6 +319,7 @@ public final class LegendaryRulesListener implements Listener {
             itemUpdated |= items.refreshAstralSwordSpeedLore(stack);
             itemUpdated |= items.initializeStarMaceProgression(stack);
             itemUpdated |= items.refreshStarMaceCooldownLore(stack);
+            itemUpdated |= items.refreshKuiperBallLore(stack);
             itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
             itemUpdated |= items.refreshCooldownGroup(stack);
             if (itemUpdated) {

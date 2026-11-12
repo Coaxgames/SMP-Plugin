@@ -2,7 +2,6 @@ package com.coaxgames.smp.listener;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
-import com.coaxgames.smp.util.HitCounter;
 import com.coaxgames.smp.util.MassOrbDamage;
 import com.coaxgames.smp.util.ItemCooldownMarkers;
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
@@ -16,6 +15,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
@@ -52,15 +52,20 @@ import org.bukkit.util.Vector;
 import org.bukkit.util.BoundingBox;
 
 public final class PhaseFourAbilityListener implements Listener {
+    private static final long ASTRAL_EFFECT_MILLIS = 10_000L;
+    private static final long ASTRAL_COOLDOWN_MILLIS = 30_000L;
+    private static final int ASTRAL_MAX_HITS = 4;
     private final GalaxySmpPlugin plugin;
     private final LegendaryItemRegistry items;
     private final NamespacedKey kuiperProjectileKey;
-    private final HitCounter astralHits;
     private final Map<UUID, Integer> voidHits = new HashMap<>();
     private final Consumer<LivingEntity> applyVoidEffects;
     private final Supplier<Attribute> attackSpeedAttribute;
+    private final LongSupplier clock;
     private final NamespacedKey astralBoostKey;
     private final NamespacedKey astralExpiryKey;
+    private final NamespacedKey astralLevelKey;
+    private final NamespacedKey astralCooldownKey;
     private final Map<UUID, MassOrbFall> massOrbFalls = new HashMap<>();
 
     public PhaseFourAbilityListener(GalaxySmpPlugin plugin) {
@@ -76,15 +81,21 @@ public final class PhaseFourAbilityListener implements Listener {
 
     PhaseFourAbilityListener(GalaxySmpPlugin plugin, Consumer<LivingEntity> applyVoidEffects,
             Supplier<Attribute> attackSpeedAttribute) {
+        this(plugin, applyVoidEffects, attackSpeedAttribute, System::currentTimeMillis);
+    }
+
+    PhaseFourAbilityListener(GalaxySmpPlugin plugin, Consumer<LivingEntity> applyVoidEffects,
+            Supplier<Attribute> attackSpeedAttribute, LongSupplier clock) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.applyVoidEffects = Objects.requireNonNull(applyVoidEffects, "applyVoidEffects");
         this.attackSpeedAttribute = Objects.requireNonNull(attackSpeedAttribute, "attackSpeedAttribute");
+        this.clock = Objects.requireNonNull(clock, "clock");
         items = plugin.getLegendaryItems();
         kuiperProjectileKey = new NamespacedKey(plugin, "kuiper-projectile");
         astralBoostKey = new NamespacedKey(plugin, "astral-sword-speed");
         astralExpiryKey = new NamespacedKey(plugin, "astral-sword-speed-expires");
-        long comboWindow = positiveConfig("phase-four.combo-window-seconds", 3);
-        astralHits = new HitCounter(Duration.ofSeconds(comboWindow));
+        astralLevelKey = new NamespacedKey(plugin, "astral-sword-speed-hits");
+        astralCooldownKey = new NamespacedKey(plugin, "astral-sword-speed-cooldown");
         Bukkit.getScheduler().runTaskTimer(plugin, () -> applyMassOrbPassive(), 1L, 20L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::expireHeldAstralBoosts, 1L, 1L);
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -93,10 +104,37 @@ public final class PhaseFourAbilityListener implements Listener {
         }
     }
 
-    public void resetAbilityProgress(UUID playerUuid) {
-        astralHits.clear(playerUuid);
+    public int resetAbilityProgress(Player player) {
+        UUID playerUuid = player.getUniqueId();
         voidHits.remove(playerUuid);
         massOrbFalls.remove(playerUuid);
+        int cleared = 0;
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!isItem(stack, "astral_sword")) {
+                continue;
+            }
+            ItemMeta meta = stack.getItemMeta();
+            var data = meta.getPersistentDataContainer();
+            Long expiry = data.get(astralExpiryKey, PersistentDataType.LONG);
+            Long cooldown = data.get(astralCooldownKey, PersistentDataType.LONG);
+            if (expiry == null && cooldown == null) {
+                continue;
+            }
+            if (cooldown != null && cooldown > clock.getAsLong()) {
+                cleared++;
+            }
+            removeAstralModifier(meta);
+            data.remove(astralExpiryKey);
+            data.remove(astralLevelKey);
+            data.remove(astralCooldownKey);
+            if (!stack.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not reset Astral Sword attack-speed state.");
+            }
+            inventory.setItem(slot, stack);
+        }
+        return cleared;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -110,23 +148,13 @@ public final class PhaseFourAbilityListener implements Listener {
                 .map(definition -> definition.id()).orElse(null);
         if ("astral_sword".equals(itemId)) {
             voidHits.remove(attacker.getUniqueId());
-            if (expireAstralBoost(weapon)) {
-                attacker.getInventory().setItemInMainHand(weapon);
-            }
-            if (hasAstralBoost(weapon)) {
-                astralHits.clear(attacker.getUniqueId());
-            } else if (astralHits.record(attacker.getUniqueId()) >= 4) {
-                astralHits.clear(attacker.getUniqueId());
-                applyAstralSpeed(attacker, weapon);
-            }
+            updateAstralSpeed(attacker, weapon);
         } else if ("void_sword".equals(itemId)) {
-            astralHits.clear(attacker.getUniqueId());
             if (voidHits.merge(attacker.getUniqueId(), 1, Integer::sum) >= 4) {
                 voidHits.remove(attacker.getUniqueId());
                 applyVoidEffects.accept(target);
             }
         } else {
-            astralHits.clear(attacker.getUniqueId());
             voidHits.remove(attacker.getUniqueId());
         }
     }
@@ -170,7 +198,7 @@ public final class PhaseFourAbilityListener implements Listener {
                     || !isKuiperBurstTarget(nearby)) {
                 continue;
             }
-            if (nearby instanceof LivingEntity living && event.getHitEntity() == living) {
+            if (nearby instanceof LivingEntity living) {
                 int freezeTicks = (int) Math.min(Integer.MAX_VALUE,
                         Math.multiplyExact(
                                 positiveConfig("phase-four.kuiper-ball.freeze-seconds", 30), 20L));
@@ -391,29 +419,43 @@ public final class PhaseFourAbilityListener implements Listener {
         applyMassOrbPassive(event.getPlayer());
     }
 
-    private void applyAstralSpeed(Player player, ItemStack sword) {
+    private void updateAstralSpeed(Player player, ItemStack sword) {
+        if (expireAstralBoost(sword)) {
+            player.getInventory().setItemInMainHand(sword);
+        }
         ItemMeta meta = sword.getItemMeta();
+        var data = meta.getPersistentDataContainer();
+        long now = clock.getAsLong();
+        Long expiry = data.get(astralExpiryKey, PersistentDataType.LONG);
+        Long cooldown = data.get(astralCooldownKey, PersistentDataType.LONG);
+        if (expiry == null && cooldown != null && now < cooldown) {
+            return;
+        }
+        Byte hits = data.get(astralLevelKey, PersistentDataType.BYTE);
+        int nextHits = hits == null ? 1 : hits + 1;
+        if (nextHits > ASTRAL_MAX_HITS) {
+            return;
+        }
+        if (expiry == null) {
+            expiry = Math.addExact(now, ASTRAL_EFFECT_MILLIS);
+            data.set(astralExpiryKey, PersistentDataType.LONG, expiry);
+            data.set(astralCooldownKey, PersistentDataType.LONG, Math.addExact(expiry, ASTRAL_COOLDOWN_MILLIS));
+        }
         if (!meta.hasAttributeModifiers()) {
             meta.setAttributeModifiers(sword.getType().getDefaultAttributeModifiers());
         }
+        removeAstralModifier(meta);
         AttributeModifier modifier = new AttributeModifier(
-                astralBoostKey, 0.65, AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.MAINHAND);
+                astralBoostKey, Math.pow(1.35, nextHits) - 1.0,
+                AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.MAINHAND);
         if (!meta.addAttributeModifier(attackSpeedAttribute.get(), modifier)) {
             throw new IllegalStateException("Could not add Astral Sword attack-speed modifier.");
         }
-        long durationMillis = Math.multiplyExact(
-                positiveConfig("phase-four.astral-sword.attack-speed-seconds", 30), 1_000L);
-        meta.getPersistentDataContainer().set(astralExpiryKey, PersistentDataType.LONG,
-                Math.addExact(System.currentTimeMillis(), durationMillis));
+        data.set(astralLevelKey, PersistentDataType.BYTE, (byte) nextHits);
         if (!sword.setItemMeta(meta)) {
             throw new IllegalStateException("Could not apply Astral Sword attack-speed boost.");
         }
         player.getInventory().setItemInMainHand(sword);
-    }
-
-    private boolean hasAstralBoost(ItemStack sword) {
-        ItemMeta meta = sword.getItemMeta();
-        return meta != null && meta.getPersistentDataContainer().has(astralExpiryKey, PersistentDataType.LONG);
     }
 
     private boolean expireAstralBoost(ItemStack stack) {
@@ -425,9 +467,20 @@ public final class PhaseFourAbilityListener implements Listener {
             return false;
         }
         Long expiry = meta.getPersistentDataContainer().get(astralExpiryKey, PersistentDataType.LONG);
-        if (expiry == null || expiry > System.currentTimeMillis()) {
+        if (expiry == null || expiry > clock.getAsLong()
+                && meta.getPersistentDataContainer().has(astralLevelKey, PersistentDataType.BYTE)) {
             return false;
         }
+        removeAstralModifier(meta);
+        meta.getPersistentDataContainer().remove(astralExpiryKey);
+        meta.getPersistentDataContainer().remove(astralLevelKey);
+        if (!stack.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not remove expired Astral Sword attack-speed boost.");
+        }
+        return true;
+    }
+
+    private void removeAstralModifier(ItemMeta meta) {
         Attribute attribute = attackSpeedAttribute.get();
         var modifiers = meta.getAttributeModifiers(attribute);
         if (modifiers != null) {
@@ -437,11 +490,6 @@ public final class PhaseFourAbilityListener implements Listener {
                 }
             }
         }
-        meta.getPersistentDataContainer().remove(astralExpiryKey);
-        if (!stack.setItemMeta(meta)) {
-            throw new IllegalStateException("Could not remove expired Astral Sword attack-speed boost.");
-        }
-        return true;
     }
 
     private void expireHeldAstralBoosts() {

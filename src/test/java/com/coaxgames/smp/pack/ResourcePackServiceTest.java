@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
@@ -12,11 +13,14 @@ import io.papermc.paper.plugin.configuration.PluginMeta;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ResourcePackServiceTest {
     private static final String RELEASE = """
@@ -59,20 +63,44 @@ class ResourcePackServiceTest {
     }
 
     @Test
-    void incompatibleLatestPackFallsBackToInstalledPluginRelease() throws Exception {
+    void incompatibleLatestPackFallsBackToInstalledPluginRelease(@TempDir Path directory) throws Exception {
         List<String> requests = new ArrayList<>();
         ResourcePackService service = service("2.22.30",
                 release("2.22.35", "2.22.35"), release("2.22.30", "2.22.30"), requests);
-        ResourcePackService.Pack pack = service.fetchLatest("o/r");
-        assertTrue(pack.url().endsWith("galaxy-smp-resource-pack-2.22.30.zip"));
-        assertTrue(requests.stream().anyMatch(url -> url.endsWith("/releases/tags/2.22.30")));
+        Path installed = directory.resolve("installed.jar");
+        Files.write(installed, PluginJarComparisonTest.jar("2.22.30", "old code"));
+        try (var comparison = mockStatic(PluginJarComparison.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+            comparison.when(PluginJarComparison::installedJar).thenReturn(installed);
+            ResourcePackService.Pack pack = service.fetchLatest("o/r");
+            assertTrue(pack.url().endsWith("galaxy-smp-resource-pack-2.22.30.zip"));
+            assertTrue(requests.stream().anyMatch(url -> url.endsWith("/releases/tags/2.22.30")));
+        }
     }
 
     @Test
-    void refusesFallbackWhenItsPluginVersionDoesNotMatch() throws Exception {
+    void matchingPluginContentsAllowNewVersionPackWithoutRestart(@TempDir Path directory) throws Exception {
+        List<String> requests = new ArrayList<>();
+        ResourcePackService service = service("2.22.30", release("2.22.35", "2.22.35"), null, requests);
+        Path installed = directory.resolve("installed.jar");
+        Files.write(installed, PluginJarComparisonTest.jar("2.22.30", "new code"));
+        try (var comparison = mockStatic(PluginJarComparison.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+            comparison.when(PluginJarComparison::installedJar).thenReturn(installed);
+            ResourcePackService.Pack pack = service.fetchLatest("o/r");
+            assertTrue(pack.url().endsWith("galaxy-smp-resource-pack-2.22.35.zip"));
+            assertTrue(requests.stream().noneMatch(url -> url.contains("/releases/tags/")));
+        }
+    }
+
+    @Test
+    void refusesFallbackWhenItsPluginVersionDoesNotMatch(@TempDir Path directory) throws Exception {
         ResourcePackService service = service("2.22.30",
                 release("2.22.35", "2.22.35"), release("2.22.30", "2.22.29"), new ArrayList<>());
-        assertThrows(IllegalStateException.class, () -> service.fetchLatest("o/r"));
+        Path installed = directory.resolve("installed.jar");
+        Files.write(installed, PluginJarComparisonTest.jar("2.22.30", "old code"));
+        try (var comparison = mockStatic(PluginJarComparison.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+            comparison.when(PluginJarComparison::installedJar).thenReturn(installed);
+            assertThrows(IllegalStateException.class, () -> service.fetchLatest("o/r"));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -84,9 +112,15 @@ class ResourcePackServiceTest {
         when(metadata.getVersion()).thenReturn(installed);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         HttpClient http = mock(HttpClient.class);
-        when(http.<String>send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenAnswer(call -> {
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenAnswer(call -> {
             String url = call.getArgument(0, HttpRequest.class).uri().toString();
             requests.add(url);
+            if (url.endsWith(".jar")) {
+                HttpResponse<byte[]> response = mock(HttpResponse.class);
+                when(response.statusCode()).thenReturn(200);
+                when(response.body()).thenReturn(PluginJarComparisonTest.jar("2.22.35", "new code"));
+                return response;
+            }
             String body = url.endsWith("/releases/latest") ? latest
                     : url.endsWith("/releases/tags/" + installed) ? fallback
                     : "037ee6bad9db952b7db4ac906477a3082dbfd2ce";

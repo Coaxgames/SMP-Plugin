@@ -27,8 +27,6 @@ class PluginMetadataTest {
         for (String path : java.util.List.of(
                 "rituals.duration-seconds",
                 "rituals.reveal-interval-seconds",
-                "phase-four.combo-window-seconds",
-                "phase-four.astral-sword.attack-speed-seconds",
                 "phase-four.daily-trigger-tick",
                 "phase-four.solstice-chestplate.trigger-tick",
                 "phase-four.daily-effect-seconds",

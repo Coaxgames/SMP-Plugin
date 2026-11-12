@@ -4,6 +4,9 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-11
 
+- Star Mace Wind Burst resets to I after 20 seconds without use, without starting a cooldown; existing maces without a recorded timer reset once when refreshed. Kuiper Ball freezes all eligible living targets in its burst, and Collapsing Star uses larger spark displays alongside its existing particles and splash damage. In-game verification remains.
+- Astral Sword speed now increases by 1.35x per hit, up to four hits, during one 10-second window starting on the first hit. It then resets for a 30-second effect cooldown; attacks remain usable. Live verification remains.
+- Restored matching release, plugin and resource-pack versions. The updater compares plugin contents independently of version so pack-only changes can remain restart-free once this updater is installed; the running plugin's reported version changes only on restart. Live release verification remains.
 - Moved the Astral Sword's 30-second attack-speed boost onto the sword itself, limited to its main-hand use. Hits cannot refresh the boost while it is active; old player-wide boosts are cleaned up and existing sword lore is refreshed. In-game verification remains.
 - Removed the Void Sword's three-second hit timeout: every fourth counted hit applies Slowness I and Wither I to that hit's target for 10 seconds. Astral Sword's configured combo window is unchanged; in-game verification remains.
 - Added the vanilla totem pop overlay to the Nova Shield's lethal-damage rescue, alongside its existing shield particles and display. In-game verification remains.
