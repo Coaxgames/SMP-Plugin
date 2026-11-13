@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +31,6 @@ import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.plugin.PluginManager;
@@ -175,79 +173,13 @@ class ResourcePackServiceTest {
     }
 
     @Test
-    void restoresOnlyOnceForEachAcceptedOtherPackRequest() throws Exception {
+    void ignoresOtherPacksStatusesWithoutResendingGalaxy() throws Exception {
         PackFixture fixture = packFixture(true);
         UUID otherPack = UUID.randomUUID();
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
-        verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
-
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
-        ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
-        verify(fixture.player).sendResourcePacks(request.capture());
-        assertFalse(request.getValue().replace());
-        assertTrue(request.getValue().required());
-        assertEquals(Component.text("Galaxy prompt"), request.getValue().prompt());
-        assertEquals(ResourcePackService.PACK_ID, request.getValue().packs().getFirst().id());
-        assertEquals("037ee6bad9db952b7db4ac906477a3082dbfd2ce", request.getValue().packs().getFirst().hash());
-
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.SUCCESSFULLY_LOADED));
-        for (int i = 0; i < 3; i++) {
-            fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        for (Status status : Status.values()) {
+            fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, status));
         }
-        verify(fixture.player, times(1)).sendResourcePacks(any(ResourcePackRequest.class));
-
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.FAILED_DOWNLOAD));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.FAILED_DOWNLOAD));
-        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
-    }
-
-    @Test
-    void respectsDeclinedGalaxyPackUntilPlayerLeaves() throws Exception {
-        PackFixture fixture = packFixture(false);
-        UUID otherPack = UUID.randomUUID();
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.DECLINED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
         verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
-
-        fixture.service.onQuit(new PlayerQuitEvent(fixture.player, (Component) null, PlayerQuitEvent.QuitReason.DISCONNECTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
-        ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
-        verify(fixture.player).sendResourcePacks(request.capture());
-        assertFalse(request.getValue().required());
-    }
-
-    @Test
-    void tracksOtherRequestsSeparatelyAndClearsPendingOnQuit() throws Exception {
-        PackFixture fixture = packFixture(true);
-        UUID first = UUID.randomUUID();
-        UUID second = UUID.randomUUID();
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, second, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.SUCCESSFULLY_LOADED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, second, Status.SUCCESSFULLY_LOADED));
-        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.ACCEPTED));
-        fixture.service.onQuit(new PlayerQuitEvent(fixture.player, (Component) null, PlayerQuitEvent.QuitReason.DISCONNECTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.SUCCESSFULLY_LOADED));
-        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
-    }
-
-    @Test
-    void tracksTheSameOtherPackIndependentlyForEachPlayer() throws Exception {
-        PackFixture fixture = packFixture(true);
-        Player second = mock(Player.class);
-        when(second.getUniqueId()).thenReturn(UUID.randomUUID());
-        when(second.isOnline()).thenReturn(true);
-        UUID otherPack = UUID.randomUUID();
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(second, otherPack, Status.ACCEPTED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
-        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(second, otherPack, Status.SUCCESSFULLY_LOADED));
-        verify(fixture.player).sendResourcePacks(any(ResourcePackRequest.class));
-        verify(second).sendResourcePacks(any(ResourcePackRequest.class));
     }
 
     @Test
@@ -264,7 +196,10 @@ class ResourcePackServiceTest {
         ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
         verify(fixture.player).sendResourcePacks(request.capture());
         assertFalse(request.getValue().replace());
+        assertTrue(request.getValue().required());
+        assertEquals(Component.text("Galaxy prompt"), request.getValue().prompt());
         assertEquals(ResourcePackService.PACK_ID, request.getValue().packs().getFirst().id());
+        assertEquals("037ee6bad9db952b7db4ac906477a3082dbfd2ce", request.getValue().packs().getFirst().hash());
     }
 
     @SuppressWarnings("unchecked")
