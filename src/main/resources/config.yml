@@ -1,7 +1,7 @@
 example-message: "Hello, world!"
 
 # Sends the latest release's pack when compatible, otherwise the installed plugin version's pack.
-# Leave resource-pack and resource-pack-sha1 blank in server.properties when this is enabled.
+# Galaxy adds its pack alongside other server packs; leave these blank unless another pack needs them.
 resource-pack:
   enabled: true
   repository: "Coaxgames/SMP-Plugin"

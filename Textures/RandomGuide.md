@@ -22,7 +22,7 @@ The pack uses Minecraft 26.3's item-definition/model format and registers its cu
 
 The plugin sends the pack by itself. On startup, and every `resource-pack.check-interval-minutes` (default 10), it reads the newest GitHub Release, downloads the `galaxy-smp-resource-pack-<version>.zip.sha1` sidecar, and sends the matching ZIP to players on join. When a new release changes the SHA-1, it re-sends the pack to everyone online. The pack is required by default, so players who decline are disconnected. Nothing needs restarting for a new pack; only a new plugin jar does.
 
-Leave `resource-pack` and `resource-pack-sha1` blank in `server.properties` so the server does not send a second, older pack. Settings live under `resource-pack:` in the plugin's `config.yml` (`enabled`, `repository`, `check-interval-minutes`, `required`, `prompt`). The server needs outbound HTTPS access to `api.github.com` and `github.com`, and the repository must stay public.
+Galaxy adds its pack alongside other server packs. If another plugin replaces packs, Galaxy sends its pack again after the other request finishes; this may cause an extra client resource reload. The packs remain separate, so conflicting assets are still resolved by Minecraft's pack priority. A plugin that removes packs without sending a new request cannot be detected this way. Leave `resource-pack` and `resource-pack-sha1` blank in `server.properties` unless another pack needs them. Settings live under `resource-pack:` in the plugin's `config.yml` (`enabled`, `repository`, `check-interval-minutes`, `required`, `prompt`). The server needs outbound HTTPS access to `api.github.com` and `github.com`, and the repository must stay public.
 
 ## Blockbench flipbook animations
 

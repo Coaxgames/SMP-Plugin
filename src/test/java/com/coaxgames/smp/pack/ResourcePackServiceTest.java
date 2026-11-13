@@ -1,11 +1,17 @@
 package com.coaxgames.smp.pack;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
@@ -18,7 +24,20 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
+import net.kyori.adventure.resource.ResourcePackRequest;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Server;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -154,4 +173,100 @@ class ResourcePackServiceTest {
         assertTrue(ResourcePackService.parseSha1("not a hash").isEmpty());
         assertTrue(ResourcePackService.parseSha1("037ee6ba").isEmpty());
     }
+
+    @Test
+    void restoresGalaxyAfterAnotherPackWithoutReplacingIt() throws Exception {
+        PackFixture fixture = packFixture(true);
+        UUID otherPack = UUID.randomUUID();
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
+        verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
+
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
+        verify(fixture.player).sendResourcePacks(request.capture());
+        assertFalse(request.getValue().replace());
+        assertTrue(request.getValue().required());
+        assertEquals(Component.text("Galaxy prompt"), request.getValue().prompt());
+        assertEquals(ResourcePackService.PACK_ID, request.getValue().packs().getFirst().id());
+        assertEquals("037ee6bad9db952b7db4ac906477a3082dbfd2ce", request.getValue().packs().getFirst().hash());
+
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.SUCCESSFULLY_LOADED));
+        verify(fixture.player, times(1)).sendResourcePacks(any(ResourcePackRequest.class));
+
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.FAILED_DOWNLOAD));
+        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
+    }
+
+    @Test
+    void respectsDeclinedGalaxyPackUntilPlayerLeaves() throws Exception {
+        PackFixture fixture = packFixture(false);
+        UUID otherPack = UUID.randomUUID();
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.DECLINED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
+
+        fixture.service.onQuit(new PlayerQuitEvent(fixture.player, (Component) null, PlayerQuitEvent.QuitReason.DISCONNECTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
+        verify(fixture.player).sendResourcePacks(request.capture());
+        assertFalse(request.getValue().required());
+    }
+
+    @Test
+    void joinSendsStackablePackOnlyWhilePlayerIsOnline() throws Exception {
+        PackFixture fixture = packFixture(true);
+        fixture.service.onJoin(new PlayerJoinEvent(fixture.player, (Component) null));
+        ArgumentCaptor<Runnable> join = ArgumentCaptor.forClass(Runnable.class);
+        verify(fixture.scheduler).runTaskLater(eq(fixture.plugin), join.capture(), eq(10L));
+        when(fixture.player.isOnline()).thenReturn(false);
+        join.getValue().run();
+        verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
+        when(fixture.player.isOnline()).thenReturn(true);
+        join.getValue().run();
+        ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
+        verify(fixture.player).sendResourcePacks(request.capture());
+        assertFalse(request.getValue().replace());
+        assertEquals(ResourcePackService.PACK_ID, request.getValue().packs().getFirst().id());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static PackFixture packFixture(boolean required) throws Exception {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        FileConfiguration config = mock(FileConfiguration.class);
+        Server server = mock(Server.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        PluginMeta metadata = mock(PluginMeta.class);
+        HttpClient http = mock(HttpClient.class);
+        Player player = mock(Player.class);
+        when(plugin.getConfig()).thenReturn(config);
+        when(config.getBoolean("resource-pack.enabled", true)).thenReturn(true);
+        when(config.getBoolean("resource-pack.required", true)).thenReturn(required);
+        when(config.getString(eq("resource-pack.prompt"), any())).thenReturn("Galaxy prompt");
+        when(config.getString(eq("resource-pack.repository"), any())).thenReturn("o/r");
+        when(plugin.getServer()).thenReturn(server);
+        when(server.getScheduler()).thenReturn(scheduler);
+        when(server.getPluginManager()).thenReturn(mock(PluginManager.class));
+        when(plugin.getPluginMeta()).thenReturn(metadata);
+        when(metadata.getVersion()).thenReturn("2.22.17");
+        when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
+        when(player.isOnline()).thenReturn(true);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenAnswer(call -> {
+            String url = call.getArgument(0, HttpRequest.class).uri().toString();
+            HttpResponse<String> response = mock(HttpResponse.class);
+            when(response.statusCode()).thenReturn(200);
+            when(response.body()).thenReturn(url.endsWith("/releases/latest")
+                    ? RELEASE : "037ee6bad9db952b7db4ac906477a3082dbfd2ce");
+            return response;
+        });
+        ResourcePackService service = new ResourcePackService(plugin, http);
+        service.start();
+        ArgumentCaptor<Runnable> refresh = ArgumentCaptor.forClass(Runnable.class);
+        verify(scheduler).runTaskTimerAsynchronously(eq(plugin), refresh.capture(), anyLong(), anyLong());
+        refresh.getValue().run();
+        return new PackFixture(service, player, plugin, scheduler);
+    }
+
+    private record PackFixture(ResourcePackService service, Player player, GalaxySmpPlugin plugin,
+                               BukkitScheduler scheduler) { }
 }

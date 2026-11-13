@@ -7,17 +7,22 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.HexFormat;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.kyori.adventure.resource.ResourcePackInfo;
+import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 /**
  * Finds the newest GitHub release's resource-pack ZIP and its SHA-1 sidecar, then sends that pack to
@@ -34,6 +39,7 @@ public final class ResourcePackService implements Listener {
 
     private final GalaxySmpPlugin plugin;
     private final HttpClient http;
+    private final Set<UUID> declinedPlayers = new HashSet<>();
     private volatile Pack current;
     private boolean required;
     private Component prompt;
@@ -72,6 +78,36 @@ public final class ResourcePackService implements Listener {
                 send(player, pack);
             }
         }, 10L);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        declinedPlayers.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onPackStatus(PlayerResourcePackStatusEvent event) {
+        Player player = event.getPlayer();
+        if (PACK_ID.equals(event.getID())) {
+            switch (event.getStatus()) {
+                case DECLINED -> declinedPlayers.add(player.getUniqueId());
+                case SUCCESSFULLY_LOADED -> declinedPlayers.remove(player.getUniqueId());
+                case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD ->
+                    plugin.getLogger().warning("[ResourcePack] Galaxy pack " + event.getStatus()
+                            + " for " + player.getName() + ".");
+                default -> { }
+            }
+            return;
+        }
+        switch (event.getStatus()) {
+            case SUCCESSFULLY_LOADED, DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD -> {
+                Pack pack = current;
+                if (pack != null && player.isOnline() && !declinedPlayers.contains(player.getUniqueId())) {
+                    send(player, pack);
+                }
+            }
+            default -> { }
+        }
     }
 
     private void refresh(String repository) {
@@ -160,7 +196,13 @@ public final class ResourcePackService implements Listener {
     }
 
     private void send(Player player, Pack pack) {
-        player.setResourcePack(PACK_ID, pack.url(), HexFormat.of().parseHex(pack.sha1()), prompt, required);
+        ResourcePackInfo info = ResourcePackInfo.resourcePackInfo(PACK_ID, URI.create(pack.url()), pack.sha1());
+        player.sendResourcePacks(ResourcePackRequest.resourcePackRequest()
+                .packs(info)
+                .replace(false)
+                .required(required)
+                .prompt(prompt)
+                .build());
     }
 
     static Optional<String> findAssetUrl(String releaseJson, String suffix) {
