@@ -7,11 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -23,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 /**
@@ -41,8 +36,6 @@ public final class ResourcePackService implements Listener {
 
     private final GalaxySmpPlugin plugin;
     private final HttpClient http;
-    private final Set<UUID> declinedPlayers = new HashSet<>();
-    private final Map<UUID, Set<UUID>> acceptedOtherPacks = new HashMap<>();
     private volatile Pack current;
     private boolean required;
     private Component prompt;
@@ -84,48 +77,14 @@ public final class ResourcePackService implements Listener {
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        declinedPlayers.remove(event.getPlayer().getUniqueId());
-        acceptedOtherPacks.remove(event.getPlayer().getUniqueId());
-    }
-
-    @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
-        Player player = event.getPlayer();
         if (PACK_ID.equals(event.getID())) {
             switch (event.getStatus()) {
-                case DECLINED -> declinedPlayers.add(player.getUniqueId());
-                case SUCCESSFULLY_LOADED -> declinedPlayers.remove(player.getUniqueId());
                 case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD ->
                     plugin.getLogger().warning("[ResourcePack] Galaxy pack " + event.getStatus()
-                            + " for " + player.getName() + ".");
+                            + " for " + event.getPlayer().getName() + ".");
                 default -> { }
             }
-            return;
-        }
-        switch (event.getStatus()) {
-            case ACCEPTED -> acceptedOtherPacks
-                    .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>())
-                    .add(event.getID());
-            case SUCCESSFULLY_LOADED, DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD -> {
-                Set<UUID> accepted = acceptedOtherPacks.get(player.getUniqueId());
-                if (accepted == null || !accepted.remove(event.getID())) {
-                    if (event.getStatus() == PlayerResourcePackStatusEvent.Status.DECLINED
-                            || event.getStatus() == PlayerResourcePackStatusEvent.Status.INVALID_URL) {
-                        plugin.getLogger().warning("[ResourcePack] Another pack was " + event.getStatus()
-                                + " for " + player.getName() + " before acceptance; Galaxy may need to be reloaded.");
-                    }
-                    return;
-                }
-                if (accepted.isEmpty()) {
-                    acceptedOtherPacks.remove(player.getUniqueId());
-                }
-                Pack pack = current;
-                if (pack != null && player.isOnline() && !declinedPlayers.contains(player.getUniqueId())) {
-                    send(player, pack);
-                }
-            }
-            default -> { }
         }
     }
 

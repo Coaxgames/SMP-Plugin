@@ -4,7 +4,7 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-13
 
-- Galaxy adds its resource pack without clearing other packs and restores it at most once after each accepted request from another pack, rather than after every reload status. This addresses the reported reload loop without modifying URLCustomDiscs; live verification remains.
+- Removed automatic resource-pack recovery triggered by other plugins. Galaxy continues to send its own pack on join and updates; another plugin can still remove it.
 - Star Mace Wind Burst progression now requires a damaging vanilla mace smash; ordinary ground hits no longer stack it. Existing miss and cooldown rules remain unchanged. In-game verification remains.
 - Bound the supplied animated Solstice Chestplate item texture and separate worn armor texture. Existing chestplates refresh their models on inventory refresh or pickup; in-game visual verification remains.
 - Added operator-only `/cooldown` and `/cooldown status` for each player's own cooldowns. Cooldowns default to enabled, and the setting persists across restarts; non-operators always have cooldowns enabled. Previously active persisted cooldowns resume if still running when re-enabled. In-game verification remains.

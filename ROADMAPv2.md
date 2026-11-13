@@ -248,7 +248,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 
 **Nova Shield testing:** Verify full versus partial axe recharge, critical versus ordinary attacks, missed/unblocked hits, both consecutive qualifying hits, the complete 10-second disable and restoration, vanilla shield-disable interactions, and lethal damage with the shield in the offhand, main hand and inventory. Verify the vanilla totem pop overlay when the offhand shield rescues the player. The old `phase-five.nova-shield.disable-seconds` setting is ignored; the requested disable duration is fixed at 10 seconds.
 
-**Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Galaxy adds its pack alongside other packs and restores it once per accepted request from another pack, instead of re-sending on repeated reload statuses. Coexistence with URLCustomDiscs and player acceptance still require owner testing on the server.
+**Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Galaxy sends its own pack on join and updates, without reacting to other packs. Another plugin can remove Galaxy's pack; player acceptance still requires owner testing on the server.
 
 ### Phase 6 – Item Lifecycle, Limits & Update Corrections
 
