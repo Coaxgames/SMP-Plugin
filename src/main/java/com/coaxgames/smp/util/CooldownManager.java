@@ -7,21 +7,33 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.bukkit.configuration.file.FileConfiguration;
 
 public final class CooldownManager {
     private final FileConfiguration config;
     private final LegendaryDataStore dataStore;
     private final LegendaryItemRegistry items;
+    private final Predicate<UUID> bypassCooldowns;
 
     public CooldownManager(
             FileConfiguration config,
             LegendaryDataStore dataStore,
             LegendaryItemRegistry items
     ) {
+        this(config, dataStore, items, ignored -> false);
+    }
+
+    public CooldownManager(
+            FileConfiguration config,
+            LegendaryDataStore dataStore,
+            LegendaryItemRegistry items,
+            Predicate<UUID> bypassCooldowns
+    ) {
         this.config = Objects.requireNonNull(config, "config");
         this.dataStore = Objects.requireNonNull(dataStore, "dataStore");
         this.items = Objects.requireNonNull(items, "items");
+        this.bypassCooldowns = Objects.requireNonNull(bypassCooldowns, "bypassCooldowns");
     }
 
     public Duration getConfiguredDuration(String itemId) {
@@ -34,11 +46,17 @@ public final class CooldownManager {
     }
 
     public boolean isOnCooldown(UUID playerUuid, String itemId) {
+        if (bypassCooldowns.test(playerUuid)) {
+            return false;
+        }
         long expiresAtMillis = dataStore.getCooldownExpiry(playerUuid, itemId);
         return expiresAtMillis > System.currentTimeMillis();
     }
 
     public Duration getRemaining(UUID playerUuid, String itemId) {
+        if (bypassCooldowns.test(playerUuid)) {
+            return Duration.ZERO;
+        }
         long remainingMillis = dataStore.getCooldownExpiry(playerUuid, itemId) - System.currentTimeMillis();
         return Duration.ofMillis(Math.max(0L, remainingMillis));
     }
@@ -52,6 +70,9 @@ public final class CooldownManager {
         Objects.requireNonNull(duration, "duration");
         if (duration.isNegative()) {
             throw new IllegalArgumentException("Cooldown duration cannot be negative.");
+        }
+        if (bypassCooldowns.test(playerUuid)) {
+            return true;
         }
         long durationMillis = duration.toMillis();
         if (durationMillis <= 0 || isOnCooldown(playerUuid, itemId)) {

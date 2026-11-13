@@ -142,7 +142,7 @@ public final class PhaseFiveAbilityListener implements Listener {
         }
         UUID playerId = player.getUniqueId();
         if (plugin.getCooldownManager().isOnCooldown(playerId, NEBULA_SPEAR)) {
-            lungeCounts.remove(playerId);
+            event.setCancelled(true);
             return;
         }
         int count = lungeCounts.merge(playerId, 1, Integer::sum);
@@ -159,6 +159,7 @@ public final class PhaseFiveAbilityListener implements Listener {
                     + playerId + "; the fifth lunge thrust was not applied.", exception);
             return;
         }
+        com.coaxgames.smp.util.ItemCooldownMarkers.sync(player, NEBULA_SPEAR, plugin.getCooldownManager());
         applyNebulaThrust(player);
     }
 
@@ -403,6 +404,10 @@ public final class PhaseFiveAbilityListener implements Listener {
             return;
         }
         UUID defenderId = defender.getUniqueId();
+        if (plugin.bypassesCooldowns(defender)) {
+            shieldAxeHitCounts.remove(defenderId);
+            return;
+        }
         int hits = NovaShieldRules.nextHitCount(shieldAxeHitCounts.getOrDefault(defenderId, 0), true);
         if (hits < NovaShieldRules.HITS_TO_DISABLE) {
             shieldAxeHitCounts.put(defenderId, hits);

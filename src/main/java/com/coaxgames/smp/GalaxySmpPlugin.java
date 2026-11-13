@@ -22,6 +22,7 @@ import com.coaxgames.smp.util.CooldownManager;
 import com.coaxgames.smp.util.HeadDropVersion;
 import java.io.IOException;
 import java.util.logging.Level;
+import java.util.Objects;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -46,6 +47,14 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         requireHeadDrop();
         saveDefaultConfig();
         migrateDefaultRitualDuration();
+        if (migrateNebulaCooldown(getConfig())) {
+            saveConfig();
+            getLogger().info("Updated the default Nebula Spear cooldown from 45 seconds to 5 seconds.");
+        }
+        if (migrateMassOrbCooldown(getConfig())) {
+            saveConfig();
+            getLogger().info("Updated the default Mass Orb cooldown from 20 seconds to 120 seconds.");
+        }
         validatePlayerItemLimits();
         validateItemNameGradients();
         validateRitualSettings();
@@ -65,7 +74,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         reclaimableItems = new ReclaimableItemService(this);
         reclaimableItems.rebuildSpawnBlockMarkers();
-        cooldownManager = new CooldownManager(getConfig(), dataStore, legendaryItems);
+        cooldownManager = new CooldownManager(getConfig(), dataStore, legendaryItems, playerUuid -> {
+            var player = getServer().getPlayer(playerUuid);
+            return player != null && bypassesCooldowns(player);
+        });
         ritualManager = new RitualManager(this);
         ritualManager.resume();
         phaseFourDailyEffects = new PhaseFourDailyEffectManager(this);
@@ -82,7 +94,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
         getServer().getPluginManager().registerEvents(new EnderPearlStackListener(this), this);
-        getServer().getPluginManager().registerEvents(new EnderPearlCooldownListener(), this);
+        getServer().getPluginManager().registerEvents(new EnderPearlCooldownListener(this), this);
         DroppedItemClumpListener clumps = new DroppedItemClumpListener(this, legendaryItems);
         getServer().getPluginManager().registerEvents(clumps, this);
         clumps.start();
@@ -108,6 +120,10 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         GalaxyCommand galaxyCommand = new GalaxyCommand(this, menu);
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
+        var cooldownCommand = Objects.requireNonNull(getCommand("cooldown"), "cooldown command missing from plugin.yml");
+        var cooldownExecutor = new com.coaxgames.smp.command.CooldownCommand(this);
+        cooldownCommand.setExecutor(cooldownExecutor);
+        cooldownCommand.setTabCompleter(cooldownExecutor);
         new com.coaxgames.smp.pack.ResourcePackService(this).start();
         pluginUpdates = new com.coaxgames.smp.pack.PluginUpdateService(this);
         pluginUpdates.start();
@@ -124,6 +140,24 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         getConfig().set(path, 180L);
         saveConfig();
         getLogger().info("Updated the default ritual duration from 15 minutes to 3 minutes.");
+    }
+
+    static boolean migrateNebulaCooldown(org.bukkit.configuration.file.FileConfiguration config) {
+        String path = "cooldowns.nebula_spear";
+        if (!config.isSet(path) || !ConfigNumbers.isWholeNumber(config, path) || config.getLong(path) != 45L) {
+            return false;
+        }
+        config.set(path, 5L);
+        return true;
+    }
+
+    static boolean migrateMassOrbCooldown(org.bukkit.configuration.file.FileConfiguration config) {
+        String path = "cooldowns.mass_orb";
+        if (!config.isSet(path) || !ConfigNumbers.isWholeNumber(config, path) || config.getLong(path) != 20L) {
+            return false;
+        }
+        config.set(path, 120L);
+        return true;
     }
 
     @Override
@@ -171,7 +205,12 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         if (cooldownManager == null) {
             throw new IllegalStateException("Cooldown manager is not available before plugin startup.");
         }
+
         return cooldownManager;
+    }
+
+    public boolean bypassesCooldowns(Player player) {
+        return player.isOp() && !getDataStore().areOperatorCooldownsEnabled(player.getUniqueId());
     }
 
     public int resetAbilities(Player player) throws IOException {

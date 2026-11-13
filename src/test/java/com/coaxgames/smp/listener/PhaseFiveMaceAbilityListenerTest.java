@@ -66,11 +66,13 @@ class PhaseFiveMaceAbilityListenerTest {
         doReturn(Optional.of(definition)).when(registry).identify(mace);
         when(mace.getItemMeta()).thenReturn(meta);
         when(meta.lore()).thenReturn(List.of(
+                Component.text("Wind Burst rises by one on each hit, up to V."),
                 Component.text("A miss resets Wind Burst to I and starts a 30-second cooldown.")));
         when(mace.setItemMeta(meta)).thenReturn(true);
 
         org.junit.jupiter.api.Assertions.assertTrue(registry.refreshStarMaceCooldownLore(mace));
         verify(meta).lore(List.of(Component.text(
+                "Wind Burst rises by one on each mace smash, up to V.", NamedTextColor.GRAY), Component.text(
                 "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.", NamedTextColor.GRAY),
                 Component.text("Wind Burst resets to I after 20 seconds without use.", NamedTextColor.GRAY)));
     }

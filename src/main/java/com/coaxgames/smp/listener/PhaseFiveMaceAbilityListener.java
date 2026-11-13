@@ -202,7 +202,7 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
             if (plugin.getLegendaryItems().initializeStarMaceProgression(mace)) {
                 attacker.getInventory().setItemInMainHand(mace);
             }
-            handleStarMaceHit(attacker, damageDealt);
+            handleStarMaceHit(attacker, event, damageDealt);
             return;
         }
         pendingCollapsingSwings.computeIfPresent(attacker.getUniqueId(), (ignored, hit) -> Boolean.TRUE);
@@ -236,14 +236,15 @@ public final class PhaseFiveMaceAbilityListener implements Listener {
         }
     }
 
-    private void handleStarMaceHit(Player attacker, double damageDealt) {
+    private void handleStarMaceHit(Player attacker, EntityDamageByEntityEvent event, double damageDealt) {
         PendingStarSwing swing = pendingStarSwings.get(attacker.getUniqueId());
         ItemStack mace = attacker.getInventory().getItemInMainHand();
         UUID maceUuid = plugin.getLegendaryItems().getUniqueId(mace).orElse(null);
         if (swing != null && Objects.equals(swing.maceUuid, maceUuid)) {
             swing.hit = true;
         }
-        if (damageDealt <= 0.0) {
+        if (damageDealt <= 0.0
+                || !MaceDamage.advancesStarMace(damageDealt, event.getDamageSource().getDamageType().getKey())) {
             return;
         }
         int level = mace.getEnchantmentLevel(Enchantment.WIND_BURST);

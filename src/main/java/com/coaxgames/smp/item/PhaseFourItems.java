@@ -26,7 +26,7 @@ public final class PhaseFourItems {
                         'S', Material.SNOWBALL), new Ingredient('B', Material.WIND_CHARGE),
                 new Ingredient('P', Material.POWDER_SNOW_BUCKET)));
         registry.register(repeatable(plugin, "mass_orb", Material.HEAVY_CORE, 1,
-                null, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
+                1, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
                         'G', Material.GOLD_BLOCK), new Ingredient('B', Material.BLUE_ICE),
                 new Ingredient('N', Material.NETHERITE_BLOCK), new Ingredient('H', Material.HEAVY_CORE)));
 
@@ -86,7 +86,8 @@ public final class PhaseFourItems {
             EnchantmentLevel... enchantments
     ) {
         ItemStack item = new ItemStack(material);
-        if (id.equals("astral_sword") || id.equals("void_sword") || id.equals("lunar_leggings")) {
+        if (id.equals("astral_sword") || id.equals("void_sword")
+                || id.equals("lunar_leggings") || id.equals("solstice_chestplate")) {
             var meta = item.getItemMeta();
             meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:" + id)));
             if (id.equals("lunar_leggings")) {
@@ -94,6 +95,12 @@ public final class PhaseFourItems {
                 equippable.setSlot(org.bukkit.inventory.EquipmentSlot.LEGS);
                 equippable.setModel(Objects.requireNonNull(
                         NamespacedKey.fromString("minecraft:lunar_leggings")));
+                meta.setEquippable(equippable);
+            } else if (id.equals("solstice_chestplate")) {
+                var equippable = meta.getEquippable();
+                equippable.setSlot(org.bukkit.inventory.EquipmentSlot.CHEST);
+                equippable.setModel(Objects.requireNonNull(
+                        NamespacedKey.fromString("galaxy:solstice_chestplate")));
                 meta.setEquippable(equippable);
             }
             item.setItemMeta(meta);

@@ -23,10 +23,10 @@ class ItemCooldownMarkersTest {
 
     @Test
     void eachCustomItemHasAnIndependentGroup() {
-        Set<String> ids = Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nova_shield");
+        Set<String> ids = Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nebula_spear", "nova_shield");
         assertTrue(ids.stream().allMatch(ItemCooldownMarkers::supported));
         assertEquals(ids.size(), ids.stream().map(ItemCooldownMarkers::group).collect(Collectors.toSet()).size());
-        assertEquals(Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace"),
+        assertEquals(Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nebula_spear"),
                 Set.copyOf(ItemCooldownMarkers.PERSISTED_ITEMS));
         assertFalse(ItemCooldownMarkers.supported("ordinary_shield"));
         assertThrows(IllegalArgumentException.class, () -> ItemCooldownMarkers.group("ordinary_shield"));

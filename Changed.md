@@ -2,6 +2,17 @@
 
 Human-readable record of project work. Current owner-feedback status and remaining checks are tracked in [ROADMAPv2.md](./ROADMAPv2.md); earlier entries are historical and may describe behavior since corrected.
 
+## Latest local changes – 2026-11-13
+
+- Star Mace Wind Burst progression now requires a damaging vanilla mace smash; ordinary ground hits no longer stack it. Existing miss and cooldown rules remain unchanged. In-game verification remains.
+- Bound the supplied animated Solstice Chestplate item texture and separate worn armor texture. Existing chestplates refresh their models on inventory refresh or pickup; in-game visual verification remains.
+- Added operator-only `/cooldown` and `/cooldown status` for each player's own cooldowns. Cooldowns default to enabled, and the setting persists across restarts; non-operators always have cooldowns enabled. Previously active persisted cooldowns resume if still running when re-enabled. In-game verification remains.
+- Added `/galaxy version` to report the running plugin version from its metadata, independent of the JAR filename.
+- Galaxy String can no longer be placed as a block; ordinary string remains placeable. In-game verification remains.
+- Mass Orb lore now states both enemy slam and holder fall-damage caps in hearts; the holder cap is before reduction.
+- Mass Orbs have a stack limit of 1, deal at most 5 hearts per slam, and start a two-minute cooldown on use. Existing default 20-second settings and older orb metadata are upgraded; customized cooldown settings are preserved. Holder fall-damage lore now clarifies its separate pre-reduction cap. In-game verification remains.
+- Nebula Spear's default cooldown is five seconds after the fifth lunge, with a dedicated hotbar indicator; lunges are blocked during cooldown. Existing default 45-second configurations migrate to five seconds, while other configured values remain unchanged. Added coverage for three lunges, switching weapons, and two more; the owner's reported in-game swap issue still needs verification.
+
 ## Latest local changes – 2026-11-12
 
 - Bound the supplied animated Galaxy String texture and model to Galaxy Strings, including refreshing older items in player inventories and on ordinary pickup. In-game verification remains.

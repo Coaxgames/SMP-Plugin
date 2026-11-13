@@ -129,4 +129,36 @@ class DroppedItemClumpListenerTest {
         verify(data).set(any(NamespacedKey.class), eq(PersistentDataType.INTEGER), eq(32));
         verify(item, never()).remove();
     }
+
+    @Test
+    void clumpPickupRespectsSingleItemMassOrbStacks() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        when(plugin.namespace()).thenReturn("galaxysmp");
+        LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
+        DroppedItemClumpListener listener = new DroppedItemClumpListener(plugin, registry);
+        Player player = mock(Player.class);
+        PlayerInventory inventory = mock(PlayerInventory.class);
+        Item item = mock(Item.class);
+        PersistentDataContainer data = mock(PersistentDataContainer.class);
+        ItemStack visible = mock(ItemStack.class);
+        ItemStack pickup = mock(ItemStack.class);
+        when(player.getInventory()).thenReturn(inventory);
+        when(item.getPersistentDataContainer()).thenReturn(data);
+        when(data.has(any(NamespacedKey.class), eq(PersistentDataType.INTEGER))).thenReturn(true);
+        when(data.get(any(NamespacedKey.class), eq(PersistentDataType.INTEGER))).thenReturn(2);
+        when(item.getItemStack()).thenReturn(visible);
+        when(visible.getAmount()).thenReturn(1);
+        when(visible.getMaxStackSize()).thenReturn(1);
+        when(visible.clone()).thenReturn(pickup);
+        when(pickup.getMaxStackSize()).thenReturn(1);
+        when(inventory.addItem(any(ItemStack.class))).thenReturn(new HashMap<>());
+
+        listener.onPickup(new EntityPickupItemEvent(player, item, 0));
+
+        verify(registry, org.mockito.Mockito.times(2)).refreshMassOrb(pickup);
+        verify(pickup, org.mockito.Mockito.times(2)).setAmount(1);
+        verify(inventory, org.mockito.Mockito.times(2)).addItem(pickup);
+        verify(item).remove();
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.coaxgames.smp.util;
 
+import org.bukkit.NamespacedKey;
+
 public final class MaceDamage {
     public static final int STAR_MACE_MIN_WIND_BURST = 1;
     public static final int STAR_MACE_MAX_WIND_BURST = 5;
@@ -18,6 +20,10 @@ public final class MaceDamage {
             throw new IllegalArgumentException("currentLevel must be between I and V.");
         }
         return hit ? Math.min(STAR_MACE_MAX_WIND_BURST, currentLevel + 1) : STAR_MACE_MIN_WIND_BURST;
+    }
+
+    public static boolean advancesStarMace(double damage, NamespacedKey damageType) {
+        return damage > 0.0 && NamespacedKey.minecraft("mace_smash").equals(damageType);
     }
 
     public static boolean startsStarMaceCooldown(int currentLevel, boolean hit) {

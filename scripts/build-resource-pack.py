@@ -398,6 +398,21 @@ def write_boots_equipment(output_dir):
     (texture_dir / "singularity_boots.png").write_bytes(png)
 
 
+def write_solstice_equipment(source_dir, output_dir):
+    texture = source_dir / "solstice_chestplate_worn.png"
+    if not texture.is_file():
+        fail(f"Missing Solstice Chestplate worn texture: {texture}")
+    equipment_dir = output_dir / "assets" / "galaxy" / "equipment"
+    texture_dir = output_dir / "assets" / "galaxy" / "textures" / "entity" / "equipment" / "humanoid"
+    equipment_dir.mkdir(parents=True, exist_ok=True)
+    texture_dir.mkdir(parents=True, exist_ok=True)
+    (equipment_dir / "solstice_chestplate.json").write_text(
+        json.dumps({"layers": {"humanoid": [{"texture": "galaxy:solstice_chestplate"}]}}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (texture_dir / "solstice_chestplate.png").write_bytes(texture.read_bytes())
+
+
 # Map source filenames to their registered custom item models.
 MODEL_ALIASES = {
     "astral_sword_rotfix": "astral_sword",
@@ -479,6 +494,8 @@ def main(source_dir, output_dir):
         if pack_assets_dir in image_path.parents:
             continue
         relative_path = image_path.relative_to(source_dir)
+        if relative_path == Path("solstice_chestplate_worn.png"):
+            continue
         texture_key = slug(relative_path.as_posix())
         owner_id = find_item_owner(texture_key.rsplit("/", 1)[-1], item_ids)
         if owner_id is None:
@@ -639,6 +656,8 @@ def main(source_dir, output_dir):
         models_found.add(model_id)
 
     write_boots_equipment(output_dir)
+    if "solstice_chestplate" in models_found:
+        write_solstice_equipment(source_dir, output_dir)
 
     for model_id in sorted(models_found):
         model_path = model_dir / f"{model_id}.json"

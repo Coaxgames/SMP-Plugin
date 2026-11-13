@@ -169,6 +169,7 @@ public final class LegendaryRulesListener implements Listener {
                 && !definition.trackUniqueInstance()
                 && !definition.hasPerPlayerCarryLimit()) {
             boolean itemUpdated = items.refreshCooldownGroup(stack);
+            itemUpdated |= items.refreshMassOrb(stack);
             itemUpdated |= refreshItemModel(stack);
             if (itemUpdated) {
                 event.getItem().setItemStack(stack);
@@ -225,7 +226,9 @@ public final class LegendaryRulesListener implements Listener {
         itemUpdated |= items.refreshStarMaceCooldownLore(stack);
         itemUpdated |= items.refreshKuiperBallLore(stack);
         itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
+        itemUpdated |= items.refreshNebulaCooldownLore(stack);
         itemUpdated |= items.refreshCooldownGroup(stack);
+        itemUpdated |= refreshItemModel(stack);
         if (itemUpdated) {
             event.getItem().setItemStack(stack);
         }
@@ -323,7 +326,9 @@ public final class LegendaryRulesListener implements Listener {
             itemUpdated |= items.refreshStarMaceCooldownLore(stack);
             itemUpdated |= items.refreshKuiperBallLore(stack);
             itemUpdated |= items.refreshCollapsingStarCooldownLore(stack);
+            itemUpdated |= items.refreshNebulaCooldownLore(stack);
             itemUpdated |= items.refreshCooldownGroup(stack);
+            itemUpdated |= items.refreshMassOrb(stack);
             itemUpdated |= refreshItemModel(stack);
             if (itemUpdated) {
                 inventory.setItem(slot, stack);
@@ -500,7 +505,9 @@ public final class LegendaryRulesListener implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
         if (isLegendary(item)
-                || items.identify(item).map(definition -> definition.id().equals("mass_orb")).orElse(false)) {
+                || items.identify(item)
+                        .map(definition -> Set.of("mass_orb", "galaxy_string").contains(definition.id()))
+                        .orElse(false)) {
             event.setCancelled(true);
         }
     }

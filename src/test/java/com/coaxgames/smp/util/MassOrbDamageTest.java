@@ -10,9 +10,11 @@ class MassOrbDamageTest {
     @Test
     void slamDamageMatchesSpecifiedHeightsAndCap() {
         assertEquals(5.0, MassOrbDamage.slamDamage(10.0), 1.0e-9);
+        assertEquals(9.5, MassOrbDamage.slamDamage(19.0), 1.0e-9);
         assertEquals(10.0, MassOrbDamage.slamDamage(20.0), 1.0e-9);
-        assertEquals(20.0, MassOrbDamage.slamDamage(40.0), 1.0e-9);
-        assertEquals(20.0, MassOrbDamage.slamDamage(200.0), 1.0e-9);
+        assertEquals(10.0, MassOrbDamage.slamDamage(21.0), 1.0e-9);
+        assertEquals(10.0, MassOrbDamage.slamDamage(40.0), 1.0e-9);
+        assertEquals(10.0, MassOrbDamage.slamDamage(200.0), 1.0e-9);
         assertThrows(IllegalArgumentException.class, () -> MassOrbDamage.slamDamage(-1));
         assertThrows(IllegalArgumentException.class, () -> MassOrbDamage.slamDamage(Double.NaN));
     }

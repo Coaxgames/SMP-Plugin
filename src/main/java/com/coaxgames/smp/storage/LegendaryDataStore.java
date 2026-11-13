@@ -588,6 +588,31 @@ public final class LegendaryDataStore {
         return expiry;
     }
 
+    public synchronized boolean areOperatorCooldownsEnabled(UUID playerUuid) {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        String path = "operator-cooldowns." + playerUuid;
+        if (!data.contains(path)) {
+            return true;
+        }
+        if (!data.isBoolean(path)) {
+            throw new IllegalStateException("Invalid operator cooldown setting for " + playerUuid);
+        }
+        return data.getBoolean(path);
+    }
+
+    public synchronized void setOperatorCooldownsEnabled(UUID playerUuid, boolean enabled) throws IOException {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        String path = "operator-cooldowns." + playerUuid;
+        Object previous = data.get(path);
+        data.set(path, enabled);
+        try {
+            save();
+        } catch (IOException exception) {
+            data.set(path, previous);
+            throw exception;
+        }
+    }
+
     public synchronized void setCooldownExpiry(UUID playerUuid, String cooldownId, long expiresAtMillis)
             throws IOException {
         Objects.requireNonNull(playerUuid, "playerUuid");
