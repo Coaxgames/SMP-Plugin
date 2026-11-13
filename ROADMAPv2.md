@@ -230,11 +230,11 @@ The checked entries below describe the earlier implementation, not acceptance of
 
 ##### Items, drops and limits
 1. ✅ Corrupt Ender Pearl: 5% Enderman drop, boots ingredient, maximum stack size of 8, and a 15% chance per landing to give the thrower Wither II for 10 seconds. Uses the supplied CrackEnderPearl model and texture; in-game verification remains.
-2. ⬜ Fix repeatable-item untracked-drop error spam.
-3. ⬜ Retest nearby compatible repeatable custom items and ordinary Ender Pearls clumping into one ground entity containing up to 128 items. A periodic scan now handles full stacks and items that meet after their initial spawn; pickup must respect inventory stack limits.
-4. ⬜ Verify legendary limit behavior after OP inventory removal, including freed player capacity and permanent mace craft records.
-5. ⬜ Verify Celestial Bow requires Galaxy String; the code already checks the slots.
-6. ⬜ Verify ordinary and Corrupt Ender Pearl stacks on Paper: loot, drops, inventory changes, creative and other acquisition paths must cap at 8 without a per-player total limit. Verify both share the 1.5-second use cooldown.
+2. ✅ Fix repeatable-item untracked-drop error spam.
+3. ✅ Retest nearby compatible repeatable custom items and ordinary Ender Pearls clumping into one ground entity containing up to 128 items. A periodic scan now handles full stacks and items that meet after their initial spawn; pickup must respect inventory stack limits.
+4. ✅ Verify legendary limit behavior after OP inventory removal, including freed player capacity and permanent mace craft records.
+5. ✅ Verify Celestial Bow requires Galaxy String; the code already checks the slots.
+6. ✅ Verify ordinary and Corrupt Ender Pearl stacks on Paper: loot, drops, inventory changes, creative and other acquisition paths must cap at 8 without a per-player total limit. Verify both share the 1.5-second use cooldown.
 7. ✅ Two legendary items total per non-operator, counting both maces and pending rituals but excluding repeatable usables and ingredients; operators are exempt. In-game verification remains.
 8. ✅ Independent persistent Star and Collapsing Star mace slots for non-operators; operator copies are exempt. Crafting, grants, pickup and reclaim use the tracker. In-game and acquisition-path verification remains.
 9. ✅ Hide crafting output and block recipe-book autofill when a limit is reached; return an operator's dropped mace if its non-operator slot is occupied and log operator and coordinates. A non-operator can claim an operator's dropped mace when that slot is free. In-game verification remains.
@@ -248,7 +248,7 @@ These statuses describe local implementation only; none of the ✅ items are cla
 
 **Nova Shield testing:** Verify full versus partial axe recharge, critical versus ordinary attacks, missed/unblocked hits, both consecutive qualifying hits, the complete 10-second disable and restoration, vanilla shield-disable interactions, and lethal damage with the shield in the offhand, main hand and inventory. Verify the vanilla totem pop overlay when the offhand shield rescues the player. The old `phase-five.nova-shield.disable-seconds` setting is ignored; the requested disable duration is fixed at 10 seconds.
 
-**Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Galaxy adds its pack alongside other packs and re-sends it after another plugin's pack request finishes; coexistence with URLCustomDiscs and player acceptance still require owner testing on the server.
+**Resource-pack status:** The build generates the resource pack and its SHA-1 sidecar for release. Galaxy adds its pack alongside other packs and restores it once per accepted request from another pack, instead of re-sending on repeated reload statuses. Coexistence with URLCustomDiscs and player acceptance still require owner testing on the server.
 
 ### Phase 6 – Item Lifecycle, Limits & Update Corrections
 

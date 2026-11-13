@@ -175,7 +175,7 @@ class ResourcePackServiceTest {
     }
 
     @Test
-    void restoresGalaxyAfterAnotherPackWithoutReplacingIt() throws Exception {
+    void restoresOnlyOnceForEachAcceptedOtherPackRequest() throws Exception {
         PackFixture fixture = packFixture(true);
         UUID otherPack = UUID.randomUUID();
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
@@ -191,8 +191,13 @@ class ResourcePackServiceTest {
         assertEquals("037ee6bad9db952b7db4ac906477a3082dbfd2ce", request.getValue().packs().getFirst().hash());
 
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.SUCCESSFULLY_LOADED));
+        for (int i = 0; i < 3; i++) {
+            fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        }
         verify(fixture.player, times(1)).sendResourcePacks(any(ResourcePackRequest.class));
 
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.FAILED_DOWNLOAD));
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.FAILED_DOWNLOAD));
         verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
     }
@@ -202,14 +207,47 @@ class ResourcePackServiceTest {
         PackFixture fixture = packFixture(false);
         UUID otherPack = UUID.randomUUID();
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, ResourcePackService.PACK_ID, Status.DECLINED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
         verify(fixture.player, never()).sendResourcePacks(any(ResourcePackRequest.class));
 
         fixture.service.onQuit(new PlayerQuitEvent(fixture.player, (Component) null, PlayerQuitEvent.QuitReason.DISCONNECTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
         fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
         ArgumentCaptor<ResourcePackRequest> request = ArgumentCaptor.forClass(ResourcePackRequest.class);
         verify(fixture.player).sendResourcePacks(request.capture());
         assertFalse(request.getValue().required());
+    }
+
+    @Test
+    void tracksOtherRequestsSeparatelyAndClearsPendingOnQuit() throws Exception {
+        PackFixture fixture = packFixture(true);
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.ACCEPTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, second, Status.ACCEPTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.SUCCESSFULLY_LOADED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, second, Status.SUCCESSFULLY_LOADED));
+        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.ACCEPTED));
+        fixture.service.onQuit(new PlayerQuitEvent(fixture.player, (Component) null, PlayerQuitEvent.QuitReason.DISCONNECTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, first, Status.SUCCESSFULLY_LOADED));
+        verify(fixture.player, times(2)).sendResourcePacks(any(ResourcePackRequest.class));
+    }
+
+    @Test
+    void tracksTheSameOtherPackIndependentlyForEachPlayer() throws Exception {
+        PackFixture fixture = packFixture(true);
+        Player second = mock(Player.class);
+        when(second.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(second.isOnline()).thenReturn(true);
+        UUID otherPack = UUID.randomUUID();
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.ACCEPTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(second, otherPack, Status.ACCEPTED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(fixture.player, otherPack, Status.SUCCESSFULLY_LOADED));
+        fixture.service.onPackStatus(new PlayerResourcePackStatusEvent(second, otherPack, Status.SUCCESSFULLY_LOADED));
+        verify(fixture.player).sendResourcePacks(any(ResourcePackRequest.class));
+        verify(second).sendResourcePacks(any(ResourcePackRequest.class));
     }
 
     @Test
