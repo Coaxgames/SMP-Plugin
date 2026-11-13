@@ -54,6 +54,14 @@ public final class GalaxyCommand implements TabExecutor {
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 case "find" -> find(sender, label, args);
+                case "version" -> {
+                    if (args.length != 1) {
+                        sender.sendMessage(Component.text("Usage: /" + label + " version"));
+                    } else {
+                        sender.sendMessage(Component.text(
+                                "Running Galaxy SMP version: " + plugin.getPluginMeta().getVersion()));
+                    }
+                }
                 case "menu" -> {
                     if (sender instanceof Player player) {
                         menu.open(player, 0);
@@ -81,7 +89,8 @@ public final class GalaxyCommand implements TabExecutor {
             return List.of();
         }
         if (args.length == 1) {
-            return matching(List.of("give", "reset", "reset-abilities", "list",             "locate", "find", "menu"), args[0]);
+            return matching(List.of("give", "reset", "reset-abilities", "list",
+                    "locate", "find", "menu", "version"), args[0]);
         }
                     if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
                         return matching(List.of("item"), args[1]);
@@ -401,6 +410,6 @@ public final class GalaxyCommand implements TabExecutor {
         sender.sendMessage(Component.text("Usage: /" + label
                 + " give all | give <player|@p> all | give <player|@p> <item> [count] | reset <item>"
                 + " | reset-abilities <player|selector>"
-                + " | list | locate <item> | find item <uuid>"));
+                + " | list | locate <item> | find item <uuid> | version"));
     }
 }

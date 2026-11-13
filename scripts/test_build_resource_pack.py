@@ -67,6 +67,37 @@ class GalaxyStringPackTests(unittest.TestCase):
             )
 
 
+class SolsticeChestplatePackTests(unittest.TestCase):
+    def test_supplied_item_animation_and_worn_texture_are_bound(self):
+        assets = SCRIPT_PATH.parent.parent / "Textures"
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "source"
+            source.mkdir()
+            for name in (
+                "CrackEnderPearl.bbmodel", "CrackEnderPearl.json",
+                "solstice_chestplate.json", "solstice_chestplate.png",
+                "solstice_chestplate.png.mcmeta", "solstice_chestplate_worn.png",
+            ):
+                shutil.copy2(assets / name, source / name)
+            output = root / "pack"
+            MODULE.main(source, output)
+
+            galaxy = output / "assets" / "galaxy"
+            item = MODULE.read_json(galaxy / "items" / "solstice_chestplate.json")
+            model = MODULE.read_json(galaxy / "models" / "item" / "solstice_chestplate.json")
+            equipment = MODULE.read_json(galaxy / "equipment" / "solstice_chestplate.json")
+            texture = galaxy / "textures" / "item" / "solstice_chestplate" / "solstice_chestplate.png"
+            worn = galaxy / "textures" / "entity" / "equipment" / "humanoid" / "solstice_chestplate.png"
+            self.assertEqual(item["model"]["model"], "galaxy:item/solstice_chestplate")
+            self.assertEqual(model["textures"]["layer0"], "galaxy:item/solstice_chestplate/solstice_chestplate")
+            self.assertEqual(texture.read_bytes(), (assets / "solstice_chestplate.png").read_bytes())
+            self.assertEqual(texture.with_suffix(".png.mcmeta").read_bytes(),
+                             (assets / "solstice_chestplate.png.mcmeta").read_bytes())
+            self.assertEqual(equipment["layers"]["humanoid"][0]["texture"], "galaxy:solstice_chestplate")
+            self.assertEqual(worn.read_bytes(), (assets / "solstice_chestplate_worn.png").read_bytes())
+
+
 class SplitSharedTextureIdsTests(unittest.TestCase):
     def test_faces_keep_their_own_texture_when_ids_are_shared(self):
         source = {

@@ -180,6 +180,17 @@ class AstralSwordAbilityTest {
             assertEquals(1, listener.resetAbilityProgress(attacker));
             listener.onDamage(hit);
             verify(meta, times(6)).addAttributeModifier(eq(speed), any(AttributeModifier.class));
+
+            now.set(189_999);
+            listener.onAstralHeldSlotChange(switchItem);
+            when(plugin.bypassesCooldowns(attacker)).thenReturn(true);
+            listener.onDamage(hit);
+            verify(meta, times(7)).addAttributeModifier(eq(speed), any(AttributeModifier.class));
+            now.set(199_999);
+            listener.onAstralHeldSlotChange(switchItem);
+            when(plugin.bypassesCooldowns(attacker)).thenReturn(false);
+            listener.onDamage(hit);
+            verify(meta, times(7)).addAttributeModifier(eq(speed), any(AttributeModifier.class));
         }
     }
 

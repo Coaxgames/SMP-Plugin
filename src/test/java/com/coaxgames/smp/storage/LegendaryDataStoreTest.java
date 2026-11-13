@@ -67,6 +67,20 @@ class LegendaryDataStoreTest {
     }
 
     @Test
+    void operatorCooldownPreferenceDefaultsOnAndPersistsPerPlayer() throws Exception {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        assertTrue(store.areOperatorCooldownsEnabled(first));
+        store.setOperatorCooldownsEnabled(first, false);
+        LegendaryDataStore reloaded = new LegendaryDataStore(dataDirectory);
+        assertFalse(reloaded.areOperatorCooldownsEnabled(first));
+        assertTrue(reloaded.areOperatorCooldownsEnabled(second));
+        reloaded.setOperatorCooldownsEnabled(first, true);
+        assertTrue(new LegendaryDataStore(dataDirectory).areOperatorCooldownsEnabled(first));
+    }
+
+    @Test
     void atomicallyRecordsCraftedItemAndAllowsNullOwnerForCrafterAutomation() throws Exception {
         UUID itemUuid = UUID.randomUUID();
         LegendaryDataStore firstStore = new LegendaryDataStore(dataDirectory);

@@ -10,7 +10,7 @@ public final class MassOrbDamage {
         if (!Double.isFinite(fallDistance) || fallDistance < 0) {
             throw new IllegalArgumentException("Fall distance must be finite and non-negative.");
         }
-        return Math.min(20.0, fallDistance * 0.5);
+        return Math.min(10.0, fallDistance * 0.5);
     }
 
     public static double impactFraction(

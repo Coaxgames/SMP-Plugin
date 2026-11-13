@@ -24,6 +24,7 @@ class PluginMetadataTest {
             config.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         }
         assertEquals(180L, config.getLong("rituals.duration-seconds"));
+        assertEquals(5L, config.getLong("cooldowns.nebula_spear"));
         for (String path : java.util.List.of(
                 "rituals.duration-seconds",
                 "rituals.reveal-interval-seconds",
@@ -65,6 +66,30 @@ class PluginMetadataTest {
         assertEquals(4.0, com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "a").orElse(-1.0));
         assertEquals(2.5, com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "b").orElse(-1.0));
         assertTrue(com.coaxgames.smp.util.ConfigNumbers.finiteNumber(edited, "c").isEmpty());
+    }
+
+    @Test
+    void migratesOldNebulaCooldownButPreservesCustomSettings() {
+        var config = new YamlConfiguration();
+        config.set("cooldowns.nebula_spear", 45);
+        assertTrue(GalaxySmpPlugin.migrateNebulaCooldown(config));
+        assertEquals(5L, config.getLong("cooldowns.nebula_spear"));
+        config.set("cooldowns.nebula_spear", 8);
+        assertFalse(GalaxySmpPlugin.migrateNebulaCooldown(config));
+        assertEquals(8L, config.getLong("cooldowns.nebula_spear"));
+        config.set("cooldowns.nebula_spear", 45.5);
+        assertFalse(GalaxySmpPlugin.migrateNebulaCooldown(config));
+    }
+
+    @Test
+    void migratesOldMassOrbCooldownButPreservesCustomSettings() {
+        var config = new YamlConfiguration();
+        config.set("cooldowns.mass_orb", 20);
+        assertTrue(GalaxySmpPlugin.migrateMassOrbCooldown(config));
+        assertEquals(120L, config.getLong("cooldowns.mass_orb"));
+        config.set("cooldowns.mass_orb", 60);
+        assertFalse(GalaxySmpPlugin.migrateMassOrbCooldown(config));
+        assertEquals(60L, config.getLong("cooldowns.mass_orb"));
     }
 
     @Test
@@ -133,7 +158,7 @@ class PluginMetadataTest {
             assertEquals(6_000L, config.getLong("phase-four.solstice-chestplate.trigger-tick"));
             assertEquals(30L, config.getLong("cooldowns.star_mace"));
             assertEquals(30L, config.getLong("cooldowns.collapsing_star_mace"));
-            assertEquals(20L, config.getLong("cooldowns.mass_orb"));
+            assertEquals(120L, config.getLong("cooldowns.mass_orb"));
             assertEquals(1_500L, config.getLong("phase-four.kuiper-ball.cooldown-millis"));
             assertEquals(4.0, config.getDouble("phase-four.kuiper-ball.burst-radius"));
             assertEquals(1.5, config.getDouble("phase-four.kuiper-ball.burst-strength"));

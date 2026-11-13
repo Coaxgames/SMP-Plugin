@@ -294,7 +294,7 @@ public final class PhaseFiveItems {
         @Override
         public java.util.Optional<Duration> cooldown() {
             return switch (id) {
-                case "nebula_spear" -> java.util.Optional.of(Duration.ofSeconds(45));
+                case "nebula_spear" -> java.util.Optional.of(Duration.ofSeconds(5));
                 case "nova_shield" -> java.util.Optional.of(Duration.ofMinutes(10));
                 default -> java.util.Optional.empty();
             };

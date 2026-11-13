@@ -10,15 +10,19 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 public final class ItemCooldownMarkers {
     public static final List<String> PERSISTED_ITEMS =
-            List.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace");
+            List.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nebula_spear");
     private static final Set<String> ITEMS =
-            Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nova_shield");
+            Set.of("kuiper_ball", "mass_orb", "star_mace", "collapsing_star_mace", "nebula_spear", "nova_shield");
 
     private ItemCooldownMarkers() {
     }
 
     public static boolean supported(String itemId) {
         return ITEMS.contains(itemId);
+    }
+
+    public static boolean isCustomGroup(NamespacedKey group) {
+        return ITEMS.stream().anyMatch(id -> group(id).equals(group));
     }
 
     public static NamespacedKey group(String itemId) {

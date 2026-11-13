@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.bukkit.NamespacedKey;
 import org.junit.jupiter.api.Test;
 
 class MaceDamageTest {
@@ -30,6 +31,15 @@ class MaceDamageTest {
         }
         assertThrows(IllegalArgumentException.class,
                 () -> MaceDamage.nextStarMaceWindBurst(0, true));
+    }
+
+    @Test
+    void onlyDamagingVanillaMaceSmashesAdvanceStarMace() {
+        NamespacedKey smash = NamespacedKey.minecraft("mace_smash");
+        assertFalse(MaceDamage.advancesStarMace(4.0, NamespacedKey.minecraft("player_attack")));
+        assertFalse(MaceDamage.advancesStarMace(4.0, new NamespacedKey("other", "mace_smash")));
+        assertFalse(MaceDamage.advancesStarMace(0.0, smash));
+        assertTrue(MaceDamage.advancesStarMace(4.0, smash));
     }
 
     @Test

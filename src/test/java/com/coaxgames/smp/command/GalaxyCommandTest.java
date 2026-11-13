@@ -12,6 +12,7 @@ import com.coaxgames.smp.item.LegendaryItem;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import com.coaxgames.smp.ritual.RitualManager;
 import com.coaxgames.smp.storage.LegendaryDataStore;
+import io.papermc.paper.plugin.configuration.PluginMeta;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,40 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.junit.jupiter.api.Test;
+import net.kyori.adventure.text.Component;
 
 class GalaxyCommandTest {
+    @Test
+    void versionReportsRunningPluginMetadataAndCompletes() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        PluginMeta metadata = mock(PluginMeta.class);
+        CommandSender sender = mock(CommandSender.class);
+        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(plugin.getPluginMeta()).thenReturn(metadata);
+        when(metadata.getVersion()).thenReturn("2.22.99");
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+
+        command.onCommand(sender, null, "galaxy", new String[] {"version"});
+
+        verify(sender).sendMessage(Component.text("Running Galaxy SMP version: 2.22.99"));
+        assertEquals(List.of("version"), command.onTabComplete(sender, null, "galaxy", new String[] {"ver"}));
+    }
+
+    @Test
+    void versionRequiresAdminAndRejectsExtraArguments() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        CommandSender sender = mock(CommandSender.class);
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        command.onCommand(sender, null, "galaxy", new String[] {"version"});
+        verify(sender).sendMessage(Component.text("You do not have permission to use this command."));
+        verify(plugin, never()).getPluginMeta();
+
+        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        command.onCommand(sender, null, "galaxy", new String[] {"version", "extra"});
+        verify(sender).sendMessage(Component.text("Usage: /galaxy version"));
+        verify(plugin, never()).getPluginMeta();
+    }
+
     @Test
     void giveAllTargetsTheNamedPlayerAndKeepsOperatorGrantsExempt() throws Exception {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);

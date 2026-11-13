@@ -572,6 +572,10 @@ public final class LegendaryItemRegistry {
                         "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.",
                         NamedTextColor.GRAY));
                 changed = true;
+            } else if (text.equals("Wind Burst rises by one on each hit, up to V.")) {
+                updatedLore.set(i, Component.text(
+                        "Wind Burst rises by one on each mace smash, up to V.", NamedTextColor.GRAY));
+                changed = true;
             }
         }
         if (changed) {
@@ -596,6 +600,86 @@ public final class LegendaryItemRegistry {
             throw new IllegalStateException("Could not update cooldown group for " + id + ".");
         }
         return true;
+    }
+
+    public boolean refreshNebulaCooldownLore(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("nebula_spear")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            return false;
+        }
+        String updatedText = "Cooldown: " + configLong("cooldowns.nebula_spear", 5) + " seconds.";
+        List<Component> updatedLore = new ArrayList<>(lore);
+        boolean changed = false;
+        for (int i = 0; i < updatedLore.size(); i++) {
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(updatedLore.get(i));
+            if (text.startsWith("Cooldown: ") && text.endsWith(" seconds.") && !text.equals(updatedText)) {
+                updatedLore.set(i, Component.text(updatedText, NamedTextColor.GRAY));
+                changed = true;
+            }
+        }
+        if (changed) {
+            meta.lore(updatedLore);
+            if (!item.setItemMeta(meta)) {
+                throw new IllegalStateException("Could not update Nebula Spear cooldown lore.");
+            }
+        }
+        return changed;
+    }
+
+    public boolean refreshMassOrb(ItemStack item) {
+        if (identify(item).map(definition -> !definition.id().equals("mass_orb")).orElse(true)) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        boolean changed = false;
+        if (!meta.hasMaxStackSize() || meta.getMaxStackSize() != 1) {
+            meta.setMaxStackSize(1);
+            changed = true;
+        }
+        List<Component> lore = meta.lore();
+        if (lore != null) {
+            List<Component> updatedLore = new ArrayList<>(lore);
+            for (int i = 0; i < updatedLore.size(); i++) {
+                String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(updatedLore.get(i));
+                String replacement = null;
+                if (text.startsWith("While held, falling onto enemies deals ")) {
+                    replacement = "Enemy slam (while held): 1/4 heart per block, up to 5 hearts.";
+                } else if (text.startsWith("Enemy slam")) {
+                    replacement = "Enemy slam (while held): 1/4 heart per block, up to 5 hearts.";
+                } else if (text.startsWith("A slam attempt starts a ")) {
+                    replacement = "A slam starts a " + configLong("cooldowns.mass_orb", 120) + "-second cooldown.";
+                } else if (text.startsWith("A slam starts a ")) {
+                    replacement = "A slam starts a " + configLong("cooldowns.mass_orb", 120) + "-second cooldown.";
+                } else if (text.startsWith("Fall damage is capped at ")
+                        || text.startsWith("Holder fall damage is capped at ")
+                        || text.startsWith("Holder fall damage: up to ")) {
+                    replacement = massOrbHolderDamageLore();
+                }
+                if (replacement != null && !replacement.equals(text)) {
+                    updatedLore.set(i, Component.text(replacement, NamedTextColor.GRAY));
+                    changed = true;
+                }
+            }
+            if (changed) {
+                meta.lore(updatedLore);
+            }
+        }
+        if (changed && !item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not update Mass Orb metadata.");
+        }
+        return changed;
+    }
+
+    private String massOrbHolderDamageLore() {
+        double healthPoints = configNumber("phase-four.mass-orb.maximum-damage", 40.0);
+        String hearts = java.math.BigDecimal.valueOf(healthPoints / 2.0).stripTrailingZeros().toPlainString();
+        return "Holder fall damage: up to " + hearts + " hearts before reduction.";
     }
 
     public boolean refreshCollapsingStarCooldownLore(ItemStack item) {
@@ -737,10 +821,9 @@ public final class LegendaryItemRegistry {
                             + " milliseconds per throw.");
             case "mass_orb" -> List.of(
                     "While carried, greatly reduces fall damage.",
-                    "While held, falling onto enemies deals 1/4 heart per block, up to 10 hearts.",
-                    "A slam attempt starts a " + configLong("cooldowns.mass_orb", 20) + "-second cooldown.",
-                    "Fall damage is capped at " + configNumber("phase-four.mass-orb.maximum-damage", 40.0)
-                            + " health points.");
+                    "Enemy slam (while held): 1/4 heart per block, up to 5 hearts.",
+                    "A slam starts a " + configLong("cooldowns.mass_orb", 120) + "-second cooldown.",
+                    massOrbHolderDamageLore());
             case "astral_sword" -> List.of(
                     "Hits increase sword speed by 1.35x (max 4); 10s effect, then 30s cooldown.");
             case "void_sword" -> List.of(
@@ -754,7 +837,7 @@ public final class LegendaryItemRegistry {
                             + ": Speed I, Strength I, and Resistance II for "
                             + configLong("phase-four.daily-effect-seconds", 300) + " seconds while worn.");
             case "star_mace" -> List.of(
-                    "Wind Burst rises by one on each hit, up to V.",
+                    "Wind Burst rises by one on each mace smash, up to V.",
                     "Wind Burst resets to I after 20 seconds without use.",
                     "A miss resets Wind Burst to I; at V, it starts a 30-second cooldown.",
                     "Attacks are blocked during cooldown.",
@@ -766,7 +849,7 @@ public final class LegendaryItemRegistry {
                     "Cooldown: 30 seconds after 3 successful hits; attacks are blocked.");
             case "nebula_spear" -> List.of(
                     "Every 5 successful Lunge activations: thrust forward and damage targets ahead.",
-                    "Cooldown: " + configLong("cooldowns.nebula_spear", 45) + " seconds.");
+                    "Cooldown: " + configLong("cooldowns.nebula_spear", 5) + " seconds.");
             case "wormhole_trident" -> List.of(
                     "Every 5 successful Riptides: open two reusable rifts for "
                             + configLong("phase-five.wormhole-trident.lifetime-after-passage-seconds", 50) + " seconds.",

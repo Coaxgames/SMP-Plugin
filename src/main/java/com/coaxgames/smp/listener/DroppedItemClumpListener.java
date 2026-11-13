@@ -171,6 +171,7 @@ public final class DroppedItemClumpListener implements Listener {
         while (uncollected > 0) {
             ItemStack stack = item.getItemStack().clone();
             items.refreshCooldownGroup(stack);
+            items.refreshMassOrb(stack);
             int amount = Math.min(uncollected, stack.getMaxStackSize());
             stack.setAmount(amount);
             int leftovers = inventory.addItem(stack).values().stream().mapToInt(ItemStack::getAmount).sum();

@@ -21,9 +21,9 @@ cooldowns:
   default-seconds: 0
   star_mace: 30
   collapsing_star_mace: 30
-  # Starts when the held Mass Orb attempts a fall-slam.
-  mass_orb: 20
-  nebula_spear: 45
+  # Starts when the held Mass Orb damages a target with a fall-slam.
+  mass_orb: 120
+  nebula_spear: 5
   nova_shield: 600
 
 phase-four:
@@ -55,7 +55,7 @@ phase-four:
     # Holder fall damage: max(0, fall-distance - 3) * damage-per-block,
     # capped at maximum-damage, then reduced by the configured Feather Falling XV placeholder.
     # Damage is in Minecraft health points. Enemy slam damage is separate: 0.5 points
-    # per block fallen, up to 20 points, when the holder falls onto an entity.
+    # per block fallen, up to 10 points (5 hearts), when the holder falls onto an entity.
     free-fall-distance: 3.0
     damage-per-block: 1.0
     maximum-damage: 40.0

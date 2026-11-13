@@ -428,7 +428,7 @@ public final class PhaseFourAbilityListener implements Listener {
         long now = clock.getAsLong();
         Long expiry = data.get(astralExpiryKey, PersistentDataType.LONG);
         Long cooldown = data.get(astralCooldownKey, PersistentDataType.LONG);
-        if (expiry == null && cooldown != null && now < cooldown) {
+        if (expiry == null && cooldown != null && now < cooldown && !plugin.bypassesCooldowns(player)) {
             return;
         }
         Byte hits = data.get(astralLevelKey, PersistentDataType.BYTE);
