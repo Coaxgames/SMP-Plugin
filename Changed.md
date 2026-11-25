@@ -4,6 +4,9 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-24
 
+- Added `/galaxy help [1-3]`, a three-page operator help guide covering every Galaxy, cooldown, and update command with clickable page navigation.
+- `/galaxy find` now lists legendary item entities currently present in loaded worlds with operator-only clickable live teleport links. Clicking either `find` or `locate` resolves the UUID again at click time so moving items and holders use their current position.
+- `/galaxy locate <item>` now retains permanent UUID history while marking deleted/Creative-removed copies inactive, refreshing active holder/world positions, and labeling operator-owned copies.
 - Capped TNT minecart damage at 14 health points (7 hearts) by scaling only over-cap base damage according to the event's final modifiers. In-game verification remains.
 - Invisible players now have only their name replaced with vanilla obfuscated random text in chat, advancement messages, and player-kill death messages. The generated text excludes every letter from the account name. In-game verification remains.
 - Replaced the vanilla golden apple and anvil recipes with the requested four-ingot golden apple shape and iron-ingot/iron-block anvil shape. In-game verification remains.
