@@ -530,6 +530,9 @@ public final class LegendaryDataStore {
         data.set(path + ".owner", ownerUuid == null ? null : ownerUuid.toString());
         data.set(path + ".owner_operator", ownerOperator);
         data.set(path + ".active", active);
+        if (active) {
+            data.set(path + ".history_hidden", null);
+        }
         data.set(path + ".updated_at", System.currentTimeMillis());
         if (location == null || location.getWorld() == null) {
             setStoredLocation(path, null, 0.0, 0.0, 0.0);
@@ -562,7 +565,7 @@ public final class LegendaryDataStore {
                 throw new IllegalStateException("Missing item id in persistent data for " + itemUuid);
             }
             validateId(trackedItemId);
-            if (!itemId.equals(trackedItemId)) {
+            if (!itemId.equals(trackedItemId) || data.getBoolean(path + ".history_hidden", false)) {
                 continue;
             }
             records.add(new ItemRecord(
@@ -580,6 +583,51 @@ public final class LegendaryDataStore {
         }
         records.sort(Comparator.comparing(record -> record.itemUuid().toString()));
         return List.copyOf(records);
+    }
+
+    public synchronized int clearItemHistory(String itemId) throws IOException {
+        if (itemId != null) {
+            validateId(itemId);
+        }
+        ConfigurationSection section = data.getConfigurationSection("items");
+        if (section == null) {
+            return 0;
+        }
+        String snapshot = data.saveToString();
+        int cleared = 0;
+        for (String key : section.getKeys(false)) {
+            String path = "items." + key;
+            if ((itemId == null || itemId.equals(data.getString(path + ".id")))
+                    && !data.getBoolean(path + ".history_hidden", false)) {
+                data.set(path + ".history_hidden", true);
+                cleared++;
+            }
+        }
+        if (cleared > 0) {
+            try {
+                save();
+            } catch (IOException exception) {
+                restoreSnapshot(snapshot, exception);
+                throw exception;
+            }
+        }
+        return cleared;
+    }
+
+    public synchronized boolean clearItemHistory(UUID itemUuid) throws IOException {
+        Objects.requireNonNull(itemUuid, "itemUuid");
+        String path = itemPath(itemUuid);
+        if (!data.contains(path + ".id") || data.getBoolean(path + ".history_hidden", false)) {
+            return false;
+        }
+        data.set(path + ".history_hidden", true);
+        try {
+            save();
+        } catch (IOException exception) {
+            data.set(path + ".history_hidden", null);
+            throw exception;
+        }
+        return true;
     }
 
     public synchronized ItemRecord getTrackedItem(UUID itemUuid) {

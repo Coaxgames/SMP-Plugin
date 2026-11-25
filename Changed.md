@@ -4,6 +4,7 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-24
 
+- Added operator `/galaxy clear-history <item|all>` and per-entry `[remove]` buttons in locate/find. Removal checks loaded drops, online inventories and cursors; it cannot search unloaded chunks or offline players and refuses active rituals or reclaim barrels. Locate reports unfound items as unknown, not active. Clearing history preserves item identities and craft limits; new sightings can appear again. In-game verification remains.
 - Added `/galaxy help [1-3]`, a three-page operator help guide covering every Galaxy, cooldown, and update command with clickable page navigation.
 - `/galaxy find` now lists legendary item entities currently present in loaded worlds with operator-only clickable live teleport links. Clicking either `find` or `locate` resolves the UUID again at click time so moving items and holders use their current position.
 - `/galaxy locate <item>` now retains permanent UUID history while marking deleted/Creative-removed copies inactive, refreshing active holder/world positions, and labeling operator-owned copies.

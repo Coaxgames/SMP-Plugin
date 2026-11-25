@@ -776,9 +776,10 @@ public final class LegendaryRulesListener implements Listener {
                     ? "unknown" : location.getWorld().getName()
                             + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
             String status = ownerUuid + ":" + ownerOperator + ":" + active + ":" + signature;
-            if (!status.equals(trackedPositions.put(itemUuid, status))) {
+            if (!status.equals(trackedPositions.get(itemUuid))) {
                 plugin.getDataStore().updateItemTracking(
                         itemId, itemUuid, ownerUuid, ownerOperator, location, active);
+                trackedPositions.put(itemUuid, status);
             }
             return true;
         } catch (IOException | IllegalArgumentException | IllegalStateException exception) {
