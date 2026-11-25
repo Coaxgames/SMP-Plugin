@@ -57,6 +57,8 @@ public final class GalaxyCommand implements TabExecutor {
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 case "find" -> find(sender, label, args);
+                case "clear-history" -> clearHistory(sender, label, args);
+                case "remove-item" -> removeItem(sender, label, args);
                 case "version" -> {
                     if (args.length != 1) {
                         sender.sendMessage(Component.text("Usage: /" + label + " version"));
@@ -93,7 +95,13 @@ public final class GalaxyCommand implements TabExecutor {
         }
         if (args.length == 1) {
             return matching(List.of("give", "reset", "reset-abilities", "list",
-                    "locate", "find", "menu", "version", "help"), args[0]);
+                    "locate", "find", "clear-history", "remove-item", "menu", "version", "help"), args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("clear-history")) {
+            List<String> ids = new ArrayList<>(plugin.getLegendaryItems().getAll().stream()
+                    .map(LegendaryItem::id).toList());
+            ids.add("all");
+            return matching(ids, args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
             return matching(List.of("1", "2", "3"), args[1]);
@@ -343,13 +351,15 @@ public final class GalaxyCommand implements TabExecutor {
                             "Open the operator item menu."));
             case 2 -> List.of(
                     helpLine("/" + label + " locate <item>",
-                            "Show retained UUID history, current holder/world position, state, operator ownership, and last update."),
+                            "Show item history and whether each UUID is currently found."),
                     helpLine("/" + label + " find",
                             "List current legendary item drops in loaded worlds."),
                     helpLine("/" + label + " find item <uuid>",
                             "Re-resolve a listed item and teleport to its current position."),
-                    helpLine("Locate/Find [teleport]",
-                            "Clickable links resolve the live position when clicked."));
+                    helpLine("/" + label + " clear-history <item|all>",
+                            "Clear locate history without removing items or craft limits."),
+                    helpLine("Locate/Find [remove]",
+                            "Clear one entry and remove matching loaded drops or online inventory items."));
             default -> List.of(
                     helpLine("/" + label + " reset <item>",
                             "Clear its cooldowns without resetting permanent craft history."),
@@ -420,10 +430,11 @@ public final class GalaxyCommand implements TabExecutor {
             return;
         }
         for (ItemRecord record : records) {
+            LiveItem live = findLiveItem(record.itemUuid());
             String owner = playerName(record.ownerUuid())
                     + (record.ownerOperator() ? " (operator-owned)" : "");
             String location = record.world() == null
-                    ? "inactive/no current location"
+                    ? "last location unknown"
                     : String.format(java.util.Locale.ROOT, "%s (%.1f, %.1f, %.1f)",
                             record.world(), record.x(), record.y(), record.z());
             String updated = record.updatedAtMillis() <= 0L
@@ -432,17 +443,11 @@ public final class GalaxyCommand implements TabExecutor {
                             .atZone(java.time.ZoneId.systemDefault())
                             .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             Component message = Component.text(record.itemUuid()
-                    + " | state: " + (record.active() ? "active" : "deleted/inactive")
-                    + " | owner: " + owner + " | " + location + " | updated: " + updated);
-            if (sender instanceof Player && record.active() && record.world() != null) {
-                String worldKey = plugin.getServer().getWorld(record.world()) == null
-                        ? null : plugin.getServer().getWorld(record.world()).getKey().asString();
-                if (worldKey != null) {
-                    String command = "/galaxy find item " + record.itemUuid();
-                    message = message.append(Component.text(" [teleport]", NamedTextColor.AQUA)
-                            .clickEvent(ClickEvent.runCommand(command))
-                            .hoverEvent(Component.text("Find this item's current live position and teleport")));
-                }
+                    + " | state: " + (live == null ? "unknown (not found in loaded worlds or online inventories)" : "found")
+                    + " | last owner: " + owner + " | last location: " + location + " | updated: " + updated);
+            if (sender instanceof Player player && player.isOp()) {
+                message = message.append(teleportButton(label, record.itemUuid()))
+                        .append(removeButton(label, record.itemUuid()));
             }
             sender.sendMessage(message);
         }
@@ -459,6 +464,10 @@ public final class GalaxyCommand implements TabExecutor {
         }
         if (args.length != 3 || !args[1].equalsIgnoreCase("item")) {
             sender.sendMessage(Component.text("Usage: /" + label + " find [item <uuid>]"));
+            return;
+        }
+        if (!player.isOp()) {
+            sender.sendMessage(Component.text("Only operators can teleport to items."));
             return;
         }
         UUID key;
@@ -508,13 +517,108 @@ public final class GalaxyCommand implements TabExecutor {
         for (var entry : found.entrySet()) {
             UUID uuid = entry.getKey();
             LiveItem item = entry.getValue();
-            operator.sendMessage(Component.text(item.name() + " (" + item.itemId() + ") at "
+            Component message = Component.text(item.name() + " (" + item.itemId() + ") at "
                             + item.location().getBlockX() + ", " + item.location().getBlockY() + ", "
-                            + item.location().getBlockZ() + " in " + item.location().getWorld().getName())
-                    .append(Component.text(" [teleport]", NamedTextColor.AQUA)
-                            .clickEvent(ClickEvent.runCommand("/galaxy find item " + uuid))
-                            .hoverEvent(Component.text("Resolve UUID " + uuid + " at click time"))));
+                            + item.location().getBlockZ() + " in " + item.location().getWorld().getName());
+            if (operator.isOp()) {
+                message = message.append(teleportButton("galaxy", uuid)).append(removeButton("galaxy", uuid));
+            }
+            operator.sendMessage(message);
         }
+    }
+
+    private Component teleportButton(String label, UUID uuid) {
+        return Component.text(" [teleport]", NamedTextColor.AQUA)
+                .clickEvent(ClickEvent.runCommand("/" + label + " find item " + uuid))
+                .hoverEvent(Component.text("Resolve the current live position and teleport"));
+    }
+
+    private Component removeButton(String label, UUID uuid) {
+        return Component.text(" [remove]", NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/" + label + " remove-item " + uuid))
+                .hoverEvent(Component.text("Clear history and remove matching loaded drops and online inventory items"));
+    }
+
+    private boolean mayManageHistory(CommandSender sender) {
+        if (sender instanceof Player player && !player.isOp()) {
+            sender.sendMessage(Component.text("Only operators can clear history or remove items."));
+            return false;
+        }
+        return true;
+    }
+
+    private void clearHistory(CommandSender sender, String label, String[] args) throws IOException {
+        if (!mayManageHistory(sender)) {
+            return;
+        }
+        if (args.length != 2) {
+            sender.sendMessage(Component.text("Usage: /" + label + " clear-history <item|all>"));
+            return;
+        }
+        String itemId = args[1].equalsIgnoreCase("all") ? null : args[1];
+        if (itemId != null && plugin.getLegendaryItems().get(itemId).isEmpty()) {
+            sender.sendMessage(Component.text("Unknown legendary item: " + itemId));
+            return;
+        }
+        int count = plugin.getDataStore().clearItemHistory(itemId);
+        sender.sendMessage(Component.text("Cleared " + count
+                + " locate history entries. Items and craft limits were not removed; new sightings may appear again."));
+    }
+
+    private void removeItem(CommandSender sender, String label, String[] args) throws IOException {
+        if (!mayManageHistory(sender)) {
+            return;
+        }
+        if (args.length != 2) {
+            sender.sendMessage(Component.text("Usage: /" + label + " remove-item <uuid>"));
+            return;
+        }
+        UUID key;
+        try {
+            key = UUID.fromString(args[1]);
+        } catch (IllegalArgumentException exception) {
+            sender.sendMessage(Component.text("That is not a valid UUID."));
+            return;
+        }
+        if (plugin.getDataStore().hasActiveRitual(key)
+                || plugin.getDataStore().getReclaimMarkers().stream()
+                        .anyMatch(marker -> marker.itemUuid().equals(key))) {
+            sender.sendMessage(Component.text(
+                    "Cannot remove an item in an active ritual or reclaim barrel; its protected state was not changed."));
+            return;
+        }
+        boolean cleared = plugin.getDataStore().clearItemHistory(key);
+        int removed = 0;
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.Item item : world.getEntitiesByClass(org.bukkit.entity.Item.class)) {
+                ItemStack stack = item.getItemStack();
+                if (matchesItem(key, stack) || key.equals(item.getUniqueId())
+                        && plugin.getLegendaryItems().identify(stack).isPresent()) {
+                    item.remove();
+                    removed++;
+                }
+            }
+        }
+        for (Player holder : plugin.getServer().getOnlinePlayers()) {
+            var inventory = holder.getInventory();
+            for (int slot = 0; slot < inventory.getSize(); slot++) {
+                if (matchesItem(key, inventory.getItem(slot))) {
+                    inventory.setItem(slot, null);
+                    removed++;
+                }
+            }
+            if (matchesItem(key, holder.getItemOnCursor())) {
+                holder.setItemOnCursor(null);
+                removed++;
+            }
+        }
+        sender.sendMessage(Component.text((cleared ? "History cleared. " : "No visible history entry. ")
+                + "Removed " + removed + " matching loaded drops/inventory or cursor stacks. "
+                + "Offline players, unloaded chunks, containers, rituals and reclaim barrels were not searched."));
+    }
+
+    private boolean matchesItem(UUID key, ItemStack stack) {
+        return stack != null && plugin.getLegendaryItems().getUniqueId(stack).filter(key::equals).isPresent();
     }
 
     private LiveItem findLiveItem(UUID key) {
@@ -527,6 +631,9 @@ public final class GalaxyCommand implements TabExecutor {
             }
         }
         for (Player holder : Bukkit.getOnlinePlayers()) {
+            if (matchesItem(key, holder.getItemOnCursor())) {
+                return liveItem(holder.getItemOnCursor(), holder.getLocation());
+            }
             ItemStack[] inventory = holder.getInventory().getContents();
             ItemStack[] armor = holder.getInventory().getArmorContents();
             for (ItemStack stack : java.util.stream.Stream.concat(
@@ -603,6 +710,7 @@ public final class GalaxyCommand implements TabExecutor {
         sender.sendMessage(Component.text("Usage: /" + label
                 + " give all | give <player|@p> all | give <player|@p> <item> [count] | reset <item>"
                 + " | reset-abilities <player|selector>"
-                + " | list | locate <item> | find [item <uuid>] | version | help [1-3]"));
+                + " | list | locate <item> | find [item <uuid>] | clear-history <item|all>"
+                + " | remove-item <uuid> | version | help [1-3]"));
     }
 }

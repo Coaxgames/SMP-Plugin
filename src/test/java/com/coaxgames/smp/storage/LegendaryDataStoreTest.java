@@ -51,6 +51,33 @@ class LegendaryDataStoreTest {
     }
 
     @Test
+    void clearingLocateHistoryPreservesIdentityAndCraftQuotaAndNewSightingsReturn() throws Exception {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        Location location = new Location(null, 1, 2, 3);
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        store.recordAdministrativeGrant("astral_sword", 1, first, owner, location);
+        store.recordAdministrativeGrant("void_sword", 1, second, owner, location);
+
+        assertTrue(store.clearItemHistory(first));
+        assertFalse(store.clearItemHistory(first));
+        assertEquals(1, store.clearItemHistory("void_sword"));
+        LegendaryDataStore reloaded = new LegendaryDataStore(dataDirectory);
+        assertTrue(reloaded.getTrackedItems("astral_sword").isEmpty());
+        assertTrue(reloaded.getTrackedItems("void_sword").isEmpty());
+        assertEquals(first, reloaded.getTrackedItem(first).itemUuid());
+        assertEquals(1, reloaded.getCraftCount("astral_sword"));
+
+        reloaded.updateItemTracking("astral_sword", first, owner, false, location, false);
+        assertTrue(reloaded.getTrackedItems("astral_sword").isEmpty());
+        reloaded.updateItemTracking("astral_sword", first, owner, false, location, true);
+        assertEquals(first, new LegendaryDataStore(dataDirectory)
+                .getTrackedItems("astral_sword").getFirst().itemUuid());
+        assertEquals(1, reloaded.clearItemHistory((String) null));
+    }
+
+    @Test
     void cooldownExpirySurvivesReloadAndCanBeClearedWithoutResettingCraftHistory() throws Exception {
         UUID playerUuid = UUID.randomUUID();
         LegendaryDataStore firstStore = new LegendaryDataStore(dataDirectory);
