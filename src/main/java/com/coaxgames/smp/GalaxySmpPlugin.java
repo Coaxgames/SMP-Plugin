@@ -39,6 +39,7 @@ public final class GalaxySmpPlugin extends JavaPlugin {
     private RitualManager ritualManager;
     private PhaseFourDailyEffectManager phaseFourDailyEffects;
     private PhaseFourAbilityListener phaseFourAbilityListener;
+    private LegendaryRulesListener legendaryRules;
     private PhaseFiveMaceAbilityListener phaseFiveMaceAbilityListener;
     private PhaseFiveAbilityListener phaseFiveAbilityListener;
     private com.coaxgames.smp.pack.PluginUpdateService pluginUpdates;
@@ -101,8 +102,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         DroppedItemClumpListener clumps = new DroppedItemClumpListener(this, legendaryItems);
         getServer().getPluginManager().registerEvents(clumps, this);
         clumps.start();
-        LegendaryRulesListener legendaryRules = new LegendaryRulesListener(this);
+        legendaryRules = new LegendaryRulesListener(this);
         getServer().getPluginManager().registerEvents(legendaryRules, this);
+        legendaryRules.startTracking();
         for (var online : getServer().getOnlinePlayers()) {
             legendaryRules.refreshItemModels(online.getInventory());
             for (String id : com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS) {
@@ -165,6 +167,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (legendaryRules != null) {
+            legendaryRules.shutdown();
+        }
         if (pluginUpdates != null) {
             pluginUpdates.shutdown();
         }

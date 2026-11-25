@@ -67,11 +67,27 @@ public final class LegendaryRulesListener implements Listener {
     private final GalaxySmpPlugin plugin;
     private final LegendaryItemRegistry items;
     private final ReclaimableItemService reclaim;
+    private final java.util.Map<UUID, String> trackedPositions = new java.util.HashMap<>();
+    private org.bukkit.scheduler.BukkitTask trackingTask;
 
     public LegendaryRulesListener(GalaxySmpPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         items = plugin.getLegendaryItems();
         reclaim = plugin.getReclaimableItems();
+    }
+
+    public void startTracking() {
+        if (trackingTask == null) {
+            trackingTask = plugin.getServer().getScheduler().runTaskTimer(
+                    plugin, this::refreshTrackedLocations, 20L, 20L);
+        }
+    }
+
+    public void shutdown() {
+        if (trackingTask != null) {
+            trackingTask.cancel();
+            trackingTask = null;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -216,7 +232,8 @@ public final class LegendaryRulesListener implements Listener {
         if (!items.isLegendary(stack)) {
             return;
         }
-        if (!persistOwnerAndLocation(stack, player.getUniqueId(), player.getLocation())) {
+        if (!persistOwnerLocationAndStatus(
+                stack, player.getUniqueId(), player.isOp(), player.getLocation(), true)) {
             event.setCancelled(true);
             return;
         }
@@ -260,7 +277,8 @@ public final class LegendaryRulesListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (items.isLegendary(stack) && !persistLocation(stack, event.getItemDrop().getLocation())) {
+        if (items.isLegendary(stack) && !persistOwnerLocationAndStatus(
+                stack, null, false, event.getItemDrop().getLocation(), true)) {
             event.setCancelled(true);
         }
     }
@@ -279,7 +297,8 @@ public final class LegendaryRulesListener implements Listener {
         Player player = event.getPlayer();
         for (ItemStack stack : allCarriedItems(player)) {
             if (items.isLegendary(stack)) {
-                persistOwnerAndLocation(stack, player.getUniqueId(), player.getLocation());
+                persistOwnerLocationAndStatus(
+                        stack, player.getUniqueId(), player.isOp(), player.getLocation(), true);
             }
         }
     }
@@ -480,8 +499,40 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerInventorySlotChange(PlayerInventorySlotChangeEvent event) {
         ItemStack stack = event.getNewItemStack();
+        updateInventoryTracking(event, stack);
         if (items.removeForbiddenLunge(stack)) {
             event.getPlayer().getInventory().setItem(event.getSlot(), stack);
+        }
+    }
+
+    private void updateInventoryTracking(PlayerInventorySlotChangeEvent event, ItemStack newStack) {
+        ItemStack oldStack = event.getOldItemStack();
+        if (items.isLegendary(oldStack)) {
+            UUID oldUuid = items.getUniqueId(oldStack).orElse(null);
+            UUID newUuid = items.getUniqueId(newStack).orElse(null);
+            if (oldUuid != null && !oldUuid.equals(newUuid)) {
+                persistOwnerLocationAndStatus(
+                        oldStack, event.getPlayer().getUniqueId(), event.getPlayer().isOp(), null, false);
+            }
+        }
+        if (items.isLegendary(newStack)) {
+            persistOwnerLocationAndStatus(
+                    newStack, event.getPlayer().getUniqueId(), event.getPlayer().isOp(),
+                    event.getPlayer().getLocation(), true);
+        }
+    }
+
+    private void refreshTrackedLocations() {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            for (ItemStack stack : allCarriedItems(player)) {
+                persistOwnerLocationAndStatus(
+                        stack, player.getUniqueId(), player.isOp(), player.getLocation(), true);
+            }
+        }
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.Item item : world.getEntitiesByClass(org.bukkit.entity.Item.class)) {
+                persistOwnerLocationAndStatus(item.getItemStack(), null, false, item.getLocation(), true);
+            }
         }
     }
 
@@ -697,6 +748,16 @@ public final class LegendaryRulesListener implements Listener {
     }
 
     private boolean persistOwnerAndLocation(ItemStack stack, UUID ownerUuid, org.bukkit.Location location) {
+        return persistOwnerLocationAndStatus(stack, ownerUuid, false, location, true);
+    }
+
+    private boolean persistOwnerLocationAndStatus(
+            ItemStack stack,
+            UUID ownerUuid,
+            boolean ownerOperator,
+            org.bukkit.Location location,
+            boolean active
+    ) {
         if (!items.isLegendary(stack)) {
             return true;
         }
@@ -711,8 +772,14 @@ public final class LegendaryRulesListener implements Listener {
             return false;
         }
         try {
-            plugin.getDataStore().setItemOwner(itemId, itemUuid, ownerUuid);
-            plugin.getDataStore().recordItemLocation(itemUuid, location);
+            String signature = (location == null || location.getWorld() == null)
+                    ? "unknown" : location.getWorld().getName()
+                            + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
+            String status = ownerUuid + ":" + ownerOperator + ":" + active + ":" + signature;
+            if (!status.equals(trackedPositions.put(itemUuid, status))) {
+                plugin.getDataStore().updateItemTracking(
+                        itemId, itemUuid, ownerUuid, ownerOperator, location, active);
+            }
             return true;
         } catch (IOException | IllegalArgumentException | IllegalStateException exception) {
             plugin.getLogger().log(Level.SEVERE, "Could not persist ownership/location for " + itemUuid + ".", exception);

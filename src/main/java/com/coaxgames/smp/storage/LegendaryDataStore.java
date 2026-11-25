@@ -516,6 +516,30 @@ public final class LegendaryDataStore {
         save();
     }
 
+    public synchronized void updateItemTracking(
+            String itemId,
+            UUID itemUuid,
+            UUID ownerUuid,
+            boolean ownerOperator,
+            Location location,
+            boolean active
+    ) throws IOException {
+        Objects.requireNonNull(itemUuid, "itemUuid");
+        validateExistingItemId(itemId, itemUuid);
+        String path = itemPath(itemUuid);
+        data.set(path + ".owner", ownerUuid == null ? null : ownerUuid.toString());
+        data.set(path + ".owner_operator", ownerOperator);
+        data.set(path + ".active", active);
+        data.set(path + ".updated_at", System.currentTimeMillis());
+        if (location == null || location.getWorld() == null) {
+            setStoredLocation(path, null, 0.0, 0.0, 0.0);
+        } else {
+            setStoredLocation(path, location.getWorld().getName(),
+                    location.getX(), location.getY(), location.getZ());
+        }
+        save();
+    }
+
     public synchronized List<ItemRecord> getTrackedItems(String itemId) {
         validateId(itemId);
         ConfigurationSection section = data.getConfigurationSection("items");
@@ -548,7 +572,10 @@ public final class LegendaryDataStore {
                     data.getString(path + ".world"),
                     data.getDouble(path + ".x"),
                     data.getDouble(path + ".y"),
-                    data.getDouble(path + ".z")
+                    data.getDouble(path + ".z"),
+                    data.getBoolean(path + ".owner_operator", false),
+                    data.getBoolean(path + ".active", true),
+                    data.getLong(path + ".updated_at", 0L)
             ));
         }
         records.sort(Comparator.comparing(record -> record.itemUuid().toString()));
@@ -570,7 +597,10 @@ public final class LegendaryDataStore {
                 data.getString(path + ".world"),
                 data.getDouble(path + ".x"),
                 data.getDouble(path + ".y"),
-                data.getDouble(path + ".z")
+                data.getDouble(path + ".z"),
+                data.getBoolean(path + ".owner_operator", false),
+                data.getBoolean(path + ".active", true),
+                data.getLong(path + ".updated_at", 0L)
         );
     }
 
@@ -819,6 +849,9 @@ public final class LegendaryDataStore {
         String path = itemPath(itemUuid);
         data.set(path + ".id", itemId);
         data.set(path + ".owner", ownerUuid == null ? null : ownerUuid.toString());
+        data.set(path + ".owner_operator", false);
+        data.set(path + ".active", true);
+        data.set(path + ".updated_at", System.currentTimeMillis());
         setStoredLocation(path, location.getWorld() == null ? null : location.getWorld().getName(),
                 location.getX(), location.getY(), location.getZ());
     }
@@ -938,7 +971,10 @@ public final class LegendaryDataStore {
             String world,
             double x,
             double y,
-            double z
+            double z,
+            boolean ownerOperator,
+            boolean active,
+            long updatedAtMillis
     ) {
     }
 

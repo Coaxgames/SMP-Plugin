@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -51,6 +53,7 @@ public final class GalaxyCommand implements TabExecutor {
                 case "give" -> give(sender, label, args);
                 case "reset" -> reset(sender, label, args);
                 case "reset-abilities" -> resetAbilities(sender, label, args);
+                case "help" -> help(sender, label, args);
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 case "find" -> find(sender, label, args);
@@ -90,15 +93,17 @@ public final class GalaxyCommand implements TabExecutor {
         }
         if (args.length == 1) {
             return matching(List.of("give", "reset", "reset-abilities", "list",
-                    "locate", "find", "menu", "version"), args[0]);
+                    "locate", "find", "menu", "version", "help"), args[0]);
         }
-                    if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
-                        return matching(List.of("item"), args[1]);
-                    }
-                    if (args.length == 3 && args[0].equalsIgnoreCase("find") && args[1].equalsIgnoreCase("item")) {
-                        return matching(plugin.getReclaimableItems().getLoggedItems().keySet().stream()
-                                .map(UUID::toString).toList(), args[2]);
-                    }
+        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+            return matching(List.of("1", "2", "3"), args[1]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
+            return matching(List.of("item"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("find") && args[1].equalsIgnoreCase("item")) {
+            return matching(findableItemIds(), args[2]);
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("reset-abilities")) {
             List<String> targets = new ArrayList<>(List.of("@s", "@p", "@a"));
             targets.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
@@ -320,6 +325,86 @@ public final class GalaxyCommand implements TabExecutor {
         }
     }
 
+    private void help(CommandSender sender, String label, int page) {
+        int safePage = Math.max(1, Math.min(3, page));
+        sender.sendMessage(Component.text("Galaxy commands — Page " + safePage + "/3",
+                NamedTextColor.GOLD));
+        List<Component> lines = switch (safePage) {
+            case 1 -> List.of(
+                    helpLine("/" + label + " give all",
+                            "Give every registered Galaxy item to yourself."),
+                    helpLine("/" + label + " give <player|@p> all",
+                            "Give every item to one online player."),
+                    helpLine("/" + label + " give <player|@p> <item> [count]",
+                            "Give one item, with limits and craft quotas enforced."),
+                    helpLine("/" + label + " list",
+                            "List registered items and permanent craft counts."),
+                    helpLine("/" + label + " menu",
+                            "Open the operator item menu."));
+            case 2 -> List.of(
+                    helpLine("/" + label + " locate <item>",
+                            "Show retained UUID history, current holder/world position, state, operator ownership, and last update."),
+                    helpLine("/" + label + " find",
+                            "List current legendary item drops in loaded worlds."),
+                    helpLine("/" + label + " find item <uuid>",
+                            "Re-resolve a listed item and teleport to its current position."),
+                    helpLine("Locate/Find [teleport]",
+                            "Clickable links resolve the live position when clicked."));
+            default -> List.of(
+                    helpLine("/" + label + " reset <item>",
+                            "Clear its cooldowns without resetting permanent craft history."),
+                    helpLine("/" + label + " reset-abilities <player|selector>",
+                            "Reset matched players' ability cooldowns and progress."),
+                    helpLine("/" + label + " version",
+                            "Show the running plugin version."),
+                    helpLine("/cooldown",
+                            "Toggle this operator's cooldown enforcement."),
+                    helpLine("/cooldown status",
+                            "Report the current operator cooldown setting."),
+                    helpLine("/checkforupdate",
+                            "Cancel a pending restart and check for a newer release."));
+        };
+        lines.forEach(sender::sendMessage);
+        String previous = safePage > 1 ? "[Previous]" : "";
+        String next = safePage < 3 ? "[Next]" : "";
+        Component navigation = Component.empty();
+        if (!previous.isEmpty()) {
+            navigation = navigation.append(Component.text(previous, NamedTextColor.AQUA)
+                    .clickEvent(ClickEvent.runCommand("/" + label + " help " + (safePage - 1))));
+        }
+        if (!previous.isEmpty() && !next.isEmpty()) {
+            navigation = navigation.append(Component.text("  "));
+        }
+        if (!next.isEmpty()) {
+            navigation = navigation.append(Component.text(next, NamedTextColor.AQUA)
+                    .clickEvent(ClickEvent.runCommand("/" + label + " help " + (safePage + 1))));
+        }
+        if (navigation != Component.empty()) {
+            sender.sendMessage(navigation);
+        }
+    }
+
+    private void help(CommandSender sender, String label, String[] args) {
+        if (args.length > 2) {
+            sender.sendMessage(Component.text("Usage: /" + label + " help [1-3]"));
+            return;
+        }
+        if (args.length == 1) {
+            help(sender, label, 1);
+            return;
+        }
+        try {
+            help(sender, label, Integer.parseInt(args[1]));
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(Component.text("Help page must be 1, 2, or 3."));
+        }
+    }
+
+    private Component helpLine(String command, String description) {
+        return Component.text(command, NamedTextColor.AQUA)
+                .append(Component.text(" — " + description, NamedTextColor.GRAY));
+    }
+
     private void locate(CommandSender sender, String label, String[] args) {
         if (args.length != 2) {
             sender.sendMessage(Component.text("Usage: /" + label + " locate <item>"));
@@ -335,12 +420,31 @@ public final class GalaxyCommand implements TabExecutor {
             return;
         }
         for (ItemRecord record : records) {
-            String owner = playerName(record.ownerUuid());
+            String owner = playerName(record.ownerUuid())
+                    + (record.ownerOperator() ? " (operator-owned)" : "");
             String location = record.world() == null
-                    ? "location unknown"
+                    ? "inactive/no current location"
                     : String.format(java.util.Locale.ROOT, "%s (%.1f, %.1f, %.1f)",
                             record.world(), record.x(), record.y(), record.z());
-            sender.sendMessage(Component.text(record.itemUuid() + " | owner: " + owner + " | " + location));
+            String updated = record.updatedAtMillis() <= 0L
+                    ? "never"
+                    : java.time.Instant.ofEpochMilli(record.updatedAtMillis())
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            Component message = Component.text(record.itemUuid()
+                    + " | state: " + (record.active() ? "active" : "deleted/inactive")
+                    + " | owner: " + owner + " | " + location + " | updated: " + updated);
+            if (sender instanceof Player && record.active() && record.world() != null) {
+                String worldKey = plugin.getServer().getWorld(record.world()) == null
+                        ? null : plugin.getServer().getWorld(record.world()).getKey().asString();
+                if (worldKey != null) {
+                    String command = "/galaxy find item " + record.itemUuid();
+                    message = message.append(Component.text(" [teleport]", NamedTextColor.AQUA)
+                            .clickEvent(ClickEvent.runCommand(command))
+                            .hoverEvent(Component.text("Find this item's current live position and teleport")));
+                }
+            }
+            sender.sendMessage(message);
         }
     }
 
@@ -349,8 +453,12 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text("Only a player can teleport to an item."));
             return;
         }
+        if (args.length == 1) {
+            listWorldItems(player);
+            return;
+        }
         if (args.length != 3 || !args[1].equalsIgnoreCase("item")) {
-            sender.sendMessage(Component.text("Usage: /" + label + " find item <uuid>"));
+            sender.sendMessage(Component.text("Usage: /" + label + " find [item <uuid>]"));
             return;
         }
         UUID key;
@@ -360,20 +468,105 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text("That is not a valid UUID."));
             return;
         }
-        var logged = plugin.getReclaimableItems().getLoggedItems().get(key);
-        if (logged == null || logged.location().getWorld() == null) {
-            sender.sendMessage(Component.text("No logged item with UUID " + key + "."));
+        LiveItem live = findLiveItem(key);
+        if (live == null || live.location().getWorld() == null) {
+            sender.sendMessage(Component.text("No current world or inventory location found for UUID " + key + "."));
             return;
         }
-        org.bukkit.Location item = logged.location();
+        org.bukkit.Location item = live.location();
         org.bukkit.World world = item.getWorld();
         org.bukkit.Location view = inspectionPoint(item);
         view.setDirection(item.toVector().subtract(view.toVector()));
         player.teleportAsync(view).thenAccept(success -> player.sendMessage(Component.text(success
-                ? String.format(java.util.Locale.ROOT, "Viewing %s (%s) last seen at %.1f, %.1f, %.1f in %s.",
-                        logged.name(), logged.itemId() == null ? "unidentified" : logged.itemId(),
+                ? String.format(java.util.Locale.ROOT, "Viewing %s (%s) live at %.1f, %.1f, %.1f in %s.",
+                        live.name(), live.itemId() == null ? "unidentified" : live.itemId(),
                         item.getX(), item.getY(), item.getZ(), world.getName())
                 : "The teleport was cancelled.")));
+    }
+
+    private void listWorldItems(Player operator) {
+        java.util.Map<UUID, LiveItem> found = new java.util.LinkedHashMap<>();
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.Item item : world.getEntitiesByClass(org.bukkit.entity.Item.class)) {
+                String itemId = plugin.getLegendaryItems().identify(item.getItemStack())
+                        .map(LegendaryItem::id).orElse(null);
+                if (itemId == null) {
+                    continue;
+                }
+                UUID key = plugin.getLegendaryItems().getUniqueId(item.getItemStack()).orElse(item.getUniqueId());
+                found.put(key, new LiveItem(
+                        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                                .serialize(item.getItemStack().effectiveName()),
+                        itemId,
+                        item.getLocation().clone()));
+            }
+        }
+        if (found.isEmpty()) {
+            operator.sendMessage(Component.text("No legendary items are currently found as world entities."));
+            return;
+        }
+        for (var entry : found.entrySet()) {
+            UUID uuid = entry.getKey();
+            LiveItem item = entry.getValue();
+            operator.sendMessage(Component.text(item.name() + " (" + item.itemId() + ") at "
+                            + item.location().getBlockX() + ", " + item.location().getBlockY() + ", "
+                            + item.location().getBlockZ() + " in " + item.location().getWorld().getName())
+                    .append(Component.text(" [teleport]", NamedTextColor.AQUA)
+                            .clickEvent(ClickEvent.runCommand("/galaxy find item " + uuid))
+                            .hoverEvent(Component.text("Resolve UUID " + uuid + " at click time"))));
+        }
+    }
+
+    private LiveItem findLiveItem(UUID key) {
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.Item item : world.getEntitiesByClass(org.bukkit.entity.Item.class)) {
+                UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item.getItemStack()).orElse(null);
+                if (key.equals(itemUuid) || key.equals(item.getUniqueId())) {
+                    return liveItem(item.getItemStack(), item.getLocation());
+                }
+            }
+        }
+        for (Player holder : Bukkit.getOnlinePlayers()) {
+            ItemStack[] inventory = holder.getInventory().getContents();
+            ItemStack[] armor = holder.getInventory().getArmorContents();
+            for (ItemStack stack : java.util.stream.Stream.concat(
+                    java.util.Arrays.stream(inventory), java.util.Arrays.stream(armor)).toList()) {
+                if (stack != null && key.equals(plugin.getLegendaryItems().getUniqueId(stack).orElse(null))) {
+                    return liveItem(stack, holder.getLocation());
+                }
+            }
+        }
+        return null;
+    }
+
+    private LiveItem liveItem(ItemStack stack, org.bukkit.Location location) {
+        String itemId = plugin.getLegendaryItems().identify(stack)
+                .map(LegendaryItem::id).orElse(null);
+        String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                .serialize(stack.effectiveName());
+        return new LiveItem(name, itemId, location.clone());
+    }
+
+    private List<String> findableItemIds() {
+        java.util.Set<UUID> ids = new java.util.HashSet<>(
+                plugin.getReclaimableItems().getLoggedItems().keySet());
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.Item item : world.getEntitiesByClass(org.bukkit.entity.Item.class)) {
+                UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item.getItemStack()).orElse(null);
+                if (itemUuid != null) {
+                    ids.add(itemUuid);
+                }
+            }
+        }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            for (ItemStack stack : player.getInventory().getContents()) {
+                plugin.getLegendaryItems().getUniqueId(stack).ifPresent(ids::add);
+            }
+        }
+        return ids.stream().map(UUID::toString).sorted().toList();
+    }
+
+    private record LiveItem(String name, String itemId, org.bukkit.Location location) {
     }
 
     /** A spot a few blocks above and to the side of the item, falling back to straight above if that is blocked. */
@@ -410,6 +603,6 @@ public final class GalaxyCommand implements TabExecutor {
         sender.sendMessage(Component.text("Usage: /" + label
                 + " give all | give <player|@p> all | give <player|@p> <item> [count] | reset <item>"
                 + " | reset-abilities <player|selector>"
-                + " | list | locate <item> | find item <uuid> | version"));
+                + " | list | locate <item> | find [item <uuid>] | version | help [1-3]"));
     }
 }
