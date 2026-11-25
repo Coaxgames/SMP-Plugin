@@ -93,6 +93,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         getLogger().info("Registered " + legendaryItems.getRecipeKeys().size() + " Galaxy SMP recipes.");
         getServer().getPluginManager().registerEvents(new LegendaryCraftListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.coaxgames.smp.listener.BreezeDropListener(), this);
+        getServer().getPluginManager().registerEvents(new com.coaxgames.smp.listener.InvisibleNameListener(), this);
+        getServer().getPluginManager().registerEvents(new com.coaxgames.smp.listener.TntMinecartDamageListener(), this);
         getServer().getPluginManager().registerEvents(new EnderPearlStackListener(this), this);
         getServer().getPluginManager().registerEvents(new EnderPearlCooldownListener(this), this);
         DroppedItemClumpListener clumps = new DroppedItemClumpListener(this, legendaryItems);

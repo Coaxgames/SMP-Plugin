@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
@@ -37,6 +39,7 @@ public final class LegendaryItemRegistry {
     private final Plugin plugin;
     private final Map<String, LegendaryItem> items = new HashMap<>();
     private final Map<NamespacedKey, LegendaryItem> recipes = new HashMap<>();
+    private final Set<NamespacedKey> auxiliaryRecipeKeys = new HashSet<>();
 
     public LegendaryItemRegistry(Plugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -105,7 +108,33 @@ public final class LegendaryItemRegistry {
     }
 
     public Collection<NamespacedKey> getRecipeKeys() {
-        return java.util.List.copyOf(recipes.keySet());
+        java.util.List<NamespacedKey> keys = new java.util.ArrayList<>(recipes.keySet());
+        keys.addAll(auxiliaryRecipeKeys);
+        return java.util.List.copyOf(keys);
+    }
+
+    public void registerAuxiliaryRecipe(Recipe recipe) {
+        registerAuxiliaryRecipe(recipe, null);
+    }
+
+    public void registerAuxiliaryRecipe(Recipe recipe, NamespacedKey replaceVanillaKey) {
+        Objects.requireNonNull(recipe, "recipe");
+        if (!(recipe instanceof Keyed keyed)) {
+            throw new IllegalArgumentException("Auxiliary recipe must have a key.");
+        }
+        NamespacedKey key = keyed.getKey();
+        if (recipes.containsKey(key) || auxiliaryRecipeKeys.contains(key)) {
+            throw new IllegalStateException("Recipe key is already registered: " + key);
+        }
+        if (replaceVanillaKey != null) {
+            if (!Bukkit.removeRecipe(replaceVanillaKey)) {
+                throw new IllegalStateException("Could not remove vanilla recipe: " + replaceVanillaKey);
+            }
+        }
+        if (!Bukkit.addRecipe(recipe)) {
+            throw new IllegalStateException("Could not register auxiliary recipe: " + key);
+        }
+        auxiliaryRecipeKeys.add(key);
     }
 
     public Optional<LegendaryItem> getForRecipe(Recipe recipe) {
@@ -348,6 +377,52 @@ public final class LegendaryItemRegistry {
             throw new IllegalStateException("Could not remove fire enchantments from " + definition.id() + ".");
         }
         return true;
+    }
+
+    public boolean removeForbiddenLunge(ItemStack item) {
+        if (item == null || item.getType().isAir()
+                || identify(item).map(definition -> definition.id().equals("nebula_spear")).orElse(false)) {
+            return false;
+        }
+        var meta = item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        boolean changed = false;
+        if (isOrdinarySpear(item)) {
+            for (Enchantment enchantment : new java.util.ArrayList<>(meta.getEnchants().keySet())) {
+                if (isLungeEnchantment(enchantment)) {
+                    changed |= meta.removeEnchant(enchantment);
+                }
+            }
+        }
+        if (meta instanceof org.bukkit.inventory.meta.EnchantmentStorageMeta storage) {
+            for (Enchantment enchantment : new java.util.ArrayList<>(storage.getStoredEnchants().keySet())) {
+                if (isLungeEnchantment(enchantment)) {
+                    changed |= storage.removeStoredEnchant(enchantment);
+                }
+            }
+        }
+        if (changed && !item.setItemMeta(meta)) {
+            throw new IllegalStateException("Could not remove forbidden Lunge.");
+        }
+        return changed;
+    }
+
+    public static boolean isLungeEnchantment(Enchantment enchantment) {
+        return enchantment != null && isLungeEnchantmentKey(enchantment.getKey());
+    }
+
+    static boolean isLungeEnchantmentKey(org.bukkit.NamespacedKey key) {
+        return org.bukkit.NamespacedKey.minecraft("lunge").equals(key);
+    }
+
+    static boolean isOrdinarySpear(ItemStack item) {
+        return switch (item.getType()) {
+            case WOODEN_SPEAR, STONE_SPEAR, COPPER_SPEAR, IRON_SPEAR, GOLDEN_SPEAR,
+                    DIAMOND_SPEAR, NETHERITE_SPEAR -> true;
+            default -> false;
+        };
     }
 
     public boolean removeCrownVanillaThorns(ItemStack item) {

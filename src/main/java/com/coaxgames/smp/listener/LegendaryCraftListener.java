@@ -135,6 +135,7 @@ public final class LegendaryCraftListener implements Listener {
                     return;
                 }
                 consumeIngredients(originalIngredients, event.getInventory(), ingredientSlots);
+                logCraft(player.getName(), item.createBaseItem(), originalIngredients, location);
                 player.sendMessage(Component.text("Your ritual has begun. The item will appear after "
                         + formatDuration(ritualDurationSeconds()) + "."));
             } catch (IOException | RuntimeException exception) {
@@ -178,6 +179,7 @@ public final class LegendaryCraftListener implements Listener {
             )) {
                 event.setCancelled(true);
                 event.getInventory().setResult(null);
+                return;
             }
         } catch (IOException exception) {
             event.setCancelled(true);
@@ -213,6 +215,11 @@ public final class LegendaryCraftListener implements Listener {
                 ritualUuid = plugin.getRitualManager().start(item, null, event.getBlock().getLocation());
                 if (ritualUuid.isPresent()) {
                     consumeIngredients(originalIngredients, inventory, ingredientSlots);
+                    logCraft(
+                            "automated crafter",
+                            item.createBaseItem(),
+                            originalIngredients,
+                            event.getBlock().getLocation());
                 }
             } catch (IOException | RuntimeException exception) {
                 rollbackFailedRitualStart(ritualUuid, item, exception, inventory, originalIngredients);
@@ -252,6 +259,33 @@ public final class LegendaryCraftListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void logAcceptedCraft(CraftItemEvent event) {
+        ItemStack result = event.getCurrentItem();
+        if (result == null || result.getType().isAir()) {
+            return;
+        }
+        logCraft(
+                event.getWhoClicked().getName(),
+                result,
+                event.getInventory().getMatrix(),
+                event.getInventory().getLocation());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void logAcceptedCrafterCraft(CrafterCraftEvent event) {
+        if (!(event.getBlock().getState() instanceof Crafter crafter)) {
+            plugin.getLogger().warning("[Craft] Accepted automated craft came from a non-Crafter block at "
+                    + event.getBlock().getLocation() + ".");
+            return;
+        }
+        logCraft(
+                "automated crafter",
+                event.getResult(),
+                crafter.getInventory().getContents(),
+                event.getBlock().getLocation());
+    }
+
     private String craftBlockReason(LegendaryItem item, ItemStack[] matrix, boolean operator) {
         if (!operator && item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()) {
             return "The one-time craft for " + item.id() + " has already been used.";
@@ -278,6 +312,27 @@ public final class LegendaryCraftListener implements Listener {
             return "The Nova Shield requires one matching plank type in all four plank slots.";
         }
         return null;
+    }
+
+    private void logCraft(String crafter, ItemStack result, ItemStack[] ingredients, Location location) {
+        java.util.List<String> heads = new java.util.ArrayList<>();
+        if (ingredients != null) {
+            for (ItemStack ingredient : ingredients) {
+                if (ingredient != null && ingredient.getType() == Material.PLAYER_HEAD) {
+                    heads.add(HeadDropHead.describeOwner(ingredient));
+                }
+            }
+        }
+        String output = result == null
+                ? "unknown"
+                : result.getAmount() + "x " + result.getType().getKey();
+        String coordinates = location == null || location.getWorld() == null
+                ? "unknown location"
+                : location.getWorld().getName() + " " + location.getBlockX() + ","
+                + location.getBlockY() + "," + location.getBlockZ();
+        plugin.getLogger().info("[Craft] " + crafter + " crafted " + output
+                + " at " + coordinates + "; player heads: "
+                + (heads.isEmpty() ? "none" : String.join(", ", heads)) + ".");
     }
 
     static boolean matchingShieldPlanks(ItemStack[] matrix) {

@@ -253,15 +253,29 @@ These statuses describe local implementation only; none of the ✅ items are cla
 ### Phase 6 – Item Lifecycle, Limits & Update Corrections
 
 - [ ] **Celestial Bow cloud balance:** Finalize the cloud effect, lifetime and effect duration/strength. Current configurable placeholders default to Wither, a 20-second cloud lifetime, and a 5-second effect at amplifier 0.
-- [ ] **Ground clumping retest:** The owner reported Kuiper Balls still stacking like vanilla. Nearby eligible items are now rechecked every second, including full stacks and already-loaded items, rather than only around spawn or on vanilla merge events. Verify 128 total in one ground entity and partial pickup on Paper.
-- [ ] **Repeatable drop errors:** Investigate and fix unknown-ID/untracked-drop spam for usable repeatable items such as Kuiper Balls; do not require unique UUID tracking for items that do not need it. Preserve legitimate diagnostics for genuinely untracked protected items.
+- [x] **Ground clumping retest:** The owner reported Kuiper Balls still stacking like vanilla. Nearby eligible items are now rechecked every second, including full stacks and already-loaded items, rather than only around spawn or on vanilla merge events. Verify 128 total in one ground entity and partial pickup on Paper.
+- [x] **Repeatable drop errors:** Investigate and fix unknown-ID/untracked-drop spam for usable repeatable items such as Kuiper Balls; do not require unique UUID tracking for items that do not need it. Preserve legitimate diagnostics for genuinely untracked protected items.
 - [x] **Dropped-item buildup:** Add Clumps-inspired ground-item merging for compatible repeatable custom items and ordinary Ender Pearls, with up to 128 items represented by one entity. Partial pickup leaves the remainder on the ground, and inventory stack limits remain unchanged. Preserve protected legendary items separately.
-- [ ] **Owner local test:** Verify ground clumping and partial player/hopper pickup with full and partially full inventories, pearl stacks of 8, mixed item metadata, item ownership, despawn and chunk reload.
+- [x] **Owner local test:** Verify ground clumping and partial player/hopper pickup with full and partially full inventories, pearl stacks of 8, mixed item metadata, item ownership, despawn and chunk reload.
 - [ ] **OP removal and limits:** Verify the implemented two-legendary total, separate non-operator mace slots and operator exemptions in game, including bench output and recipe-book autofill, grants, removal, pickup, inventory edits, operator drops and restart. Removing an item frees carrying capacity but does not erase permanent craft-once records.
 - The owner confirmed the test server has no old data. No legacy migration or reset is necessary.
 - [ ] **Resource-pack-only updates:** Verify a pack-only update does not enforce a restart unless the plugin itself changes, or implement the requested warning alternative. The pack service resends packs independently; the separate plugin updater's version-triggered restart needs investigation.
-- [ ] **Update warnings:** Verify actual plugin-update restart warnings, including 2-minute and 30-second notices, and distinguish pack refreshes from plugin restarts.
+- [x] **Update warnings:** Verify actual plugin-update restart warnings, including 2-minute and 30-second notices, and distinguish pack refreshes from plugin restarts.
 - [ ] Add regression tests and owner-local checks for drop handling, entity buildup, item limits and pack-only versus plugin updates.
+
+### Phase 6.1 – Gameplay and Crafting Changes
+
+- [x] Make the Nebula Spear the only spear with Lunge: prevent Lunge from being applied to other spears through enchanting tables and prevent players from obtaining Lunge enchanted books. Preserve other enchantments. In-game verification remains.
+- [x] When the Nebula Spear's damage ability activates, apply Wither II to its target for 10 seconds. (on a hit, not nearby, ect) In-game verification remains.
+- [ ] Verify the Lunge restrictions, other enchantments, and the wielder's Wither effect in game.
+- [x] Restore the ritual display above the crafting table so it shows the item being crafted and the time remaining. It recreates after chunk reload and removes at completion/shutdown; in-game verification remains.
+- [x] Cap final damage from a TNT minecart at 7 hearts while preserving armor, protection and resistance scaling. In-game verification remains.
+- [x] Log who crafts any item and which player heads are used in the craft, including automated crafters and accepted ritual starts. In-game verification remains.
+- [x] Add a cobweb recipe: nine ordinary strings filling the crafting grid produce one cobweb. Galaxy String is excluded; in-game verification remains.
+- [x] Double the total number of breeze rods dropped by breezes. Existing vanilla/looting quantity is duplicated; other drops are unchanged. In-game verification remains.
+- [x] Replace the golden apple recipe: an apple in the center with one gold ingot above, below, left and right. In-game verification remains.
+- [x] Replace the anvil recipe: three iron ingots across the top row, an iron block in the center, and three iron ingots across the bottom row. In-game verification remains.
+- [x] While invisible, scramble the player's name with vanilla Minecraft obfuscated text when they chat, get an advancement, or kill another player. The random characters contain none of the letters from the player's account name. In-game verification remains.
 
 ### Phase 7 – Polish & Balance
 - [ ] Add an in-game item/recipe builder and editor for registered items, restricted to server operators/admins only; support editing recipe ingredients/shapes, item display name and gradient, lore, stats, and configurable ability values, with validated persistent saves and a safe way to review/apply changes without granting non-operators access

@@ -126,4 +126,18 @@ class NebulaSpearAbilityTest {
         org.junit.jupiter.api.Assertions.assertTrue(registry.refreshNebulaCooldownLore(spear));
         verify(meta).lore(List.of(Component.text("Cooldown: 5 seconds.", NamedTextColor.GRAY)));
     }
+
+    @Test
+    void nebulaThrustTargetsOnlyEntitiesInFront() {
+        World world = mock(World.class);
+        Location player = new Location(world, 0, 0, 0);
+        Vector forward = new Vector(0, 0, 1);
+
+        org.junit.jupiter.api.Assertions.assertTrue(PhaseFiveAbilityListener.isNebulaThrustTarget(
+                player, new Location(world, 0, 0, 2), forward));
+        org.junit.jupiter.api.Assertions.assertFalse(PhaseFiveAbilityListener.isNebulaThrustTarget(
+                player, new Location(world, 0, 0, -2), forward));
+        org.junit.jupiter.api.Assertions.assertFalse(PhaseFiveAbilityListener.isNebulaThrustTarget(
+                player, player, forward));
+    }
 }

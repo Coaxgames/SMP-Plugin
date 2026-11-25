@@ -2,6 +2,7 @@ package com.coaxgames.smp.listener;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
+import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -158,6 +159,9 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPickup(EntityPickupItemEvent event) {
         ItemStack stack = event.getItem().getItemStack();
+        if (items.removeForbiddenLunge(stack)) {
+            event.getItem().setItemStack(stack);
+        }
         var definition = items.identify(stack).orElse(null);
         if (definition == null) {
             if (items.containsProtectedItem(stack) && !items.isLegendary(stack)) {
@@ -216,7 +220,8 @@ public final class LegendaryRulesListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        boolean itemUpdated = items.upgradeVoidSword(stack);
+        boolean itemUpdated = items.removeForbiddenLunge(stack);
+        itemUpdated |= items.upgradeVoidSword(stack);
         itemUpdated |= items.upgradeLunarLeggings(stack);
         itemUpdated |= items.removeWeaponFireEnchantments(stack);
         itemUpdated |= items.removeCrownVanillaThorns(stack);
@@ -436,12 +441,26 @@ public final class LegendaryRulesListener implements Listener {
     public void onPrepareEnchant(PrepareItemEnchantEvent event) {
         if (isLegendary(event.getItem())) {
             event.setCancelled(true);
+            return;
+        }
+        var offers = event.getOffers();
+        for (int i = 0; i < offers.length; i++) {
+            if (offers[i] != null
+                    && LegendaryItemRegistry.isLungeEnchantment(offers[i].getEnchantment())) {
+                offers[i] = null;
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEnchant(EnchantItemEvent event) {
         if (isLegendary(event.getItem())) {
+            event.setCancelled(true);
+            return;
+        }
+        event.getEnchantsToAdd().keySet()
+                .removeIf(LegendaryItemRegistry::isLungeEnchantment);
+        if (event.getEnchantsToAdd().isEmpty()) {
             event.setCancelled(true);
         }
     }
@@ -450,6 +469,19 @@ public final class LegendaryRulesListener implements Listener {
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         if (containsProtectedItem(event.getInventory().getContents())) {
             event.getInventory().setResult(null);
+            return;
+        }
+        ItemStack result = event.getInventory().getResult();
+        if (items.removeForbiddenLunge(result)) {
+            event.getInventory().setResult(result);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerInventorySlotChange(PlayerInventorySlotChangeEvent event) {
+        ItemStack stack = event.getNewItemStack();
+        if (items.removeForbiddenLunge(stack)) {
+            event.getPlayer().getInventory().setItem(event.getSlot(), stack);
         }
     }
 

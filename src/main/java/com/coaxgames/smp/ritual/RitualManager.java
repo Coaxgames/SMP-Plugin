@@ -20,10 +20,16 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.Color;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 
 public final class RitualManager {
     private static final long TICKS_PER_SECOND = 20L;
@@ -36,6 +42,7 @@ public final class RitualManager {
     private final Set<String> missingDefinitionsWarned = new HashSet<>();
     private final Set<UUID> completionWarnings = new HashSet<>();
     private final java.util.Map<UUID, BossBar> bossBars = new java.util.HashMap<>();
+    private final java.util.Map<UUID, RitualDisplay> displays = new java.util.HashMap<>();
     private BukkitTask task;
 
     public RitualManager(GalaxySmpPlugin plugin) {
@@ -55,6 +62,8 @@ public final class RitualManager {
         }
         bossBars.values().forEach(BossBar::removeAll);
         bossBars.clear();
+        displays.values().forEach(RitualDisplay::remove);
+        displays.clear();
     }
 
     public boolean hasCapacity(Player player, String itemId, int additionalItems) {
@@ -134,7 +143,19 @@ public final class RitualManager {
             updateBossBar(ritual, now);
             World world = Bukkit.getWorld(ritual.world());
             if (world == null) {
+                removeDisplay(ritual.itemUuid());
                 continue;
+            }
+            int blockX = Location.locToBlock(ritual.x());
+            int blockZ = Location.locToBlock(ritual.z());
+            if (!world.isChunkLoaded(blockX >> 4, blockZ >> 4)) {
+                removeDisplay(ritual.itemUuid());
+                continue;
+            }
+            if (plugin.getLegendaryItems().get(ritual.itemId()).isEmpty()) {
+                removeDisplay(ritual.itemUuid());
+            } else {
+                updateDisplay(ritual, world, now);
             }
             if (now >= ritual.completesAtMillis()) {
                 complete(ritual, world);
@@ -243,6 +264,7 @@ public final class RitualManager {
             capacityWarnings.remove(ritual.itemUuid());
             completionWarnings.remove(ritual.itemUuid());
             removeBossBar(ritual.itemUuid());
+            removeDisplay(ritual.itemUuid());
             announceCompletion(ritual);
         } catch (IOException exception) {
             dropped.setPickupDelay(Integer.MAX_VALUE);
@@ -280,6 +302,7 @@ public final class RitualManager {
             completionWarnings.remove(ritual.itemUuid());
             item.setPickupDelay(0);
             removeBossBar(ritual.itemUuid());
+            removeDisplay(ritual.itemUuid());
             announceCompletion(ritual);
         } catch (IOException exception) {
             if (completionWarnings.add(ritual.itemUuid())) {
@@ -324,6 +347,62 @@ public final class RitualManager {
         }
     }
 
+    private void updateDisplay(RitualRecord ritual, World world, long now) {
+        RitualDisplay display = displays.get(ritual.itemUuid());
+        if (display == null || !display.item().isValid() || !display.text().isValid()) {
+            removeDisplay(ritual.itemUuid());
+            ItemStack visualItem = plugin.getLegendaryItems().get(ritual.itemId())
+                    .orElseThrow()
+                    .createBaseItem()
+                    .clone();
+            Location table = new Location(
+                    world, Location.locToBlock(ritual.x()) + 0.5,
+                    Location.locToBlock(ritual.y()), Location.locToBlock(ritual.z()) + 0.5);
+            ItemDisplay item = world.spawn(table.clone().add(0.0, 1.55, 0.0), ItemDisplay.class);
+            item.setItemStack(visualItem);
+            item.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            item.setBillboard(Display.Billboard.CENTER);
+            item.setTransformation(new org.bukkit.util.Transformation(
+                    new Vector3f(), new AxisAngle4f(),
+                    new Vector3f(0.65F, 0.65F, 0.65F), new AxisAngle4f()));
+            TextDisplay text = world.spawn(table.clone().add(0.0, 2.45, 0.0), TextDisplay.class);
+            text.setBillboard(Display.Billboard.CENTER);
+            text.setAlignment(TextDisplay.TextAlignment.CENTER);
+            text.setBackgroundColor(Color.fromARGB(150, 0, 0, 0));
+            text.setShadowed(true);
+            text.setSeeThrough(false);
+            configureDisplay(item);
+            configureDisplay(text);
+            display = new RitualDisplay(item, text);
+            displays.put(ritual.itemUuid(), display);
+        }
+        long remainingSeconds = Math.max(0L,
+                (ritual.completesAtMillis() - now + MILLIS_PER_SECOND - 1L) / MILLIS_PER_SECOND);
+        display.text().text(Component.empty()
+                .append(plugin.getLegendaryItems().displayName(ritual.itemId()))
+                .appendNewline()
+                .append(Component.text(formatRemainingTime(remainingSeconds))));
+    }
+
+    private void configureDisplay(Display display) {
+        display.setGravity(false);
+        display.setInvulnerable(true);
+        display.setSilent(true);
+        display.setPersistent(false);
+    }
+
+    private void removeDisplay(UUID ritualItemUuid) {
+        RitualDisplay display = displays.remove(ritualItemUuid);
+        if (display != null) {
+            display.remove();
+        }
+    }
+
+    static String formatRemainingTime(long remainingSeconds) {
+        long seconds = Math.max(0L, remainingSeconds);
+        return String.format(java.util.Locale.ROOT, "%d:%02d", seconds / 60L, seconds % 60L);
+    }
+
     private void announceCompletion(RitualRecord ritual) {
         Bukkit.broadcast(Component.text("The ritual is complete: ")
                 .append(plugin.getLegendaryItems().displayName(ritual.itemId())));
@@ -339,5 +418,12 @@ public final class RitualManager {
 
     private String formatCoordinate(double coordinate) {
         return String.format(java.util.Locale.ROOT, "%.1f", coordinate);
+    }
+
+    private record RitualDisplay(ItemDisplay item, TextDisplay text) {
+        private void remove() {
+            item.remove();
+            text.remove();
+        }
     }
 }
