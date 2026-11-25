@@ -541,11 +541,17 @@ public final class PhaseFiveAbilityListener implements Listener {
             if (!(entity instanceof LivingEntity living) || living.equals(player)) {
                 continue;
             }
-            Vector offset = living.getLocation().toVector().subtract(player.getLocation().toVector());
-            if (offset.lengthSquared() > 0 && offset.normalize().dot(forward) > 0.35) {
+            if (isNebulaThrustTarget(player.getLocation(), living.getLocation(), forward)) {
                 living.damage(damage, player);
+                living.addPotionEffect(new PotionEffect(
+                        PotionEffectType.WITHER, 200, 1, true, true, true));
             }
         }
+    }
+
+    static boolean isNebulaThrustTarget(Location player, Location target, Vector forward) {
+        Vector offset = target.toVector().subtract(player.toVector());
+        return offset.lengthSquared() > 0 && offset.normalize().dot(forward) > 0.35;
     }
 
     private void tickRifts() {

@@ -29,6 +29,12 @@ public final class PhaseFourItems {
                 1, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
                         'G', Material.GOLD_BLOCK), new Ingredient('B', Material.BLUE_ICE),
                 new Ingredient('N', Material.NETHERITE_BLOCK), new Ingredient('H', Material.HEAVY_CORE)));
+        ShapedRecipe cobweb = new ShapedRecipe(new NamespacedKey(plugin, "ordinary_string_cobweb"),
+                new ItemStack(Material.COBWEB));
+        cobweb.shape("SSS", "SSS", "SSS");
+        cobweb.setIngredient('S', ordinaryStringChoice(registry));
+        registry.registerAuxiliaryRecipe(cobweb);
+        registerOverrideRecipes(plugin, registry);
 
         registry.register(legendary(plugin, "astral_sword", Material.NETHERITE_SWORD,
                 new String[] {"HNH", "DND", "HBH"}, new Ingredient[] {new Ingredient(
@@ -55,6 +61,22 @@ public final class PhaseFourItems {
                 new EnchantmentLevel(Enchantment.SWIFT_SNEAK, 3)));
     }
 
+    private static void registerOverrideRecipes(Plugin plugin, LegendaryItemRegistry registry) {
+        ShapedRecipe goldenApple = new ShapedRecipe(
+                new NamespacedKey(plugin, "golden_apple_four_ingots"), new ItemStack(Material.GOLDEN_APPLE));
+        goldenApple.shape(" G ", "GAG", " G ");
+        goldenApple.setIngredient('G', Material.GOLD_INGOT);
+        goldenApple.setIngredient('A', Material.APPLE);
+        registry.registerAuxiliaryRecipe(goldenApple, NamespacedKey.minecraft("golden_apple"));
+
+        ShapedRecipe anvil = new ShapedRecipe(
+                new NamespacedKey(plugin, "anvil_block_center"), new ItemStack(Material.ANVIL));
+        anvil.shape("III", " B ", "III");
+        anvil.setIngredient('I', Material.IRON_INGOT);
+        anvil.setIngredient('B', Material.IRON_BLOCK);
+        registry.registerAuxiliaryRecipe(anvil, NamespacedKey.minecraft("anvil"));
+    }
+
     private static PhaseFourItemDefinition repeatable(
             Plugin plugin,
             String id,
@@ -75,6 +97,17 @@ public final class PhaseFourItems {
         }
         item.setItemMeta(meta);
         return definition(plugin, id, item, shape, false, false, hasPerPlayerCarryLimit, ingredients);
+    }
+
+    static RecipeChoice ordinaryStringChoice(LegendaryItemRegistry registry) {
+        return RecipeChoice.predicateChoice(
+                item -> isOrdinaryString(item, registry), new ItemStack(Material.STRING));
+    }
+
+    static boolean isOrdinaryString(ItemStack item, LegendaryItemRegistry registry) {
+        return item != null
+                && item.getType() == Material.STRING
+                && registry.identify(item).isEmpty();
     }
 
     private static PhaseFourItemDefinition legendary(

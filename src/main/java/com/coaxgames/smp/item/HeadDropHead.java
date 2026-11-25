@@ -36,6 +36,24 @@ public final class HeadDropHead {
         return true;
     }
 
+    public static String describeOwner(ItemStack item) {
+        if (item == null || item.getType() != Material.PLAYER_HEAD) {
+            return "not a player head";
+        }
+        var meta = item.getItemMeta();
+        if (!(meta instanceof org.bukkit.inventory.meta.SkullMeta skull)) {
+            return "unknown";
+        }
+        var profile = skull.getOwnerProfile();
+        String name = profile == null ? skull.getOwner() : profile.getName();
+        String uuid = profile == null || profile.getUniqueId() == null
+                ? null : profile.getUniqueId().toString();
+        if (name == null || name.isBlank()) {
+            return uuid == null ? "unknown" : uuid;
+        }
+        return uuid == null ? name : name + " (" + uuid + ")";
+    }
+
     public static boolean usesFixedPlayerHeadChoice(Recipe recipe) {
         if (!(recipe instanceof ShapedRecipe shaped)) {
             return false;

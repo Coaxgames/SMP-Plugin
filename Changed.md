@@ -2,6 +2,24 @@
 
 Human-readable record of project work. Current owner-feedback status and remaining checks are tracked in [ROADMAPv2.md](./ROADMAPv2.md); earlier entries are historical and may describe behavior since corrected.
 
+## Latest local changes – 2026-11-24
+
+- Capped TNT minecart damage at 14 health points (7 hearts) by scaling only over-cap base damage according to the event's final modifiers. In-game verification remains.
+- Invisible players now have only their name replaced with vanilla obfuscated random text in chat, advancement messages, and player-kill death messages. The generated text excludes every letter from the account name. In-game verification remains.
+- Replaced the vanilla golden apple and anvil recipes with the requested four-ingot golden apple shape and iron-ingot/iron-block anvil shape. In-game verification remains.
+- Doubled Breeze Rod drops from breezes by duplicating the final vanilla/looting rod quantity without changing other drops. In-game verification remains.
+- Added a 3×3 ordinary-string recipe for one cobweb. Galaxy String is explicitly rejected by the recipe.
+- Added accepted-craft logging for all player and automated crafter recipes. Logs include crafter, output, location, and each player-head owner/UUID when available; failed or blocked crafts are not logged.
+- Restored the 3-minute ritual's world display above the crafting table: the crafted item's model and a live `m:ss` countdown now recreate after chunk/world reload and are removed on completion or shutdown. In-game verification remains.
+- The Nebula Spear's fifth-lunge damage now applies Wither II for 10 seconds to each entity actually damaged by the thrust, not nearby non-targets or the holder. In-game verification remains.
+- Implemented Phase 6.1 Nebula Spear-only Lunge. Enchanting tables and anvils cannot add Lunge to ordinary spears, and Lunge is removed from enchanted books and ordinary spears as players acquire them. Other enchantments remain. In-game verification remains.
+
+## Latest local changes – 2026-11-15
+
+- Added Phase 6.1 roadmap items for Nebula Spear-only Lunge, blocking Lunge books while retaining other enchantments, and applying Wither II to the target for 10 seconds when its damage ability activates.
+- Added a Phase 6.1 item to investigate the reported ritual display regression and show the crafted item and remaining time above the crafting table.
+- Added Phase 6.1 tasks for TNT minecart damage, head-crafting logs, doubled breeze rods, and the requested cobweb, golden apple and anvil recipes. These are not implemented yet.
+
 ## Latest local changes – 2026-11-13
 
 - Removed automatic resource-pack recovery triggered by other plugins. Galaxy continues to send its own pack on join and updates; another plugin can still remove it.
