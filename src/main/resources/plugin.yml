@@ -8,16 +8,14 @@ depend:
 commands:
   galaxy:
     description: Manage Galaxy SMP legendary items.
-    usage: /galaxy <give|reset|reset-abilities|list|locate|find|clear-history|remove-item|menu|version|help>
-    permission: galaxy.admin
+    usage: /galaxy <give|reset|reset-abilities|list|locate|find|clear-history|remove-item|menu|recipes|version|help>
   checkforupdate:
     description: Cancel any pending update restart, then check for a new plugin release.
     usage: /checkforupdate
-    permission: galaxy.admin
   cooldown:
     description: Toggle or check your operator cooldowns.
     usage: /cooldown [status]
 permissions:
   galaxy.admin:
-    description: Allows administering Galaxy SMP legendary items.
+    description: Receives Galaxy SMP administrator notifications.
     default: op

@@ -21,15 +21,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public final class GalaxyCommand implements TabExecutor {
-    private static final String PERMISSION = "galaxy.admin";
-
     private final GalaxySmpPlugin plugin;
 
     private final LegendaryMenu menu;
+    private final RecipeGuide recipeGuide;
 
-    public GalaxyCommand(GalaxySmpPlugin plugin, LegendaryMenu menu) {
+    public GalaxyCommand(GalaxySmpPlugin plugin, LegendaryMenu menu, RecipeGuide recipeGuide) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.menu = Objects.requireNonNull(menu, "menu");
+        this.recipeGuide = Objects.requireNonNull(recipeGuide, "recipeGuide");
     }
 
     @Override
@@ -39,12 +39,26 @@ public final class GalaxyCommand implements TabExecutor {
             String label,
             String[] args
     ) {
-        if (!sender.hasPermission(PERMISSION)) {
-            sender.sendMessage(Component.text("You do not have permission to use this command."));
+        if (args.length == 0) {
+            help(sender, label, 1);
             return true;
         }
-        if (args.length == 0) {
-            sendUsage(sender, label);
+        if (args[0].equalsIgnoreCase("help")) {
+            help(sender, label, args);
+            return true;
+        }
+        if (args.length > 0 && args[0].equalsIgnoreCase("recipes")) {
+            if (args.length != 1) {
+                sender.sendMessage(Component.text("Usage: /" + label + " recipes"));
+            } else if (sender instanceof Player player) {
+                recipeGuide.open(player, 0);
+            } else {
+                sender.sendMessage(Component.text("Only players can open the recipe guide."));
+            }
+            return true;
+        }
+        if (!sender.isOp()) {
+            sender.sendMessage(Component.text("Only operators can use this command."));
             return true;
         }
 
@@ -53,7 +67,6 @@ public final class GalaxyCommand implements TabExecutor {
                 case "give" -> give(sender, label, args);
                 case "reset" -> reset(sender, label, args);
                 case "reset-abilities" -> resetAbilities(sender, label, args);
-                case "help" -> help(sender, label, args);
                 case "list" -> list(sender);
                 case "locate" -> locate(sender, label, args);
                 case "find" -> find(sender, label, args);
@@ -90,21 +103,21 @@ public final class GalaxyCommand implements TabExecutor {
             String alias,
             String[] args
     ) {
-        if (!sender.hasPermission(PERMISSION)) {
-            return List.of();
+        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+            return matching(List.of("1", "2", "3"), args[1]);
+        }
+        if (!sender.isOp()) {
+            return args.length == 1 ? matching(List.of("help", "recipes"), args[0]) : List.of();
         }
         if (args.length == 1) {
             return matching(List.of("give", "reset", "reset-abilities", "list",
-                    "locate", "find", "clear-history", "remove-item", "menu", "version", "help"), args[0]);
+                    "locate", "find", "clear-history", "remove-item", "menu", "recipes", "version", "help"), args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("clear-history")) {
             List<String> ids = new ArrayList<>(plugin.getLegendaryItems().getAll().stream()
                     .map(LegendaryItem::id).toList());
             ids.add("all");
             return matching(ids, args[1]);
-        }
-        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
-            return matching(List.of("1", "2", "3"), args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
             return matching(List.of("item"), args[1]);
@@ -219,6 +232,18 @@ public final class GalaxyCommand implements TabExecutor {
             ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
             if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
                 problem = target.getName() + " already holds the maximum of two legendary items.";
+                break;
+            }
+            if (!target.isOp() && definition.protectedFromLossAndStorage()
+                    && com.coaxgames.smp.listener.LegendaryRulesListener.hasOtherNonOperatorCopy(
+                            plugin, definition.id(), null, -1)) {
+                UUID uuid = plugin.getLegendaryItems().getUniqueId(item).orElse(null);
+                plugin.getDataStore().recordItemRemoval(
+                        definition.id(), uuid, target.getUniqueId(), target.getName(),
+                        "duplicate_grant", target.getLocation());
+                plugin.getLogger().warning("Denied duplicate grant of " + definition.id() + " UUID " + uuid
+                        + " to " + target.getName() + " (" + target.getUniqueId() + ").");
+                problem = "A non-operator already holds " + definition.id() + "; the duplicate was removed.";
                 break;
             }
             if (definition.trackUniqueInstance()) {
@@ -337,8 +362,14 @@ public final class GalaxyCommand implements TabExecutor {
         int safePage = Math.max(1, Math.min(3, page));
         sender.sendMessage(Component.text("Galaxy commands — Page " + safePage + "/3",
                 NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("Help and recipes are for everyone; all other commands listed require OP.",
+                NamedTextColor.GRAY));
         List<Component> lines = switch (safePage) {
             case 1 -> List.of(
+                    helpLine("/" + label + " help [1-3]",
+                            "Show this guide."),
+                    helpLine("/" + label + " recipes",
+                            "Open the crafting guide for Galaxy recipes."),
                     helpLine("/" + label + " give all",
                             "Give every registered Galaxy item to yourself."),
                     helpLine("/" + label + " give <player|@p> all",
@@ -711,6 +742,6 @@ public final class GalaxyCommand implements TabExecutor {
                 + " give all | give <player|@p> all | give <player|@p> <item> [count] | reset <item>"
                 + " | reset-abilities <player|selector>"
                 + " | list | locate <item> | find [item <uuid>] | clear-history <item|all>"
-                + " | remove-item <uuid> | version | help [1-3]"));
+                + " | remove-item <uuid> | recipes | version | help [1-3]"));
     }
 }

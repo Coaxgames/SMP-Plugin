@@ -31,6 +31,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -92,6 +93,10 @@ public final class LegendaryRulesListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player player && player.isOp()
+                && removeOperatorInventoryTransfer(event, player)) {
+            return;
+        }
         if (event instanceof CraftItemEvent craftEvent
                 && items.getForRecipe(craftEvent.getRecipe()).isPresent()) {
             return;
@@ -154,6 +159,9 @@ public final class LegendaryRulesListener implements Listener {
         if (isLegendary(event.getOldCursor())
                 && event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot < event.getView().getTopInventory().getSize())) {
             event.setCancelled(true);
+            if (event.getWhoClicked() instanceof Player player && player.isOp()) {
+                scheduleOperatorInventoryRemoval(player, event.getOldCursor(), -1, false);
+            }
             return;
         }
     }
@@ -203,6 +211,17 @@ public final class LegendaryRulesListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             if (items.containsProtectedItem(stack)) {
                 event.setCancelled(true);
+            }
+            return;
+        }
+        if (!player.isOp() && definition.protectedFromLossAndStorage()
+                && hasOtherNonOperatorCopy(plugin, definition.id(), null, -1)) {
+            event.setCancelled(true);
+            if (recordRemoval(definition.id(), items.getUniqueId(stack).orElse(null),
+                    player, "duplicate_pickup", event.getItem().getLocation())) {
+                event.getItem().remove();
+            } else {
+                player.sendMessage("The duplicate could not be removed because its audit record could not be saved.");
             }
             return;
         }
@@ -260,34 +279,47 @@ public final class LegendaryRulesListener implements Listener {
     public void onPlayerDrop(PlayerDropItemEvent event) {
         ItemStack stack = event.getItemDrop().getItemStack();
         var definition = items.identify(stack).orElse(null);
-        if (event.getPlayer().isOp() && definition != null
-                && com.coaxgames.smp.storage.LegendaryDataStore.isLimitedMace(definition.id())) {
-            UUID occupied = plugin.getDataStore().getNonOperatorMace(definition.id());
-            if (occupied != null) {
-                var location = event.getItemDrop().getLocation();
-                event.setCancelled(true);
-                plugin.getLogger().warning("Returned " + definition.id() + " dropped by operator "
-                        + event.getPlayer().getName() + " at " + location.getWorld().getName() + " "
-                        + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
-                        + "; the non-operator mace slot is occupied.");
-                return;
-            }
+        if (event.getPlayer().isOp() && definition != null && definition.protectedFromLossAndStorage()) {
+            Item dropped = event.getItemDrop();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (!event.isCancelled() && dropped.isValid()) {
+                    recordRemoval(definition.id(), items.getUniqueId(dropped.getItemStack()).orElse(null),
+                            event.getPlayer(), "operator_drop", dropped.getLocation());
+                    dropped.remove();
+                }
+            });
+            return;
         }
         if (items.containsProtectedItem(stack) && !items.isLegendary(stack)) {
             event.setCancelled(true);
             return;
         }
-        if (items.isLegendary(stack) && !persistOwnerLocationAndStatus(
-                stack, null, false, event.getItemDrop().getLocation(), true)) {
-            event.setCancelled(true);
+        if (items.isLegendary(stack)) {
+            Player player = event.getPlayer();
+            if (!persistOwnerLocationAndStatus(
+                    stack, player.getUniqueId(), player.isOp(), player.getLocation(), true)
+                    || !persistOwnerLocationAndStatus(
+                            stack, null, false, event.getItemDrop().getLocation(), true)) {
+                event.setCancelled(true);
+            }
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        for (ItemStack stack : event.getDrops()) {
+        Player player = event.getEntity();
+        var drops = event.getDrops().iterator();
+        while (drops.hasNext()) {
+            ItemStack stack = drops.next();
+            var definition = items.identify(stack).orElse(null);
+            if (player.isOp() && definition != null && definition.protectedFromLossAndStorage()) {
+                recordRemoval(definition.id(), items.getUniqueId(stack).orElse(null),
+                        player, "operator_death_drop", player.getLocation());
+                drops.remove();
+                continue;
+            }
             if (items.isLegendary(stack)) {
-                persistLocation(stack, event.getEntity().getLocation());
+                persistLocation(stack, player.getLocation());
             }
         }
     }
@@ -295,11 +327,25 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        Set<UUID> held = new java.util.HashSet<>();
         for (ItemStack stack : allCarriedItems(player)) {
             if (items.isLegendary(stack)) {
+                items.getUniqueId(stack).ifPresent(held::add);
                 persistOwnerLocationAndStatus(
                         stack, player.getUniqueId(), player.isOp(), player.getLocation(), true);
             }
+        }
+        ItemStack cursor = player.getItemOnCursor();
+        if (items.isLegendary(cursor)) {
+            items.getUniqueId(cursor).ifPresent(held::add);
+            persistOwnerLocationAndStatus(
+                    cursor, player.getUniqueId(), player.isOp(), player.getLocation(), true);
+        }
+        try {
+            plugin.getDataStore().clearMissingHeldItems(player.getUniqueId(), held);
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Could not reconcile item ownership on logout for "
+                    + player.getUniqueId() + ".", exception);
         }
     }
 
@@ -326,6 +372,7 @@ public final class LegendaryRulesListener implements Listener {
                         + "'s ender chest; the item remains in place.");
             }
         }
+        enforceJoiningPlayerUniqueness(player);
         enforceCarryingCaps(player);
         refreshItemModels(player.getInventory());
         for (String id : com.coaxgames.smp.util.ItemCooldownMarkers.PERSISTED_ITEMS) {
@@ -499,22 +546,36 @@ public final class LegendaryRulesListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerInventorySlotChange(PlayerInventorySlotChangeEvent event) {
         ItemStack stack = event.getNewItemStack();
-        updateInventoryTracking(event, stack);
+        Player player = event.getPlayer();
+        var definition = items.identify(stack).orElse(null);
+        if (!player.isOp() && definition != null && definition.protectedFromLossAndStorage()
+                && hasOtherNonOperatorCopy(plugin, definition.id(), player, event.getSlot())) {
+            UUID uuid = items.getUniqueId(stack).orElse(null);
+            int slot = event.getSlot();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                ItemStack current = player.getInventory().getItem(slot);
+                if (player.isOnline() && !player.isOp() && current != null
+                        && items.identify(current).filter(item -> item.id().equals(definition.id())).isPresent()
+                        && Objects.equals(uuid, items.getUniqueId(current).orElse(null))) {
+                    if (hasOtherNonOperatorCopy(plugin, definition.id(), player, slot)) {
+                        if (recordRemoval(definition.id(), uuid, player, "duplicate_inventory", player.getLocation())) {
+                            player.getInventory().setItem(slot, null);
+                        }
+                    } else {
+                        persistOwnerLocationAndStatus(
+                                current, player.getUniqueId(), false, player.getLocation(), true);
+                    }
+                }
+            });
+        } else {
+            updateInventoryTracking(event, stack);
+        }
         if (items.removeForbiddenLunge(stack)) {
             event.getPlayer().getInventory().setItem(event.getSlot(), stack);
         }
     }
 
     private void updateInventoryTracking(PlayerInventorySlotChangeEvent event, ItemStack newStack) {
-        ItemStack oldStack = event.getOldItemStack();
-        if (items.isLegendary(oldStack)) {
-            UUID oldUuid = items.getUniqueId(oldStack).orElse(null);
-            UUID newUuid = items.getUniqueId(newStack).orElse(null);
-            if (oldUuid != null && !oldUuid.equals(newUuid)) {
-                persistOwnerLocationAndStatus(
-                        oldStack, event.getPlayer().getUniqueId(), event.getPlayer().isOp(), null, false);
-            }
-        }
         if (items.isLegendary(newStack)) {
             persistOwnerLocationAndStatus(
                     newStack, event.getPlayer().getUniqueId(), event.getPlayer().isOp(),
@@ -549,6 +610,9 @@ public final class LegendaryRulesListener implements Listener {
         if (event.getRightClicked() instanceof ItemFrame && isLegendary(handItem)
                 || items.containsProtectedItem(handItem) && !items.isProtectedItem(handItem)) {
             event.setCancelled(true);
+            if (event.getRightClicked() instanceof ItemFrame && event.getPlayer().isOp()) {
+                removeOperatorHandItem(event.getPlayer(), event.getHand(), handItem);
+            }
         }
     }
 
@@ -564,6 +628,9 @@ public final class LegendaryRulesListener implements Listener {
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
         if (isLegendary(event.getPlayerItem()) || isLegendary(event.getArmorStandItem())) {
             event.setCancelled(true);
+            if (event.getPlayer().isOp()) {
+                removeOperatorHandItem(event.getPlayer(), event.getHand(), event.getPlayerItem());
+            }
         }
     }
 
@@ -592,6 +659,9 @@ public final class LegendaryRulesListener implements Listener {
                         .map(definition -> Set.of("mass_orb", "galaxy_string").contains(definition.id()))
                         .orElse(false)) {
             event.setCancelled(true);
+            if (isLegendary(item) && event.getPlayer().isOp()) {
+                removeOperatorHandItem(event.getPlayer(), event.getHand(), item);
+            }
         }
     }
 
@@ -607,6 +677,110 @@ public final class LegendaryRulesListener implements Listener {
 
     private boolean isLegendary(ItemStack stack) {
         return items.containsProtectedItem(stack);
+    }
+
+    boolean removeOperatorInventoryTransfer(InventoryClickEvent event, Player player) {
+        if (event instanceof InventoryCreativeEvent) {
+            ItemStack creativeDrop = event.getCursor();
+            var definition = items.identify(creativeDrop).orElse(null);
+            if (event.getRawSlot() < 0 && definition != null && definition.protectedFromLossAndStorage()) {
+                event.setCancelled(true);
+                scheduleOperatorInventoryRemoval(player, creativeDrop, -1, true);
+                return true;
+            }
+            return false;
+        }
+        Inventory clicked = event.getClickedInventory();
+        boolean clickedTop = clicked != null && clicked == event.getView().getTopInventory()
+                && clicked != player.getInventory();
+        InventoryAction action = event.getAction();
+        ItemStack outgoing = null;
+        int sourceSlot = -1;
+        if (clickedTop && (action == InventoryAction.PLACE_ALL || action == InventoryAction.PLACE_ONE
+                || action == InventoryAction.PLACE_SOME || action == InventoryAction.SWAP_WITH_CURSOR)
+                || clicked == null && (action == InventoryAction.DROP_ALL_CURSOR
+                || action == InventoryAction.DROP_ONE_CURSOR)) {
+            outgoing = event.getCursor();
+        } else if (clickedTop && (action == InventoryAction.HOTBAR_SWAP
+                || action == InventoryAction.HOTBAR_MOVE_AND_READD)) {
+            outgoing = hotbarItem(event);
+            sourceSlot = event.getClick() == ClickType.SWAP_OFFHAND ? 40 : event.getHotbarButton();
+        } else if (clicked == event.getView().getBottomInventory()
+                && action == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                && isExternalInventory(event.getView().getTopInventory())) {
+            outgoing = event.getCurrentItem();
+            sourceSlot = event.getSlot();
+        } else if (clicked == player.getInventory()
+                && (action == InventoryAction.DROP_ALL_SLOT || action == InventoryAction.DROP_ONE_SLOT)) {
+            outgoing = event.getCurrentItem();
+            sourceSlot = event.getSlot();
+        } else if (isBundle(event.getCurrentItem())) {
+            outgoing = event.getCursor();
+        } else if (isBundle(event.getCursor()) && clicked == player.getInventory()) {
+            outgoing = event.getCurrentItem();
+            sourceSlot = event.getSlot();
+        }
+        var definition = items.identify(outgoing).orElse(null);
+        if (definition == null || !definition.protectedFromLossAndStorage()) {
+            return false;
+        }
+        event.setCancelled(true);
+        scheduleOperatorInventoryRemoval(player, outgoing, sourceSlot, false);
+        return true;
+    }
+
+    private void scheduleOperatorInventoryRemoval(
+            Player player, ItemStack stack, int sourceSlot, boolean discardedAtEvent
+    ) {
+        var definition = items.identify(stack).orElse(null);
+        if (definition == null || !definition.protectedFromLossAndStorage()) {
+            return;
+        }
+        UUID uuid = items.getUniqueId(stack).orElse(null);
+        ItemStack original = stack.clone();
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            String reason = "operator_inventory_transfer";
+            Inventory inventory = player.getInventory();
+            if (sourceSlot >= 0 && sameOperatorItem(inventory.getItem(sourceSlot), definition.id(), uuid, original)) {
+                recordRemoval(definition.id(), uuid, player, reason, player.getLocation());
+                inventory.setItem(sourceSlot, null);
+                return;
+            }
+            ItemStack cursor = player.getItemOnCursor();
+            if (sameOperatorItem(cursor, definition.id(), uuid, original)) {
+                recordRemoval(definition.id(), uuid, player, reason, player.getLocation());
+                player.setItemOnCursor(null);
+                return;
+            }
+            for (int slot = 0; slot < inventory.getSize(); slot++) {
+                if (sameOperatorItem(inventory.getItem(slot), definition.id(), uuid, original)) {
+                    recordRemoval(definition.id(), uuid, player, reason, player.getLocation());
+                    inventory.setItem(slot, null);
+                    return;
+                }
+            }
+            if (discardedAtEvent) {
+                recordRemoval(definition.id(), uuid, player, "operator_drop", player.getLocation());
+            } else {
+                plugin.getLogger().severe("Could not find operator item " + definition.id() + " UUID " + uuid
+                        + " for removal after an inventory transfer attempt by " + player.getName() + ".");
+            }
+        });
+    }
+
+    private boolean sameOperatorItem(ItemStack stack, String itemId, UUID uuid, ItemStack original) {
+        return stack != null && items.identify(stack).filter(item -> item.id().equals(itemId)).isPresent()
+                && (uuid == null ? stack.isSimilar(original) : items.getUniqueId(stack).filter(uuid::equals).isPresent());
+    }
+
+    private void removeOperatorHandItem(Player player, org.bukkit.inventory.EquipmentSlot hand, ItemStack stack) {
+        var definition = items.identify(stack).orElse(null);
+        if (definition == null || !definition.protectedFromLossAndStorage()) {
+            return;
+        }
+        recordRemoval(definition.id(), items.getUniqueId(stack).orElse(null),
+                player, "operator_world_transfer", player.getLocation());
+        player.getInventory().setItem(hand, null);
     }
 
     private boolean isPendingRitualItem(ItemStack stack) {
@@ -745,6 +919,73 @@ public final class LegendaryRulesListener implements Listener {
         System.arraycopy(armor, 0, all, contents.length, armor.length);
         all[all.length - 1] = player.getInventory().getItemInOffHand();
         return all;
+    }
+
+    public static boolean hasOtherNonOperatorCopy(
+            GalaxySmpPlugin plugin, String itemId, Player excludedPlayer, int excludedSlot
+    ) {
+        LegendaryItemRegistry items = plugin.getLegendaryItems();
+        Set<UUID> online = new java.util.HashSet<>();
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            online.add(player.getUniqueId());
+            if (player.isOp()) {
+                continue;
+            }
+            Inventory inventory = player.getInventory();
+            for (int slot = 0; slot < inventory.getSize(); slot++) {
+                if (player.equals(excludedPlayer) && slot == excludedSlot) {
+                    continue;
+                }
+                if (items.identify(inventory.getItem(slot))
+                        .filter(item -> item.id().equals(itemId)).isPresent()) {
+                    return true;
+                }
+            }
+            if (items.identify(player.getItemOnCursor())
+                    .filter(item -> item.id().equals(itemId)).isPresent()) {
+                return true;
+            }
+        }
+        for (UUID holder : plugin.getDataStore().getRecordedHolders(itemId)) {
+            if (!online.contains(holder) && !plugin.getServer().getOfflinePlayer(holder).isOp()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void enforceJoiningPlayerUniqueness(Player player) {
+        if (player.isOp()) {
+            return;
+        }
+        Inventory inventory = player.getInventory();
+        for (int slot = inventory.getSize() - 1; slot >= 0; slot--) {
+            ItemStack stack = inventory.getItem(slot);
+            var definition = items.identify(stack).orElse(null);
+            if (definition == null || !definition.protectedFromLossAndStorage()
+                    || !hasOtherNonOperatorCopy(plugin, definition.id(), player, slot)) {
+                continue;
+            }
+            UUID uuid = items.getUniqueId(stack).orElse(null);
+            if (recordRemoval(definition.id(), uuid, player, "duplicate_join", player.getLocation())) {
+                inventory.setItem(slot, null);
+            }
+        }
+    }
+
+    private boolean recordRemoval(String itemId, UUID uuid, Player player, String reason, org.bukkit.Location location) {
+        try {
+            plugin.getDataStore().recordItemRemoval(
+                    itemId, uuid, player.getUniqueId(), player.getName(), reason, location);
+            plugin.getLogger().warning("Removed " + itemId + " UUID " + (uuid == null ? "missing" : uuid)
+                    + " from " + player.getName() + " (" + player.getUniqueId() + "): " + reason
+                    + " at " + location + ".");
+            return true;
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Could not save " + reason + " removal for "
+                    + itemId + " UUID " + uuid + ".", exception);
+            return false;
+        }
     }
 
     private boolean persistOwnerAndLocation(ItemStack stack, UUID ownerUuid, org.bukkit.Location location) {

@@ -20,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 
 /** Op-only chest menu listing every legendary item; clicking grants it through /galaxy give. */
 public final class LegendaryMenu implements Listener {
-    private static final String PERMISSION = "galaxy.admin";
     private static final int PAGE_SIZE = 45;
     private static final int PREVIOUS_SLOT = 45;
     private static final int NEXT_SLOT = 53;
@@ -70,7 +69,7 @@ public final class LegendaryMenu implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !player.hasPermission(PERMISSION)) {
+        if (!(event.getWhoClicked() instanceof Player player) || !player.isOp()) {
             return;
         }
         if (event.getClickedInventory() != event.getView().getTopInventory()) {

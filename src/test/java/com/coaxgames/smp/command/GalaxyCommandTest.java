@@ -29,12 +29,85 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.mockito.ArgumentCaptor;
 
 class GalaxyCommandTest {
+    @Test
+    void helpIsAvailableToNonOperatorsAndCompletesAllPages() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        Player player = mock(Player.class);
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
+
+        command.onCommand(player, null, "galaxy", new String[] {"help"});
+        command.onCommand(player, null, "galaxy", new String[] {"help", "2"});
+        command.onCommand(player, null, "galaxy", new String[] {"help", "3"});
+        command.onCommand(player, null, "galaxy", new String[] {});
+
+        ArgumentCaptor<Component> messages = ArgumentCaptor.forClass(Component.class);
+        verify(player, org.mockito.Mockito.atLeastOnce()).sendMessage(messages.capture());
+        List<String> text = messages.getAllValues().stream()
+                .map(PlainTextComponentSerializer.plainText()::serialize).toList();
+        assertTrue(text.stream().anyMatch(line -> line.contains("Page 1/3")));
+        assertTrue(text.stream().anyMatch(line -> line.contains("Page 2/3")));
+        assertTrue(text.stream().anyMatch(line -> line.contains("Page 3/3")));
+        assertTrue(text.stream().anyMatch(line -> line.contains("/galaxy recipes")));
+        assertTrue(text.stream().anyMatch(line -> line.contains("require OP")));
+        assertEquals(List.of("help"), command.onTabComplete(player, null, "galaxy", new String[] {"h"}));
+        assertEquals(List.of("1", "2", "3"),
+                command.onTabComplete(player, null, "galaxy", new String[] {"help", ""}));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"give", "reset", "reset-abilities", "list", "locate", "find",
+            "clear-history", "remove-item", "menu", "version"})
+    void nonOperatorCannotUseAdministrativeCommandsEvenWithPermission(String subcommand) {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        LegendaryMenu menu = mock(LegendaryMenu.class);
+        Player player = mock(Player.class);
+        when(player.hasPermission("galaxy.admin")).thenReturn(true);
+        GalaxyCommand command = new GalaxyCommand(plugin, menu, mock(RecipeGuide.class));
+
+        command.onCommand(player, null, "galaxy", new String[] {subcommand});
+
+        verify(player).sendMessage(Component.text("Only operators can use this command."));
+        verify(plugin, never()).getLegendaryItems();
+        verify(menu, never()).open(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt());
+        assertTrue(command.onTabComplete(player, null, "galaxy", new String[] {subcommand}).isEmpty());
+    }
+
+    @Test
+    void operatorMayUseAdminCommandWithoutPermissionNode() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        LegendaryMenu menu = mock(LegendaryMenu.class);
+        Player player = mock(Player.class);
+        when(player.isOp()).thenReturn(true);
+        GalaxyCommand command = new GalaxyCommand(plugin, menu, mock(RecipeGuide.class));
+
+        command.onCommand(player, null, "galaxy", new String[] {"menu"});
+
+        verify(menu).open(player, 0);
+    }
+
+    @Test
+    void recipesAreAvailableWithoutAdminButOtherCommandsRemainProtected() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        RecipeGuide guide = mock(RecipeGuide.class);
+        Player player = mock(Player.class);
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), guide);
+
+        command.onCommand(player, null, "galaxy", new String[] {"recipes"});
+        verify(guide).open(player, 0);
+        assertEquals(List.of("recipes"), command.onTabComplete(player, null, "galaxy", new String[] {"r"}));
+        command.onCommand(player, null, "galaxy", new String[] {"give", "all"});
+        verify(player).sendMessage(Component.text("Only operators can use this command."));
+        verify(plugin, never()).getLegendaryItems();
+    }
+
     @Test
     void locateLabelsMissingItemsUnknownAndProvidesBothActions() {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
@@ -53,7 +126,7 @@ class GalaxyCommandTest {
                 new LegendaryDataStore.ItemRecord("astral_sword", id, null, "world",
                         1, 2, 3, false, true, 0)));
         when(server.getWorlds()).thenReturn(List.of());
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         try (var bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());
             command.onCommand(sender, null, "galaxy", new String[] {"locate", "astral_sword"});
@@ -99,7 +172,7 @@ class GalaxyCommandTest {
         when(inventory.getItem(1)).thenReturn(stack);
         when(holder.getItemOnCursor()).thenReturn(stack);
 
-        new GalaxyCommand(plugin, mock(LegendaryMenu.class)).onCommand(
+        new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class)).onCommand(
                 operator, null, "galaxy", new String[] {"remove-item", id.toString()});
 
         verify(entity).remove();
@@ -117,7 +190,7 @@ class GalaxyCommandTest {
         UUID id = UUID.randomUUID();
         when(sender.hasPermission("galaxy.admin")).thenReturn(true);
         when(plugin.getDataStore()).thenReturn(store);
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         command.onCommand(sender, null, "galaxy", new String[] {"remove-item", id.toString()});
         verify(plugin, never()).getDataStore();
         when(sender.isOp()).thenReturn(true);
@@ -135,7 +208,7 @@ class GalaxyCommandTest {
         when(sender.isOp()).thenReturn(true);
         when(plugin.getDataStore()).thenReturn(store);
         when(store.clearItemHistory((String) null)).thenReturn(3);
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         command.onCommand(sender, null, "galaxy", new String[] {"clear-history", "all"});
         verify(sender).sendMessage(Component.text(
                 "Cleared 3 locate history entries. Items and craft limits were not removed; new sightings may appear again."));
@@ -144,7 +217,7 @@ class GalaxyCommandTest {
         when(sender.isOp()).thenReturn(false);
         command.onCommand(sender, null, "galaxy",
                 new String[] {"find", "item", UUID.randomUUID().toString()});
-        verify(sender).sendMessage(Component.text("Only operators can teleport to items."));
+        verify(sender).sendMessage(Component.text("Only operators can use this command."));
         verify(sender, never()).teleportAsync(org.mockito.ArgumentMatchers.any());
     }
 
@@ -153,10 +226,10 @@ class GalaxyCommandTest {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
         PluginMeta metadata = mock(PluginMeta.class);
         CommandSender sender = mock(CommandSender.class);
-        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(sender.isOp()).thenReturn(true);
         when(plugin.getPluginMeta()).thenReturn(metadata);
         when(metadata.getVersion()).thenReturn("2.22.99");
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
 
         command.onCommand(sender, null, "galaxy", new String[] {"version"});
 
@@ -167,13 +240,14 @@ class GalaxyCommandTest {
     @Test
     void versionRequiresAdminAndRejectsExtraArguments() {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
-        CommandSender sender = mock(CommandSender.class);
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        Player sender = mock(Player.class);
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
+        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
         command.onCommand(sender, null, "galaxy", new String[] {"version"});
-        verify(sender).sendMessage(Component.text("You do not have permission to use this command."));
+        verify(sender).sendMessage(Component.text("Only operators can use this command."));
         verify(plugin, never()).getPluginMeta();
 
-        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(sender.isOp()).thenReturn(true);
         command.onCommand(sender, null, "galaxy", new String[] {"version", "extra"});
         verify(sender).sendMessage(Component.text("Usage: /galaxy version"));
         verify(plugin, never()).getPluginMeta();
@@ -196,7 +270,7 @@ class GalaxyCommandTest {
         UUID playerId = UUID.randomUUID();
         Location location = mock(Location.class);
 
-        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(sender.isOp()).thenReturn(true);
         when(plugin.getLegendaryItems()).thenReturn(registry);
         when(plugin.getRitualManager()).thenReturn(rituals);
         when(plugin.getDataStore()).thenReturn(store);
@@ -220,7 +294,7 @@ class GalaxyCommandTest {
         when(inventory.addItem(ballStack)).thenReturn(new HashMap<>());
         when(registry.getUniqueId(maceStack)).thenReturn(Optional.of(itemId));
 
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         try (var bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(() -> Bukkit.getPlayerExact("Owner")).thenReturn(target);
             command.onCommand(sender, null, "galaxy", new String[] {"give", "Owner", "all"});
@@ -241,7 +315,7 @@ class GalaxyCommandTest {
         Player target = mock(Player.class);
         LegendaryItem mace = mock(LegendaryItem.class);
         ItemStack stack = mock(ItemStack.class);
-        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(sender.isOp()).thenReturn(true);
         when(plugin.getLegendaryItems()).thenReturn(registry);
         when(plugin.getRitualManager()).thenReturn(rituals);
         when(registry.getAll()).thenReturn(List.of(mace));
@@ -250,7 +324,7 @@ class GalaxyCommandTest {
         when(stack.getAmount()).thenReturn(1);
         when(target.getName()).thenReturn("Player");
 
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         try (var bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(() -> Bukkit.getPlayerExact("Player")).thenReturn(target);
             command.onCommand(sender, null, "galaxy", new String[] {"give", "Player", "all"});
@@ -261,14 +335,66 @@ class GalaxyCommandTest {
     }
 
     @Test
+    void duplicateGrantIsAuditedBeforeItCanConsumeCraftQuota() throws Exception {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
+        RitualManager rituals = mock(RitualManager.class);
+        LegendaryDataStore store = mock(LegendaryDataStore.class);
+        Server server = mock(Server.class);
+        Player sender = mock(Player.class);
+        Player target = mock(Player.class);
+        Player holder = mock(Player.class);
+        PlayerInventory inventory = mock(PlayerInventory.class);
+        LegendaryItem definition = mock(LegendaryItem.class);
+        ItemStack newItem = mock(ItemStack.class);
+        ItemStack existing = mock(ItemStack.class);
+        Location location = new Location(null, 1, 2, 3);
+        UUID itemUuid = UUID.randomUUID();
+        UUID targetUuid = UUID.randomUUID();
+        when(sender.isOp()).thenReturn(true);
+        when(plugin.getLegendaryItems()).thenReturn(registry);
+        when(plugin.getRitualManager()).thenReturn(rituals);
+        when(plugin.getDataStore()).thenReturn(store);
+        when(plugin.getServer()).thenReturn(server);
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getAnonymousLogger());
+        when(registry.get("astral_sword")).thenReturn(Optional.of(definition));
+        when(registry.createItem("astral_sword")).thenReturn(newItem);
+        when(registry.getUniqueId(newItem)).thenReturn(Optional.of(itemUuid));
+        when(registry.identify(existing)).thenReturn(Optional.of(definition));
+        when(definition.id()).thenReturn("astral_sword");
+        when(definition.protectedFromLossAndStorage()).thenReturn(true);
+        when(newItem.getAmount()).thenReturn(1);
+        when(rituals.hasCapacity(target, "astral_sword", 1)).thenReturn(true);
+        when(target.getName()).thenReturn("Target");
+        when(target.getUniqueId()).thenReturn(targetUuid);
+        when(target.getLocation()).thenReturn(location);
+        doReturn(List.of(holder)).when(server).getOnlinePlayers();
+        when(holder.getInventory()).thenReturn(inventory);
+        when(inventory.getSize()).thenReturn(1);
+        when(inventory.getItem(0)).thenReturn(existing);
+        try (var bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getPlayerExact("Target")).thenReturn(target);
+            new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class)).onCommand(
+                    sender, null, "galaxy", new String[] {"give", "Target", "astral_sword"});
+        }
+        verify(store).recordItemRemoval(
+                "astral_sword", itemUuid, targetUuid, "Target", "duplicate_grant", location);
+        verify(store, never()).recordCraftedItem(
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(target, never()).getInventory();
+    }
+
+    @Test
     void completesAllForTheItemArgument() {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
         LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
         CommandSender sender = mock(CommandSender.class);
-        when(sender.hasPermission("galaxy.admin")).thenReturn(true);
+        when(sender.isOp()).thenReturn(true);
         when(plugin.getLegendaryItems()).thenReturn(registry);
         when(registry.getAll()).thenReturn(List.of());
-        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class));
+        GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
 
         assertEquals(List.of("all"), command.onTabComplete(
                 sender, null, "galaxy", new String[] {"give", "Player", "a"}));

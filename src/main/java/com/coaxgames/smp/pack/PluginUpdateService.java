@@ -123,6 +123,10 @@ public final class PluginUpdateService implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isOp()) {
+            sender.sendMessage(Component.text("Only operators can use this command."));
+            return true;
+        }
         if (countdown != null) {
             countdown.cancel();
             countdown = null;

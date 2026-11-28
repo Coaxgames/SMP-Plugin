@@ -55,8 +55,9 @@ Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total p
 5. Cannot be stored in ender chests or any container (chests, barrels, shulkers, hoppers, droppers, item frames, armor stands, bundles, etc.).
 6. Crafting triggers a **3 min ritual**, except for Galaxy String, Kuiper Ball, and Mass Orb. The item does not exist in the world until the timer ends. An animation appears above the crafting table, then the item drops there. Every 3 min, chat reveals the crafter's coordinates and the crafted item's name.
 7. Each non-operator may carry at most **two legendary items in total**, including both maces. For example, a chestplate and a weapon or both different maces fill the limit. Usables and repeatable ingredients, such as Kuiper Balls, Mass Orbs, Galaxy String and Corrupt Ender Pearls, do not count. Operators are exempt from the player and server-wide limits.
-8. For non-operators, there may be **one Star Mace and one Collapsing Star Mace server-wide**, independently; both count toward the player's two-legendary limit. Operator copies are exempt. Once a non-operator's mace has been made, another non-operator cannot craft another of that type. The current separate craft records do not by themselves prove all acquisition paths enforce the server-wide item cap.
-9. When a limit blocks crafting, show no crafting-table output and prevent recipe-book autofill from enabling the craft. If an operator drops a mace while that mace's non-operator slot is occupied, immediately return it to the operator and log the operator and coordinates. If that slot is free, a non-operator may pick up the dropped operator mace.
+8. For non-operators, each legendary type is limited to **one copy server-wide**; all legendary types count toward the two-item personal limit. Operator copies and usable items are exempt. Permanent non-operator craft-once records remain separate from this carrying rule.
+9. When a limit blocks crafting, show no crafting-table output and prevent recipe-book autofill from enabling the craft. An operator's legendary item is removed and logged if dropped or transferred out of their inventory; moving it within their own inventory is allowed. With keep-inventory enabled, retained items remain tracked and the same removal rule applies if they are later dropped. When a non-operator receives a duplicate, remove the new copy and log its UUID and player.
+   Manual drops, death drops, container transfer attempts and item-frame/armor-stand transfers are handled locally. Creative inventory and other plugin-driven transfer paths still need live verification. The pickup and inventory-slot checks include recorded offline holders, but a complete independent offline/world scan and all acquisition paths are not yet covered.
 
 ## 3. Technical Design
 
@@ -68,7 +69,7 @@ Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total p
 ### 3.2 Recipes
 - Register shaped recipes using exact choices for fixed custom ingredients such as Galaxy String. Player-head slots must match the Head Drop PDC marker, not a fixed display name or full `ItemStack` snapshot.
 - Head Drop (`HeadDrop`) 3.1.0 or newer is a required server plugin (`plugin.yml` hard dependency and startup version check). Configure its `drop.placement: item` so recipe heads are usable as items; for block placement, require `head.persist_lore_on_placement: true`.
-- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each type has its own independent, permanent server-wide one-craft limit; the owner also requires no more than one of each mace present server-wide. Verify all acquisition paths against that cap.
+- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each type has its own independent, permanent server-wide one-craft limit; the owner also requires one copy of each legendary type among non-operators. Verify all acquisition paths against that cap.
 - Recipe heads come from [Head Drop](https://modrinth.com/plugin/head-drop). Its 3.1.0 source tags generated heads with plugin-owned persistent data: `headdrop:dropped` as a byte value of `1` (`DROPPED_KEY = "dropped"`). Validate that marker in crafting events rather than matching player-specific display names or lore. Configure `drop.placement: item` so deaths produce recipe-usable item heads; if heads are placed as blocks, Head Drop can preserve the marker through placement and return it when broken when `head.persist_lore_on_placement` is enabled.
 - Craft-once enforcement in `PrepareItemCraftEvent` (deny result) and `CraftItemEvent` (atomically record in the data store; handle shift-click and automated crafting).
 - On successful craft, consume ingredients and start the ritual; do not create the item until the 3-minute timer completes. Show the animation over the crafting table and drop the item there at completion.
@@ -237,7 +238,7 @@ The checked entries below describe the earlier implementation, not acceptance of
 6. ✅ Verify ordinary and Corrupt Ender Pearl stacks on Paper: loot, drops, inventory changes, creative and other acquisition paths must cap at 8 without a per-player total limit. Verify both share the 1.5-second use cooldown.
 7. ✅ Two legendary items total per non-operator, counting both maces and pending rituals but excluding repeatable usables and ingredients; operators are exempt. In-game verification remains.
 8. ✅ Independent persistent Star and Collapsing Star mace slots for non-operators; operator copies are exempt. Crafting, grants, pickup and reclaim use the tracker. In-game and acquisition-path verification remains.
-9. ✅ Hide crafting output and block recipe-book autofill when a limit is reached; return an operator's dropped mace if its non-operator slot is occupied and log operator and coordinates. A non-operator can claim an operator's dropped mace when that slot is free. In-game verification remains.
+9. ⬜ Hide crafting output and block recipe-book autofill when a limit is reached; operator-dropped legendary items must now be removed and logged. Verify the revised rule in game and across acquisition paths.
 
 ##### Updates
 1. ⬜ Verify matching release/plugin/pack versions and restart-free pack-only updates after installing the content-comparing updater; a running plugin's reported version changes only on restart.
@@ -277,11 +278,98 @@ These statuses describe local implementation only; none of the ✅ items are cla
 - [x] Replace the anvil recipe: three iron ingots across the top row, an iron block in the center, and three iron ingots across the bottom row. In-game verification remains.
 - [x] While invisible, scramble the player's name with vanilla Minecraft obfuscated text when they chat, get an advancement, or kill another player. The random characters contain none of the letters from the player's account name. In-game verification remains.
 
+
+## Phase 6.2 - Testing and Debugging
+
+Run these checks on the target Paper 26.3 server with the required Head Drop version and the production-like configuration. Check an item only after completing the in-game test and recording/fixing any failure; automated tests or local code inspection do not count as server verification.
+
+#### Server setup, startup and configuration
+- [ ] **Owner local test:** Start a clean server with Java 25+ and Paper 26.3; confirm Galaxy SMP and Head Drop 3.1.0+ enable without errors and report the expected plugin versions.
+- [ ] **Owner local test:** Confirm Galaxy SMP refuses to enable with Head Drop missing or below 3.1.0, and gives a clear diagnostic.
+- [ ] **Owner local test:** Confirm Head Drop `drop.placement: item` generates usable recipe heads carrying `headdrop:dropped` as byte `1`; ordinary player heads do not satisfy head ingredients.
+- [ ] **Owner local test:** Check startup logs for failed recipe, listener, scheduler, storage, resource-pack, or configuration registration; confirm invalid configuration is reported instead of silently replaced.
+- [ ] **Owner local test:** Check all documented defaults and overridden values load as expected, including cooldowns, damage/effect values, Kuiper Ball targeting, ritual settings, and resource-pack settings.
+
+#### Recipes, crafting and craft-once rules
+- [ ] **Owner local test:** Verify every recipe in Sections 2.1 and 2.2 plus the cobweb, golden apple, and anvil recipes: exact shape, exact ingredients, correct output, and no unintended recipe collisions.
+- [ ] **Owner local test:** For every recipe using a player head, verify a Head Drop-marked head is accepted and an ordinary player head is rejected.
+- [ ] **Owner local test:** Verify Galaxy String, Kuiper Ball, Mass Orb, and Corrupt Ender Pearl recipes are repeatable, have the specified output amounts/stack limits, and do not consume legendary craft-once records or start rituals.
+- [ ] **Owner local test:** Verify every legendary recipe can be completed only once server-wide by non-operators, including each mace type independently; confirm the vanilla mace recipe is unavailable.
+- [ ] **Owner local test:** Verify blocked recipes show no crafting output and cannot be completed through recipe-book autofill, shift-click, repeated clicks, a Crafter, or concurrent attempts.
+- [ ] **Owner local test:** Verify crafting records are written once per successful craft, preserve the correct item ID/UUID and owner where applicable, and are not written for rejected or interrupted crafts.
+- [ ] **Owner local test:** Verify recipe ingredients are consumed exactly once on successful player and automated crafts, including when a 3-minute ritual starts.
+- [ ] **Owner local test:** Confirm craft/head-use logs identify the crafter, item, and heads used for normal crafting, automated crafting, and accepted ritual starts.
+
+#### Legendary item outputs and abilities
+- [ ] **Owner local test:** Check every legendary output has the correct identity, name/lore, recipe-specific enchantments, attributes, unbreakable status, and absence of forbidden enchantments; verify custom models where available.
+- [ ] **Owner local test:** **Nebula Spear:** Confirm it has Lunge III, counts only successful Lunges across item swaps, triggers its fifth-lunge thrust and damage effect on the correct target, applies Wither II for 10 seconds on an activating hit, respects the four-heart damage cap and five-second cooldown, and displays the cooldown indicator.
+- [ ] **Owner local test:** **Star Mace:** Confirm Wind Burst progression starts at I, increases on qualifying smash hits to V, resets to I after a miss or 20 seconds without use, and only a miss at V starts the 30-second cooldown; verify cooldown behavior/indicator and the seven-heart damage cap.
+- [ ] **Owner local test:** **Collapsing Star Mace:** Confirm its base enchantments and seven-heart cap; verify sparks scale with actual full-heart damage and consecutive hits, display correctly including lethal hits, and deal one health point of splash damage per spark to nearby entities; verify streak reset, three-hit cooldown, and immunity-timer behavior.
+- [ ] **Owner local test:** **Astral Sword:** Confirm each hit multiplies sword speed by 1.35 up to four hits within 10 seconds from the first hit; verify the 30-second effect cooldown, continued ability to attack, and that other weapons are unaffected.
+- [ ] **Owner local test:** **Void Sword:** Confirm every fourth hit applies Slowness I and Wither I for 10 seconds to that hit's target, with no expiry between hits.
+- [ ] **Owner local test:** **Celestial Bow:** Confirm only fully charged shots trigger the configured splash and lingering cloud on impact; check cloud lifetime, effect type/duration/amplifier, target selection, and that undercharged shots do not trigger it.
+- [ ] **Owner local test:** **Wormhole Trident:** Confirm every fifth successful Riptide creates a reusable entrance/exit pair in the expected direction; verify owner access, non-owner two-heart damage and Wither I for 20 seconds, both-way travel, 50-second closure, and no anti-cheat setbacks.
+- [ ] **Owner local test:** **Cosmic Crown:** Confirm retaliation occurs every two qualifying damage hits and absorption is boosted correctly for golden apples (four hearts), enchanted golden apples (ten hearts), and other absorption sources; verify no Thorns enchantment.
+- [ ] **Owner local test:** **Singularity Boots:** Confirm Protection IV and Depth Strider III, no fall damage, and a creeper-sized explosion only after a fall of at least 50 blocks; verify nearby damage and blocks behave as intended.
+- [ ] **Owner local test:** **Solstice Chestplate:** At tick 6000, verify Speed III, Strength II, and Resistance I for five minutes, once per Minecraft day, with the expected grant log.
+- [ ] **Owner local test:** **Lunar Leggings:** At tick 13500, verify Speed I, Strength I, and Resistance II for five minutes, once per Minecraft day; verify Swift Sneak III and the agreed missed-trigger/catch-up behavior.
+- [ ] **Owner local test:** **Nova Shield:** Verify two fully charged axe critical hits disable its blocking for 10 seconds, partial recharge/non-critical/unblocked hits do not count, blocking restores correctly, and normal shields are unaffected.
+- [ ] **Owner local test:** **Nova Shield rescue:** Test lethal damage with the shield in offhand, main hand, and inventory; confirm only offhand rescues, the 10-minute cooldown persists, and the vanilla totem-pop overlay is shown.
+- [ ] **Owner local test:** Verify all damage caps and effect durations against unarmored targets and Protection IV diamond armor, including the Nebula Spear, both maces, Collapsing Star sparks, Celestial Bow, Singularity Boots, and TNT minecart cap; confirm resistance/armor scaling is preserved.
+
+#### Repeatable items, vanilla changes and drops
+- [ ] **Owner local test:** **Galaxy String:** Verify the supplied animated texture on newly crafted and existing strings, correct recipe, and that Galaxy String cannot be placed while ordinary string behavior remains unchanged.
+- [ ] **Owner local test:** **Kuiper Ball:** Verify output of 10, stack size 64, freeze/burst behavior, configured radius/power/vertical boost and player/mob/item/projectile targeting, and 1.5-second cooldown on throw attempt.
+- [ ] **Owner local test:** **Mass Orb:** Verify stack limit 1, non-placeability while ordinary Heavy Cores remain placeable, Slowness IV, holder fall-damage reduction, and lore values; test direct slams at 10, 20, and 40+ blocks, five-heart cap, target selection, and two-minute cooldown after a damaging slam.
+- [ ] **Owner local test:** **Corrupt Ender Pearl:** Verify 5% Enderman drop behavior, stack limit 8 on all acquisition paths, 15% landing effect chance (Wither II for 10 seconds), boots recipe ingredient, and shared 1.5-second cooldown with ordinary Ender Pearls.
+- [ ] **Owner local test:** Verify ordinary Ender Pearls also cap at 8 across loot, drops, crafting, creative access, inventory movement, and other acquisition paths, with no total per-player pearl limit.
+- [ ] **Owner local test:** Verify compatible Galaxy/ordinary pearls and repeatable custom items clump up to 128 per ground entity, including after nearby entities meet later; test partial player/hopper pickup, full inventories, stack limits, metadata incompatibility, ownership, despawn, and chunk reload.
+- [ ] **Owner local test:** Verify the cobweb recipe uses nine ordinary strings and rejects Galaxy String; verify replacement golden apple and anvil recipes work and their prior recipes are unavailable.
+- [ ] **Owner local test:** Verify breezes drop double the vanilla/looting breeze-rod quantity without changing other drops.
+- [ ] **Owner local test:** Verify while invisible the player's name is obfuscated in chat, advancement, and player-kill messages; confirm generated characters do not reveal letters from the account name and normal visibility restores normal names.
+
+#### Carrying limits, protection and recovery
+- [ ] **Owner local test:** Verify non-operators can carry at most two legendary items total, counting both mace types and pending rituals; verify operators are exempt and repeatable usables/ingredients do not count.
+- [ ] **Owner local test:** Verify the one-per-type non-operator server-wide legendary limit across crafting, `/galaxy give`, pickup, reclaim, inventory movement, restart, and concurrent attempts; operator copies are exempt.
+- [ ] **Owner local test:** Verify `/galaxy give` cannot bypass the carrying limit or mace slots; removing an item frees carrying capacity but never resets permanent craft-once records.
+- [ ] **Owner local test:** Verify items remain unbreakable and protected against durability loss, enchanting-table changes, anvil changes, grindstone disenchanting, Curse of Vanishing, Mending, and XP repair.
+- [ ] **Owner local test:** Verify legendary items cannot enter or move through chests, barrels, shulkers, ender chests, hoppers, droppers, dispensers, bundles, crafting grids, item frames, armor stands, or other containers; cover click, drag, shift-click, number-key, offhand swap, automation, and container break/explosion paths.
+- [ ] **Owner local test:** Verify ordinary death drops remain at the death location; lava, fire, cactus, void, explosions, and despawn recover the same item UUID into a protected reclaim barrel at world X/Z (0,0).
+- [ ] **Owner local test:** Verify reclaim blocks resist breaking/moving/automation as intended, only restore one copy, and correctly enforce owner tracking, carrying limits, and mace slots when claimed.
+- [ ] **Owner local test:** Verify manually dropped operator legendary items are removed and logged with item UUID, operator and location, regardless of other copies.
+- [ ] **Owner local test:** Verify owner and last-known location remain correct through crafting, pickup, drop, death, logout, reconnect, recovery, grant, and administrative removal.
+
+#### Rituals, persistence and administration
+- [ ] **Owner local test:** Verify each eligible craft starts a three-minute ritual, while Galaxy String, Kuiper Ball, and Mass Orb do not; confirm the crafted item does not exist before completion.
+- [ ] **Owner local test:** Verify ritual display shows the correct item and remaining time above the crafting table, restores after chunk reload, and is removed at completion or shutdown.
+- [ ] **Owner local test:** Verify the crafter/item coordinates are announced every three minutes with the correct reveal schedule/axes, and reveal state survives restart.
+- [ ] **Owner local test:** Restart and reload during active rituals, cooldowns, daily effects, and recovery states; verify remaining time/state resumes correctly and no duplicate item or missed permanent record is created.
+- [ ] **Owner local test:** Verify data survives clean shutdown/restart and server upgrade, including permanent craft records, per-mace records, UUIDs, ownership, locations, cooldowns, and ritual state.
+- [ ] **Owner local test:** Verify `/galaxy version`, `/galaxy give`, `/galaxy reset`, `/galaxy list`, and `/galaxy locate` permissions, arguments, output, logging, and behavior; confirm reset clears cooldowns only and never craft history.
+- [ ] **Owner local test:** Verify player-facing and admin logs are accurate and useful for crafting, head usage, grants, recovery, limit blocks, and rejected/malformed operations, without routine error spam.
+
+#### Phase 6.1, resource pack and update behavior
+- [ ] **Owner local test:** Verify Lunge cannot be applied to non-Nebula spears through enchanting tables and Lunge enchanted books cannot be obtained; other supported enchantments remain available.
+- [ ] **Owner local test:** Verify the restored ritual display, TNT-minecart seven-heart final-damage cap, crafting/head-use logs, cobweb recipe, doubled breeze-rod drops, replacement golden-apple/anvil recipes, and invisible-name obfuscation in live play.
+- [ ] **Owner local test:** Verify the Galaxy resource pack is offered on join/update, accepted/rejected behavior is correct, the pack-only update refreshes without requiring a plugin restart, and another plugin removing the pack does not break Galaxy.
+- [ ] **Owner local test:** Verify plugin updates show the expected two-minute and 30-second restart warnings; distinguish plugin changes from pack-only changes and confirm reported plugin version changes only after restart.
+- [ ] **Owner local test:** Verify plugin, resource-pack ZIP, SHA-1 sidecar, and release versions match; test a clean install and an upgrade from the previous release.
+
+#### Final regression and operational pass
+- [ ] **Owner local test:** Repeat the craft-once, two-item, mace-slot, container, death/reclaim, ritual/restart, and cooldown checks with multiple players, including operator/non-operator combinations and simultaneous actions.
+- [ ] **Owner local test:** Recheck all item abilities and recipes after a server restart and after installing the resource pack; verify ordinary vanilla items and unrelated player actions still behave normally.
+- [ ] **Owner local test:** Observe a representative play session for console errors, repeating task leaks, stuck cooldowns, duplicate drops, item loss/duplication, incorrect logs, and performance issues; record and resolve each finding before closing Phase 6.2.
+
+
+
+
+
+
 ### Phase 7 – Polish & Balance
 - [ ] Add an in-game item/recipe builder and editor for registered items, restricted to server operators/admins only; support editing recipe ingredients/shapes, item display name and gradient, lore, stats, and configurable ability values, with validated persistent saves and a safe way to review/apply changes without granting non-operators access
 - [ ] Add distinct particles, sounds, and player-facing lore for every legendary and repeatable item; use each item's configured gradient display name in death and interaction messages
 - [ ] Show a clean, readable hover tooltip for every registered item that presents all relevant item stats and abilities (including enchantments, damage/effect values, cooldowns, triggers, and special rules); keep the tooltip accurate to the item's configured behavior
-- [ ] Add `/galaxy recipes` covering every registered recipe; verify readable item models/textures without requiring a resource pack (`item_model` remains optional)
+- [ ] Add `/galaxy recipes` covering every registered recipe; verify readable item models/textures without requiring a resource pack (`item_model` remains optional). Implemented locally; owner in-game verification remains.
 - [x] Generate a separate versioned Minecraft 26.3 resource pack from the embedded Blockbench models/textures, assign item models to Astral Sword, Void Sword, and Collapsing Star Mace, and attach the ZIP and SHA-1 sidecar to releases
 - [ ] Move balance-sensitive values into validated config, including cooldowns, damage/effect caps, combo windows, durations, ritual settings, and projectile/rift behavior
 - [ ] Run balance tests against Protection IV diamond and verify all exact damage caps, armor interactions, and effect durations

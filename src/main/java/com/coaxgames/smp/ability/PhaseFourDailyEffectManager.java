@@ -2,7 +2,10 @@ package com.coaxgames.smp.ability;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -15,8 +18,11 @@ import org.bukkit.scheduler.BukkitTask;
 public final class PhaseFourDailyEffectManager {
     private static final String SOLSTICE = "solstice_chestplate";
     private static final String LUNAR = "lunar_leggings";
+    private static final long RETRY_MILLIS = 5_000L;
+    private static final long WARN_INTERVAL_MILLIS = 60_000L;
 
     private final GalaxySmpPlugin plugin;
+    private final Map<EffectKey, Failure> failures = new HashMap<>();
     private BukkitTask task;
 
     public PhaseFourDailyEffectManager(GalaxySmpPlugin plugin) {
@@ -36,6 +42,7 @@ public final class PhaseFourDailyEffectManager {
             task.cancel();
             task = null;
         }
+        failures.clear();
     }
 
     private void tick() {
@@ -45,7 +52,12 @@ public final class PhaseFourDailyEffectManager {
         long durationMillis = Math.multiplyExact(
                 plugin.getConfig().getLong("phase-four.daily-effect-seconds", 300L), 1_000L);
         boolean catchUp = plugin.getConfig().getBoolean("phase-four.lunar-leggings.catch-up-if-offline", false);
-        for (Player player : Bukkit.getOnlinePlayers()) {
+        var onlinePlayers = Bukkit.getOnlinePlayers();
+        if (!failures.isEmpty()) {
+            var onlineIds = onlinePlayers.stream().map(Player::getUniqueId).collect(java.util.stream.Collectors.toSet());
+            failures.keySet().removeIf(key -> !onlineIds.contains(key.player()));
+        }
+        for (Player player : onlinePlayers) {
             restoreActiveEffect(player, SOLSTICE, now);
             restoreActiveEffect(player, LUNAR, now);
             long worldTime = player.getWorld().getTime();
@@ -94,6 +106,8 @@ public final class PhaseFourDailyEffectManager {
     private void restoreActiveEffect(Player player, String itemId, long now) {
         long expiresAt = plugin.getDataStore().getActiveEffectExpiry(player.getUniqueId(), itemId);
         if (expiresAt <= now) {
+            failures.keySet().removeIf(key -> key.player().equals(player.getUniqueId())
+                    && key.itemId().equals(itemId));
             try {
                 plugin.getDataStore().clearActiveEffect(player.getUniqueId(), itemId);
             } catch (IOException exception) {
@@ -108,26 +122,60 @@ public final class PhaseFourDailyEffectManager {
 
     private void applyEffects(Player player, String itemId, long remainingMillis) {
         int durationTicks = (int) Math.max(1L, Math.min(Integer.MAX_VALUE, (remainingMillis + 49L) / 50L));
+        long now = System.currentTimeMillis();
         if (SOLSTICE.equals(itemId)) {
-            apply(player, PotionEffectType.SPEED, durationTicks, 2);
-            apply(player, PotionEffectType.STRENGTH, durationTicks, 1);
-            apply(player, PotionEffectType.RESISTANCE, durationTicks, 0);
+            apply(player, itemId, PotionEffectType.SPEED, durationTicks, 2, now);
+            apply(player, itemId, PotionEffectType.STRENGTH, durationTicks, 1, now);
+            apply(player, itemId, PotionEffectType.RESISTANCE, durationTicks, 0, now);
         } else if (LUNAR.equals(itemId)) {
-            apply(player, PotionEffectType.SPEED, durationTicks, 0);
-            apply(player, PotionEffectType.STRENGTH, durationTicks, 0);
-            apply(player, PotionEffectType.RESISTANCE, durationTicks, 1);
+            apply(player, itemId, PotionEffectType.SPEED, durationTicks, 0, now);
+            apply(player, itemId, PotionEffectType.STRENGTH, durationTicks, 0, now);
+            apply(player, itemId, PotionEffectType.RESISTANCE, durationTicks, 1, now);
         }
     }
 
-    private void apply(Player player, PotionEffectType type, int durationTicks, int amplifier) {
+    void apply(Player player, String itemId, PotionEffectType type, int durationTicks, int amplifier, long now) {
+        EffectKey key = new EffectKey(player.getUniqueId(), itemId, type);
         PotionEffect current = player.getPotionEffect(type);
-        if (current != null && current.getAmplifier() > amplifier) {
+        if (current != null && !needsRefresh(
+                current.getAmplifier(), current.getDuration(), current.isInfinite(), amplifier, durationTicks)) {
+            failures.remove(key);
+            return;
+        }
+        Failure failure = failures.get(key);
+        if (!retryDue(failure, now)) {
             return;
         }
         PotionEffect effect = new PotionEffect(type, durationTicks, amplifier, true, true, true);
-        if (!player.addPotionEffect(effect, true)) {
-            plugin.getLogger().warning("Could not apply " + type.getKey() + " for daily equipment effect to "
-                    + player.getUniqueId() + ".");
+        if (player.addPotionEffect(effect, true)) {
+            failures.remove(key);
+        } else {
+            boolean warn = shouldWarn(failure, now);
+            if (warn) {
+                plugin.getLogger().warning("Could not apply " + type.getKey() + " for daily equipment effect to "
+                        + player.getUniqueId() + "; retrying periodically.");
+            }
+            failures.put(key, new Failure(now + RETRY_MILLIS, warn ? now : failure.lastWarning()));
         }
+    }
+
+    static boolean needsRefresh(int currentAmplifier, int currentDuration, boolean infinite,
+            int desiredAmplifier, int desiredDuration) {
+        return currentAmplifier < desiredAmplifier
+                || currentAmplifier == desiredAmplifier && !infinite && currentDuration + 20L < desiredDuration;
+    }
+
+    private record EffectKey(UUID player, String itemId, PotionEffectType type) {
+    }
+
+    static boolean retryDue(Failure failure, long now) {
+        return failure == null || now >= failure.retryAt();
+    }
+
+    static boolean shouldWarn(Failure failure, long now) {
+        return failure == null || now - failure.lastWarning() >= WARN_INTERVAL_MILLIS;
+    }
+
+    record Failure(long retryAt, long lastWarning) {
     }
 }

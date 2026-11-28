@@ -516,6 +516,39 @@ public final class LegendaryDataStore {
         save();
     }
 
+    public synchronized void recordItemRemoval(
+            String itemId, UUID itemUuid, UUID playerUuid, String playerName, String reason, Location location
+    ) throws IOException {
+        validateId(itemId);
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        Objects.requireNonNull(playerName, "playerName");
+        Objects.requireNonNull(reason, "reason");
+        Objects.requireNonNull(location, "location");
+        String snapshot = data.saveToString();
+        List<Map<?, ?>> removals = new ArrayList<>(data.getMapList("item-removals"));
+        Map<String, Object> removal = new java.util.LinkedHashMap<>();
+        removal.put("time", System.currentTimeMillis());
+        removal.put("item_id", itemId);
+        removal.put("item_uuid", itemUuid == null ? "missing" : itemUuid.toString());
+        removal.put("player_uuid", playerUuid.toString());
+        removal.put("player_name", playerName);
+        removal.put("reason", reason);
+        if (location.getWorld() != null) {
+            removal.put("world", location.getWorld().getName());
+            removal.put("x", location.getX());
+            removal.put("y", location.getY());
+            removal.put("z", location.getZ());
+        }
+        removals.add(removal);
+        data.set("item-removals", removals);
+        try {
+            save();
+        } catch (IOException exception) {
+            restoreSnapshot(snapshot, exception);
+            throw exception;
+        }
+    }
+
     public synchronized void updateItemTracking(
             String itemId,
             UUID itemUuid,
@@ -525,10 +558,45 @@ public final class LegendaryDataStore {
             boolean active
     ) throws IOException {
         Objects.requireNonNull(itemUuid, "itemUuid");
+        validateId(itemId);
         validateExistingItemId(itemId, itemUuid);
         String path = itemPath(itemUuid);
-        data.set(path + ".owner", ownerUuid == null ? null : ownerUuid.toString());
-        data.set(path + ".owner_operator", ownerOperator);
+        String snapshot = data.saveToString();
+        String previousOwner = data.getString(path + ".owner");
+        String previousHolder = data.contains(path + ".holder_state")
+                ? data.getString(path + ".holder") : previousOwner;
+        String holder = ownerUuid == null ? null : ownerUuid.toString();
+        boolean previousOperator = data.getBoolean(path + ".owner_operator", false);
+        boolean newRecord = !data.contains(path + ".id");
+        data.set(path + ".id", itemId);
+        if (ownerUuid != null) {
+            data.set(path + ".owner", holder);
+            data.set(path + ".owner_operator", ownerOperator);
+        }
+        data.set(path + ".holder", holder);
+        data.set(path + ".holder_state", holder == null ? "dropped" : "held");
+        if (newRecord || !data.contains(path + ".ownership_history") || !Objects.equals(previousHolder, holder)
+                || ownerUuid != null && previousOperator != ownerOperator) {
+            List<Map<?, ?>> history = new ArrayList<>(data.getMapList(path + ".ownership_history"));
+            Map<String, Object> observation = new java.util.LinkedHashMap<>();
+            observation.put("time", System.currentTimeMillis());
+            observation.put("state", holder == null ? "dropped" : "held");
+            if (holder != null) {
+                observation.put("owner", holder);
+                observation.put("operator", ownerOperator);
+            } else if (previousOwner != null) {
+                observation.put("last_owner", previousOwner);
+                observation.put("last_owner_operator", previousOperator);
+            }
+            if (location != null && location.getWorld() != null) {
+                observation.put("world", location.getWorld().getName());
+                observation.put("x", location.getX());
+                observation.put("y", location.getY());
+                observation.put("z", location.getZ());
+            }
+            history.add(observation);
+            data.set(path + ".ownership_history", history);
+        }
         data.set(path + ".active", active);
         if (active) {
             data.set(path + ".history_hidden", null);
@@ -540,7 +608,12 @@ public final class LegendaryDataStore {
             setStoredLocation(path, location.getWorld().getName(),
                     location.getX(), location.getY(), location.getZ());
         }
-        save();
+        try {
+            save();
+        } catch (IOException exception) {
+            restoreSnapshot(snapshot, exception);
+            throw exception;
+        }
     }
 
     public synchronized List<ItemRecord> getTrackedItems(String itemId) {
@@ -583,6 +656,56 @@ public final class LegendaryDataStore {
         }
         records.sort(Comparator.comparing(record -> record.itemUuid().toString()));
         return List.copyOf(records);
+    }
+
+    public synchronized List<UUID> getRecordedHolders(String itemId) {
+        validateId(itemId);
+        ConfigurationSection section = data.getConfigurationSection("items");
+        if (section == null) {
+            return List.of();
+        }
+        List<UUID> holders = new ArrayList<>();
+        for (String key : section.getKeys(false)) {
+            String path = "items." + key;
+            if (itemId.equals(data.getString(path + ".id"))
+                    && "held".equals(data.getString(path + ".holder_state"))
+                    && data.getBoolean(path + ".active", true)) {
+                UUID holder = parseUuid(data.getString(path + ".holder"));
+                if (holder != null) {
+                    holders.add(holder);
+                }
+            }
+        }
+        return List.copyOf(holders);
+    }
+
+    public synchronized void clearMissingHeldItems(UUID holder, java.util.Set<UUID> heldItems) throws IOException {
+        Objects.requireNonNull(holder, "holder");
+        Objects.requireNonNull(heldItems, "heldItems");
+        ConfigurationSection section = data.getConfigurationSection("items");
+        if (section == null) {
+            return;
+        }
+        String snapshot = data.saveToString();
+        boolean changed = false;
+        for (String key : section.getKeys(false)) {
+            String path = "items." + key;
+            if ("held".equals(data.getString(path + ".holder_state"))
+                    && holder.toString().equals(data.getString(path + ".holder"))
+                    && !heldItems.contains(UUID.fromString(key))) {
+                data.set(path + ".holder", null);
+                data.set(path + ".holder_state", "unknown");
+                changed = true;
+            }
+        }
+        if (changed) {
+            try {
+                save();
+            } catch (IOException exception) {
+                restoreSnapshot(snapshot, exception);
+                throw exception;
+            }
+        }
     }
 
     public synchronized int clearItemHistory(String itemId) throws IOException {
