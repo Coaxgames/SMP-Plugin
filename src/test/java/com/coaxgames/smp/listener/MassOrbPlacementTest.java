@@ -9,6 +9,7 @@ import com.coaxgames.smp.GalaxySmpPlugin;
 import com.coaxgames.smp.item.LegendaryItem;
 import com.coaxgames.smp.item.LegendaryItemRegistry;
 import java.util.Optional;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,7 @@ class MassOrbPlacementTest {
 
         BlockPlaceEvent protectedEvent = mock(BlockPlaceEvent.class);
         when(protectedEvent.getItemInHand()).thenReturn(protectedItem);
+        when(protectedEvent.getPlayer()).thenReturn(mock(Player.class));
         listener.onBlockPlace(protectedEvent);
         verify(protectedEvent).setCancelled(true);
     }

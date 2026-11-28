@@ -2,6 +2,15 @@
 
 Human-readable record of project work. Current owner-feedback status and remaining checks are tracked in [ROADMAPv2.md](./ROADMAPv2.md); earlier entries are historical and may describe behavior since corrected.
 
+## Latest local changes – 2026-11-27
+
+- Extended operator legendary removal to death drops and attempted container, item-frame and armor-stand transfers. Keep-inventory items remain held and tracked; any actual death drops are removed. Normal moves within the operator's inventory are allowed. Creative and other plugin-driven paths still need live verification.
+- Stopped daily equipment effects from being reapplied every tick when an equivalent or stronger effect is already present; genuinely refused effects retry every five seconds and warnings are limited to once per minute per effect. In-game verification remains.
+- Fixed newly observed legendary UUIDs missing their item ID, retained the last owner when dropped, and added persistent holder-transition history. Moving an item out of a slot no longer marks it deleted. A full offline/unloaded scan is not implemented; in-game verification remains.
+- Added duplicate removal and persistent audit records for legendary pickups, joins, inventory-slot changes and grants when another non-operator is online or has a recorded offline holding. Operator manual drops of protected legendary items are removed and logged; repeatable usables are excluded. This does not yet cover every acquisition path or independently scan offline data. In-game verification remains.
+- Made `/galaxy help` and `/galaxy recipes` available to all players; other Galaxy commands, `/cooldown`, and `/checkforupdate` require operator status. The help pages identify operator-only commands. In-game verification remains.
+- Added the player-accessible `/galaxy recipes` crafting guide, including registered Galaxy recipes and modified vanilla recipes, with special ingredient requirements and vanilla item icons usable without the resource pack. The operator grant menu remains separate. In-game verification remains.
+
 ## Latest local changes – 2026-11-24
 
 - Added operator `/galaxy clear-history <item|all>` and per-entry `[remove]` buttons in locate/find. Removal checks loaded drops, online inventories and cursors; it cannot search unloaded chunks or offline players and refuses active rituals or reclaim barrels. Locate reports unfound items as unknown, not active. Clearing history preserves item identities and craft limits; new sightings can appear again. In-game verification remains.

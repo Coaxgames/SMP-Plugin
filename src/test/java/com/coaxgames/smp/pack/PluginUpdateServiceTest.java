@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.coaxgames.smp.GalaxySmpPlugin;
@@ -20,10 +22,26 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.util.logging.Logger;
 import org.bukkit.Server;
+import org.bukkit.entity.Player;
+import net.kyori.adventure.text.Component;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class PluginUpdateServiceTest {
+    @Test
+    void nonOperatorCannotStartUpdateEvenWithAdminPermission() {
+        GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
+        Player player = mock(Player.class);
+        when(player.hasPermission("galaxy.admin")).thenReturn(true);
+        PluginUpdateService service = new PluginUpdateService(plugin, mock(HttpClient.class));
+
+        service.onCommand(player, null, "checkforupdate", new String[0]);
+
+        verify(player).sendMessage(Component.text("Only operators can use this command."));
+        verify(plugin, never()).getServer();
+        verify(plugin, never()).getConfig();
+    }
+
     @Test
     void comparesVersionsNumerically() {
         assertTrue(PluginUpdateService.compareVersions("2.22.17", "2.22.8") > 0);

@@ -5,17 +5,68 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.UUID;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class LegendaryDataStoreTest {
     @TempDir
     Path dataDirectory;
+
+    @Test
+    void observedUnregisteredItemTracksTransfersAndPreservesLastOwnerOnDrop() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID item = UUID.randomUUID();
+        UUID operator = UUID.randomUUID();
+        UUID recipient = UUID.randomUUID();
+        World world = mock(World.class);
+        when(world.getName()).thenReturn("world");
+        Location location = new Location(world, 12, 64, 3);
+
+        store.updateItemTracking("astral_sword", item, operator, true, location, true);
+        store.updateItemTracking("astral_sword", item, null, false, location, true);
+        store.updateItemTracking("astral_sword", item, null, false, location, true);
+        LegendaryDataStore reloaded = new LegendaryDataStore(dataDirectory);
+        assertEquals("astral_sword", reloaded.getTrackedItem(item).itemId());
+        assertEquals(operator, reloaded.getTrackedItem(item).ownerUuid());
+        assertTrue(reloaded.getTrackedItem(item).ownerOperator());
+        reloaded.updateItemTracking("astral_sword", item, recipient, false, location, true);
+        assertEquals(recipient, new LegendaryDataStore(dataDirectory).getTrackedItem(item).ownerUuid());
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(dataDirectory.resolve("data.yml").toFile());
+        var history = yaml.getMapList("items." + item + ".ownership_history");
+        assertEquals(3, history.size());
+        assertEquals(operator.toString(), history.get(0).get("owner"));
+        assertEquals("dropped", history.get(1).get("state"));
+        assertEquals(operator.toString(), history.get(1).get("last_owner"));
+        assertEquals(recipient.toString(), history.get(2).get("owner"));
+        assertEquals(false, history.get(2).get("operator"));
+    }
+
+    @Test
+    void duplicateRemovalAuditAndOfflineHolderStateSurviveRestart() throws Exception {
+        LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
+        UUID item = UUID.randomUUID();
+        UUID holder = UUID.randomUUID();
+        Location location = new Location(null, 1, 2, 3);
+        store.updateItemTracking("astral_sword", item, holder, false, location, true);
+        store.recordItemRemoval("astral_sword", item, holder, "Player", "duplicate_pickup", location);
+        LegendaryDataStore reloaded = new LegendaryDataStore(dataDirectory);
+        assertEquals(java.util.List.of(holder), reloaded.getRecordedHolders("astral_sword"));
+        var yaml = YamlConfiguration.loadConfiguration(dataDirectory.resolve("data.yml").toFile());
+        assertEquals(item.toString(), yaml.getMapList("item-removals").getFirst().get("item_uuid"));
+        assertEquals("duplicate_pickup", yaml.getMapList("item-removals").getFirst().get("reason"));
+        reloaded.clearMissingHeldItems(holder, java.util.Set.of());
+        assertTrue(new LegendaryDataStore(dataDirectory)
+                .getRecordedHolders("astral_sword").isEmpty());
+    }
 
     @Test
     void craftRecordSurvivesReloadAndCannotExceedItsLimit() throws Exception {

@@ -122,7 +122,9 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         }
         com.coaxgames.smp.command.LegendaryMenu menu = new com.coaxgames.smp.command.LegendaryMenu(this);
         getServer().getPluginManager().registerEvents(menu, this);
-        GalaxyCommand galaxyCommand = new GalaxyCommand(this, menu);
+        var recipeGuide = new com.coaxgames.smp.command.RecipeGuide(this);
+        getServer().getPluginManager().registerEvents(recipeGuide, this);
+        GalaxyCommand galaxyCommand = new GalaxyCommand(this, menu, recipeGuide);
         getCommand("galaxy").setExecutor(galaxyCommand);
         getCommand("galaxy").setTabCompleter(galaxyCommand);
         var cooldownCommand = Objects.requireNonNull(getCommand("cooldown"), "cooldown command missing from plugin.yml");
