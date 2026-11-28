@@ -211,7 +211,7 @@ class GalaxyCommandTest {
         GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         command.onCommand(sender, null, "galaxy", new String[] {"clear-history", "all"});
         verify(sender).sendMessage(Component.text(
-                "Cleared 3 locate history entries. Items and craft limits were not removed; new sightings may appear again."));
+                "Cleared 3 locate history entries. Items were not removed; new sightings may appear again."));
         verify(plugin, never()).getServer();
 
         when(sender.isOp()).thenReturn(false);
@@ -283,8 +283,6 @@ class GalaxyCommandTest {
         when(registry.createItem("kuiper_ball")).thenReturn(ballStack);
         when(maceStack.getAmount()).thenReturn(1);
         when(ballStack.getAmount()).thenReturn(10);
-        when(rituals.hasCapacity(target, "star_mace", 1)).thenReturn(true);
-        when(rituals.hasCapacity(target, "kuiper_ball", 10)).thenReturn(true);
         when(target.getInventory()).thenReturn(inventory);
         when(target.getName()).thenReturn("Owner");
         when(target.isOp()).thenReturn(true);
@@ -307,12 +305,13 @@ class GalaxyCommandTest {
     }
 
     @Test
-    void giveAllRespectsTheTargetsCapacity() {
+    void giveAllOnlyStopsWhenInventoryIsFull() {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
         LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
         RitualManager rituals = mock(RitualManager.class);
         CommandSender sender = mock(CommandSender.class);
         Player target = mock(Player.class);
+        PlayerInventory inventory = mock(PlayerInventory.class);
         LegendaryItem mace = mock(LegendaryItem.class);
         ItemStack stack = mock(ItemStack.class);
         when(sender.isOp()).thenReturn(true);
@@ -323,6 +322,9 @@ class GalaxyCommandTest {
         when(registry.createItem("star_mace")).thenReturn(stack);
         when(stack.getAmount()).thenReturn(1);
         when(target.getName()).thenReturn("Player");
+        when(target.getInventory()).thenReturn(inventory);
+        when(mace.trackUniqueInstance()).thenReturn(true);
+        when(inventory.firstEmpty()).thenReturn(-1);
 
         GalaxyCommand command = new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class));
         try (var bukkit = mockStatic(Bukkit.class)) {
@@ -330,12 +332,11 @@ class GalaxyCommandTest {
             command.onCommand(sender, null, "galaxy", new String[] {"give", "Player", "all"});
         }
 
-        verify(rituals).hasCapacity(target, "star_mace", 1);
-        verify(target, never()).getInventory();
+        verify(inventory).firstEmpty();
     }
 
     @Test
-    void duplicateGrantIsAuditedBeforeItCanConsumeCraftQuota() throws Exception {
+    void duplicateGrantIsAllowedWithoutConsumingCraftQuota() throws Exception {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
         LegendaryItemRegistry registry = mock(LegendaryItemRegistry.class);
         RitualManager rituals = mock(RitualManager.class);
@@ -364,10 +365,13 @@ class GalaxyCommandTest {
         when(definition.id()).thenReturn("astral_sword");
         when(definition.protectedFromLossAndStorage()).thenReturn(true);
         when(newItem.getAmount()).thenReturn(1);
-        when(rituals.hasCapacity(target, "astral_sword", 1)).thenReturn(true);
         when(target.getName()).thenReturn("Target");
         when(target.getUniqueId()).thenReturn(targetUuid);
         when(target.getLocation()).thenReturn(location);
+        when(target.getInventory()).thenReturn(inventory);
+        when(definition.trackUniqueInstance()).thenReturn(true);
+        when(definition.maxCrafts()).thenReturn(1);
+        when(inventory.firstEmpty()).thenReturn(1);
         doReturn(List.of(holder)).when(server).getOnlinePlayers();
         when(holder.getInventory()).thenReturn(inventory);
         when(inventory.getSize()).thenReturn(1);
@@ -377,13 +381,12 @@ class GalaxyCommandTest {
             new GalaxyCommand(plugin, mock(LegendaryMenu.class), mock(RecipeGuide.class)).onCommand(
                     sender, null, "galaxy", new String[] {"give", "Target", "astral_sword"});
         }
-        verify(store).recordItemRemoval(
-                "astral_sword", itemUuid, targetUuid, "Target", "duplicate_grant", location);
+        verify(store).recordAdministrativeGrant("astral_sword", 1, itemUuid, targetUuid, location, false);
         verify(store, never()).recordCraftedItem(
                 org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
-        verify(target, never()).getInventory();
+        verify(inventory).setItem(1, newItem);
     }
 
     @Test

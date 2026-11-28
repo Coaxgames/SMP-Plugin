@@ -51,18 +51,19 @@ class LegendaryDataStoreTest {
     }
 
     @Test
-    void duplicateRemovalAuditAndOfflineHolderStateSurviveRestart() throws Exception {
+    void removalAuditIsDeletedAndOfflineHolderStateSurvivesRestart() throws Exception {
         LegendaryDataStore store = new LegendaryDataStore(dataDirectory);
         UUID item = UUID.randomUUID();
         UUID holder = UUID.randomUUID();
         Location location = new Location(null, 1, 2, 3);
         store.updateItemTracking("astral_sword", item, holder, false, location, true);
-        store.recordItemRemoval("astral_sword", item, holder, "Player", "duplicate_pickup", location);
+        var oldData = YamlConfiguration.loadConfiguration(dataDirectory.resolve("data.yml").toFile());
+        oldData.set("item-removals", java.util.List.of(java.util.Map.of("item_uuid", item.toString())));
+        oldData.save(dataDirectory.resolve("data.yml").toFile());
         LegendaryDataStore reloaded = new LegendaryDataStore(dataDirectory);
         assertEquals(java.util.List.of(holder), reloaded.getRecordedHolders("astral_sword"));
         var yaml = YamlConfiguration.loadConfiguration(dataDirectory.resolve("data.yml").toFile());
-        assertEquals(item.toString(), yaml.getMapList("item-removals").getFirst().get("item_uuid"));
-        assertEquals("duplicate_pickup", yaml.getMapList("item-removals").getFirst().get("reason"));
+        assertFalse(yaml.contains("item-removals"));
         reloaded.clearMissingHeldItems(holder, java.util.Set.of());
         assertTrue(new LegendaryDataStore(dataDirectory)
                 .getRecordedHolders("astral_sword").isEmpty());

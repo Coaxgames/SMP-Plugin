@@ -101,7 +101,7 @@ class MassOrbAbilityTest {
     }
 
     @Test
-    void upgradesOldOrbsToSingleItemStacksAndCorrectsLoreWithoutChangingOtherItems() {
+    void removesOldOrbStackLimitAndCorrectsLoreWithoutChangingOtherItems() {
         GalaxySmpPlugin plugin = mock(GalaxySmpPlugin.class);
         when(plugin.namespace()).thenReturn("galaxysmp");
         YamlConfiguration config = new YamlConfiguration();
@@ -115,13 +115,15 @@ class MassOrbAbilityTest {
         doReturn(Optional.of(definition)).when(registry).identify(orb);
         when(orb.getItemMeta()).thenReturn(meta);
         when(orb.setItemMeta(meta)).thenReturn(true);
+        when(meta.hasMaxStackSize()).thenReturn(true);
+        when(meta.getMaxStackSize()).thenReturn(1);
         when(meta.lore()).thenReturn(List.of(
                 Component.text("While held, falling onto enemies deals 1/4 heart per block, up to 10 hearts."),
                 Component.text("A slam attempt starts a 20-second cooldown."),
                 Component.text("Fall damage is capped at 40 health points.")));
 
         assertTrue(registry.refreshMassOrb(orb));
-        verify(meta).setMaxStackSize(1);
+        verify(meta).setMaxStackSize(null);
         verify(meta).lore(List.of(
                 Component.text("Enemy slam (while held): 1/4 heart per block, up to 5 hearts.", NamedTextColor.GRAY),
                 Component.text("A slam starts a 120-second cooldown.", NamedTextColor.GRAY),

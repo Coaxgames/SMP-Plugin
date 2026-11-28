@@ -177,12 +177,3 @@ legendary-items:
       text: "Corrupt Ender Pearl"
       start-color: "#54276B"
       end-color: "#9E63C7"
-  max-per-player:
-    # Legacy settings retained for config compatibility; the active limit is two
-    # legendary items total for non-operators. Usables and operators are exempt.
-    default: 1
-    items:
-      galaxy_string: 0
-      kuiper_ball: 0
-      mass_orb: 0
-      corrupt_ender_pearl: 0

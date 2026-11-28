@@ -203,8 +203,8 @@ public final class GalaxyCommand implements TabExecutor {
             } catch (NumberFormatException exception) {
                 count = 0;
             }
-            if (count < 1 || count > 2304) {
-                sender.sendMessage(Component.text("Count must be a number from 1 to 2304."));
+            if (count < 1) {
+                sender.sendMessage(Component.text("Count must be a positive whole number."));
                 return;
             }
         }
@@ -230,22 +230,6 @@ public final class GalaxyCommand implements TabExecutor {
         String problem = null;
         for (int i = 0; i < count; i++) {
             ItemStack item = plugin.getLegendaryItems().createItem(definition.id());
-            if (!plugin.getRitualManager().hasCapacity(target, definition.id(), item.getAmount())) {
-                problem = target.getName() + " already holds the maximum of two legendary items.";
-                break;
-            }
-            if (!target.isOp() && definition.protectedFromLossAndStorage()
-                    && com.coaxgames.smp.listener.LegendaryRulesListener.hasOtherNonOperatorCopy(
-                            plugin, definition.id(), null, -1)) {
-                UUID uuid = plugin.getLegendaryItems().getUniqueId(item).orElse(null);
-                plugin.getDataStore().recordItemRemoval(
-                        definition.id(), uuid, target.getUniqueId(), target.getName(),
-                        "duplicate_grant", target.getLocation());
-                plugin.getLogger().warning("Denied duplicate grant of " + definition.id() + " UUID " + uuid
-                        + " to " + target.getName() + " (" + target.getUniqueId() + ").");
-                problem = "A non-operator already holds " + definition.id() + "; the duplicate was removed.";
-                break;
-            }
             if (definition.trackUniqueInstance()) {
                 int slot = target.getInventory().firstEmpty();
                 if (slot < 0) {
@@ -254,16 +238,8 @@ public final class GalaxyCommand implements TabExecutor {
                 }
                 UUID itemUuid = plugin.getLegendaryItems().getUniqueId(item)
                         .orElseThrow(() -> new IllegalStateException("New legendary item has no unique identity."));
-                if (!target.isOp() && definition.craftOnce()) {
-                    if (!plugin.getDataStore().recordCraftedItem(definition.id(), definition.maxCrafts(),
-                            itemUuid, target.getUniqueId(), target.getLocation(), true)) {
-                        problem = "The server-wide limit for " + definition.id() + " has already been reached.";
-                        break;
-                    }
-                } else {
-                    plugin.getDataStore().recordAdministrativeGrant(definition.id(), definition.maxCrafts(),
-                            itemUuid, target.getUniqueId(), target.getLocation(), false);
-                }
+                plugin.getDataStore().recordAdministrativeGrant(definition.id(), definition.maxCrafts(),
+                        itemUuid, target.getUniqueId(), target.getLocation(), false);
                 target.getInventory().setItem(slot, item);
             } else if (!target.getInventory().addItem(item).isEmpty()) {
                 problem = target.getName() + "'s inventory has no room for the full stack.";
@@ -275,9 +251,7 @@ public final class GalaxyCommand implements TabExecutor {
             sender.sendMessage(Component.text(problem + " Gave " + given + " of " + count + "."));
         }
         if (given > 0) {
-            sender.sendMessage(Component.text("Gave " + given + "x " + definition.id() + " to " + target.getName()
-                    + (definition.craftOnce() && !target.isOp()
-                    ? ". Its craft quota is now permanently used." : ".")));
+            sender.sendMessage(Component.text("Gave " + given + "x " + definition.id() + " to " + target.getName() + "."));
         }
     }
 
@@ -296,8 +270,7 @@ public final class GalaxyCommand implements TabExecutor {
                 com.coaxgames.smp.util.ItemCooldownMarkers.set(online, args[1], 0);
             }
         }
-        sender.sendMessage(Component.text("Cleared " + removed + " cooldown(s) for " + args[1]
-                + ". Its permanent crafted-ever record was not changed."));
+        sender.sendMessage(Component.text("Cleared " + removed + " cooldown(s) for " + args[1] + "."));
     }
 
     private void resetAbilities(CommandSender sender, String label, String[] args) throws IOException {
@@ -348,13 +321,7 @@ public final class GalaxyCommand implements TabExecutor {
         }
         sender.sendMessage(Component.text("Registered legendary items:"));
         for (LegendaryItem item : items) {
-            if (!item.craftOnce()) {
-                sender.sendMessage(Component.text("- " + item.id() + " (repeatable)"));
-                continue;
-            }
-            int crafted = plugin.getDataStore().getCraftCount(item.id());
-            sender.sendMessage(Component.text("- " + item.id() + " (crafted " + crafted
-                    + "/" + item.maxCrafts() + ")"));
+            sender.sendMessage(Component.text("- " + item.id()));
         }
     }
 
@@ -375,7 +342,7 @@ public final class GalaxyCommand implements TabExecutor {
                     helpLine("/" + label + " give <player|@p> all",
                             "Give every item to one online player."),
                     helpLine("/" + label + " give <player|@p> <item> [count]",
-                            "Give one item, with limits and craft quotas enforced."),
+                            "Give a plugin item to a player."),
                     helpLine("/" + label + " list",
                             "List registered items and permanent craft counts."),
                     helpLine("/" + label + " menu",
@@ -388,7 +355,7 @@ public final class GalaxyCommand implements TabExecutor {
                     helpLine("/" + label + " find item <uuid>",
                             "Re-resolve a listed item and teleport to its current position."),
                     helpLine("/" + label + " clear-history <item|all>",
-                            "Clear locate history without removing items or craft limits."),
+                            "Clear locate history without removing items."),
                     helpLine("Locate/Find [remove]",
                             "Clear one entry and remove matching loaded drops or online inventory items."));
             default -> List.of(
@@ -593,7 +560,7 @@ public final class GalaxyCommand implements TabExecutor {
         }
         int count = plugin.getDataStore().clearItemHistory(itemId);
         sender.sendMessage(Component.text("Cleared " + count
-                + " locate history entries. Items and craft limits were not removed; new sightings may appear again."));
+                + " locate history entries. Items were not removed; new sightings may appear again."));
     }
 
     private void removeItem(CommandSender sender, String label, String[] args) throws IOException {

@@ -41,23 +41,25 @@ Living document copied from [ROADMAP.md](./ROADMAP.md), including its existing l
 |---|---|---|
 | Galaxy String | Plain crafting component, no ability | Top: blaze rod; middle: breeze rod; bottom: end rod |
 | Kuiper Ball | Freeze and wind-charge-like burst; 1.5s cooldown, configurable radius/power and player/mob targeting; recipe yields 10 | Corners: snowballs; center and middle-left/middle-right: powdered snow; top-middle/bottom-middle: breeze charges |
-| Mass Orb | Infinitely craftable, stack limit 1; Slowness IV; direct fall-slam deals 0.25 hearts per block, capped at 5 hearts; holder takes reduced fall damage; 2-minute cooldown after a slam | Middle: heavy core; sides: netherite blocks; top/bottom: blue ice; corners: gold blocks |
+| Mass Orb | Infinitely craftable; Slowness IV; direct fall-slam deals 0.25 hearts per block, capped at 5 hearts; holder takes reduced fall damage; 2-minute cooldown after a slam | Middle: heavy core; sides: netherite blocks; top/bottom: blue ice; corners: gold blocks |
 | Corrupt Ender Pearl | Custom Enderman drop at 5%; Singularity Boots ingredient; stacks to 8; 15% chance per landing to give the thrower Wither II for 10 seconds | Uses the supplied CrackEnderPearl model and texture; in-game verification remains |
 
-Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total per-player pearl limit. Both use a shared 1.5-second cooldown; in-game verification remains.
+Ordinary and Corrupt Ender Pearls use Minecraft's normal stack size. Both use a shared 1.5-second cooldown; in-game verification remains.
 
 ### 2.3 Global rules
 
-1. Non-operators can craft each legendary item **once ever** server-wide; operator copies bypass the craft quota. Galaxy String, Kuiper Ball, Mass Orb and Corrupt Ender Pearls are repeatable. A server reset or administrative removal does not allow another non-operator craft; preserve the craft record across resets.
-2. The vanilla mace recipe is disabled. Only the two custom mace recipes are allowed, and each custom mace type can be crafted once ever. Track each recipe's crafted state separately in this plugin; a server reset or administrative removal does not reset either flag.
+The 2026-11-27 removal of item-count and craft quotas supersedes earlier limit-related checklists and historical notes below.
+
+1. All Galaxy items can be crafted repeatedly; no per-player or server-wide item-count or craft quotas apply.
+2. The vanilla mace recipe is disabled. Both custom mace recipes can be crafted repeatedly.
 3. Legendary items are unbreakable and protected from loss. On player death, the item remains at the death location unless destroyed by hazards such as lava, the void, or cactus; a hazard-destroyed item is returned to (0,0) as a reclaimable block. An item left to despawn is also returned there.
 4. Curse of Vanishing (COV) is prohibited; items cannot be enchanted or disenchanted (anvil, grindstone, and enchanting table blocked).
 5. Cannot be stored in ender chests or any container (chests, barrels, shulkers, hoppers, droppers, item frames, armor stands, bundles, etc.).
 6. Crafting triggers a **3 min ritual**, except for Galaxy String, Kuiper Ball, and Mass Orb. The item does not exist in the world until the timer ends. An animation appears above the crafting table, then the item drops there. Every 3 min, chat reveals the crafter's coordinates and the crafted item's name.
-7. Each non-operator may carry at most **two legendary items in total**, including both maces. For example, a chestplate and a weapon or both different maces fill the limit. Usables and repeatable ingredients, such as Kuiper Balls, Mass Orbs, Galaxy String and Corrupt Ender Pearls, do not count. Operators are exempt from the player and server-wide limits.
-8. For non-operators, each legendary type is limited to **one copy server-wide**; all legendary types count toward the two-item personal limit. Operator copies and usable items are exempt. Permanent non-operator craft-once records remain separate from this carrying rule.
-9. When a limit blocks crafting, show no crafting-table output and prevent recipe-book autofill from enabling the craft. An operator's legendary item is removed and logged if dropped or transferred out of their inventory; moving it within their own inventory is allowed. With keep-inventory enabled, retained items remain tracked and the same removal rule applies if they are later dropped. When a non-operator receives a duplicate, remove the new copy and log its UUID and player.
-   Manual drops, death drops, container transfer attempts and item-frame/armor-stand transfers are handled locally. Creative inventory and other plugin-driven transfer paths still need live verification. The pickup and inventory-slot checks include recorded offline holders, but a complete independent offline/world scan and all acquisition paths are not yet covered.
+7. Players and operators can hold any number of legendary items, subject to normal Minecraft inventory and stack mechanics.
+8. Operator legendary drops and duplicate items are no longer deleted. The existing legendary storage and loss protections remain.
+9. Item-removal and crafting audit logs are no longer written; existing item-removal audit records in plugin data are deleted on startup.
+10. Requested but not yet implemented: `/galaxy locate` and `/galaxy find` must search online inventories and saved player files, show each player's first recorded/observed acquisition time, and offer teleport/removal buttons, including safe offline inventory removal.
 
 ## 3. Technical Design
 
@@ -69,7 +71,7 @@ Ordinary and Corrupt Ender Pearls have a maximum of 8 per stack, with no total p
 ### 3.2 Recipes
 - Register shaped recipes using exact choices for fixed custom ingredients such as Galaxy String. Player-head slots must match the Head Drop PDC marker, not a fixed display name or full `ItemStack` snapshot.
 - Head Drop (`HeadDrop`) 3.1.0 or newer is a required server plugin (`plugin.yml` hard dependency and startup version check). Configure its `drop.placement: item` so recipe heads are usable as items; for block placement, require `head.persist_lore_on_placement: true`.
-- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Each type has its own independent, permanent server-wide one-craft limit; the owner also requires one copy of each legendary type among non-operators. Verify all acquisition paths against that cap.
+- Remove/disable the vanilla mace recipe and register only the Star Mace and Collapsing Star Mace recipes. Both are repeatable.
 - Recipe heads come from [Head Drop](https://modrinth.com/plugin/head-drop). Its 3.1.0 source tags generated heads with plugin-owned persistent data: `headdrop:dropped` as a byte value of `1` (`DROPPED_KEY = "dropped"`). Validate that marker in crafting events rather than matching player-specific display names or lore. Configure `drop.placement: item` so deaths produce recipe-usable item heads; if heads are placed as blocks, Head Drop can preserve the marker through placement and return it when broken when `head.persist_lore_on_placement` is enabled.
 - Craft-once enforcement in `PrepareItemCraftEvent` (deny result) and `CraftItemEvent` (atomically record in the data store; handle shift-click and automated crafting).
 - On successful craft, consume ingredients and start the ritual; do not create the item until the 3-minute timer completes. Show the animation over the crafting table and drop the item there at completion.
@@ -369,7 +371,7 @@ Run these checks on the target Paper 26.3 server with the required Head Drop ver
 - [ ] Add an in-game item/recipe builder and editor for registered items, restricted to server operators/admins only; support editing recipe ingredients/shapes, item display name and gradient, lore, stats, and configurable ability values, with validated persistent saves and a safe way to review/apply changes without granting non-operators access
 - [ ] Add distinct particles, sounds, and player-facing lore for every legendary and repeatable item; use each item's configured gradient display name in death and interaction messages
 - [ ] Show a clean, readable hover tooltip for every registered item that presents all relevant item stats and abilities (including enchantments, damage/effect values, cooldowns, triggers, and special rules); keep the tooltip accurate to the item's configured behavior
-- [ ] Add `/galaxy recipes` covering every registered recipe; verify readable item models/textures without requiring a resource pack (`item_model` remains optional). Implemented locally; owner in-game verification remains.
+- [ ] Add `/galaxy recipes` covering every registered recipe; use the plugin's custom item models for results and custom ingredients when the resource pack is loaded. Implemented locally; owner in-game verification remains.
 - [x] Generate a separate versioned Minecraft 26.3 resource pack from the embedded Blockbench models/textures, assign item models to Astral Sword, Void Sword, and Collapsing Star Mace, and attach the ZIP and SHA-1 sidecar to releases
 - [ ] Move balance-sensitive values into validated config, including cooldowns, damage/effect caps, combo windows, durations, ritual settings, and projectile/rift behavior
 - [ ] Run balance tests against Protection IV diamond and verify all exact damage caps, armor interactions, and effect durations

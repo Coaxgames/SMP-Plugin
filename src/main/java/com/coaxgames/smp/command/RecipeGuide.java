@@ -45,7 +45,7 @@ public final class RecipeGuide implements Listener {
         int start = current * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE && start + i < keys.size(); i++) {
             Recipe recipe = requireRecipe(keys.get(start + i));
-            ItemStack icon = fallbackModel(recipe.getResult());
+            ItemStack icon = recipe.getResult().clone();
             addLore(icon, "Click to view recipe");
             inventory.setItem(i, icon);
         }
@@ -64,7 +64,7 @@ public final class RecipeGuide implements Listener {
         Inventory inventory = Bukkit.createInventory(holder, 54,
                 Component.text("Recipe: " + key.getKey().replace('_', ' ')));
         holder.inventory = inventory;
-        ItemStack result = fallbackModel(recipe.getResult());
+        ItemStack result = recipe.getResult().clone();
         if (key.getKey().equals("nova_shield")) {
             addLore(result, "All four planks must be the same type.");
         } else if (key.getKey().equals("ordinary_string_cobweb")) {
@@ -98,11 +98,11 @@ public final class RecipeGuide implements Listener {
         ItemStack icon;
         String id = key.getKey();
         if (id.equals("celestial_bow") && col == 2) {
-            icon = fallbackModel(plugin.getLegendaryItems().createItem("galaxy_string"));
+            icon = plugin.getLegendaryItems().createItem("galaxy_string").clone();
         } else if (id.equals("singularity_boots") && row != 1 && col != 1) {
-            icon = fallbackModel(plugin.getLegendaryItems().createItem("corrupt_ender_pearl"));
+            icon = plugin.getLegendaryItems().createItem("corrupt_ender_pearl").clone();
         } else {
-            icon = fallbackModel(choice.getItemStack());
+            icon = choice.getItemStack().clone();
             if (icon.getType() == Material.PLAYER_HEAD) {
                 addLore(icon, "Requires a player head dropped by Head Drop.");
             }
@@ -128,12 +128,6 @@ public final class RecipeGuide implements Listener {
             throw new IllegalStateException("Registered Galaxy recipe is missing: " + key);
         }
         return recipe;
-    }
-
-    private static ItemStack fallbackModel(ItemStack original) {
-        ItemStack copy = original.clone();
-        copy.editMeta(meta -> meta.setItemModel(null));
-        return copy;
     }
 
     private static void addLore(ItemStack item, String text) {
