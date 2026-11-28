@@ -132,7 +132,7 @@ class PluginMetadataTest {
             var names = config.getConfigurationSection("legendary-items.display-names");
             assertNotNull(names);
             assertEquals(itemIds, names.getKeys(false));
-            assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
+            assertFalse(config.contains("legendary-items.max-per-player"));
             for (String itemId : itemIds) {
                 String path = "legendary-items.display-names." + itemId;
                 LegendaryItemBuilder.gradientComponent(
@@ -149,11 +149,6 @@ class PluginMetadataTest {
             assertNotNull(configStream);
             var config = YamlConfiguration.loadConfiguration(
                     new InputStreamReader(configStream, StandardCharsets.UTF_8));
-            assertEquals(0, config.getInt("legendary-items.max-per-player.items.galaxy_string"));
-            assertEquals(0, config.getInt("legendary-items.max-per-player.items.kuiper_ball"));
-            assertEquals(0, config.getInt("legendary-items.max-per-player.items.mass_orb"));
-            assertEquals(0, config.getInt("legendary-items.max-per-player.items.corrupt_ender_pearl"));
-            assertEquals(1, config.getInt("legendary-items.max-per-player.default"));
             assertEquals(13_500L, config.getLong("phase-four.daily-trigger-tick"));
             assertEquals(6_000L, config.getLong("phase-four.solstice-chestplate.trigger-tick"));
             assertEquals(30L, config.getLong("cooldowns.star_mace"));

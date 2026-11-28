@@ -4,6 +4,8 @@ Human-readable record of project work. Current owner-feedback status and remaini
 
 ## Latest local changes – 2026-11-27
 
+- Removed legendary item carry and craft quotas, duplicate and operator-drop deletion, the Mass Orb and Ender Pearl plugin stack restrictions, and item-removal/craft audit logging. Existing item-removal audit records are deleted on startup; normal Minecraft stack and inventory sizes remain.
+- Fixed `/galaxy recipes` to preserve custom item models on recipe results and ingredients instead of forcing vanilla textures. The resource pack must be loaded; in-game verification remains.
 - Extended operator legendary removal to death drops and attempted container, item-frame and armor-stand transfers. Keep-inventory items remain held and tracked; any actual death drops are removed. Normal moves within the operator's inventory are allowed. Creative and other plugin-driven paths still need live verification.
 - Stopped daily equipment effects from being reapplied every tick when an equivalent or stronger effect is already present; genuinely refused effects retry every five seconds and warnings are limited to once per minute per effect. In-game verification remains.
 - Fixed newly observed legendary UUIDs missing their item ID, retained the last owner when dropped, and added persistent holder-transition history. Moving an item out of a slot no longer marks it deleted. A full offline/unloaded scan is not implemented; in-game verification remains.

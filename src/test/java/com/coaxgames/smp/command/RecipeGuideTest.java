@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,12 +51,7 @@ class RecipeGuideTest {
         assertSame(customCopy, guide.ingredient(new NamespacedKey("galaxy", "singularity_boots"), 0, 0, choice));
         verify(registry).createItem("galaxy_string");
         verify(registry).createItem("corrupt_ender_pearl");
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Consumer<ItemMeta>> modelEdit = ArgumentCaptor.forClass(Consumer.class);
-        verify(customCopy, org.mockito.Mockito.times(2)).editMeta(modelEdit.capture());
-        ItemMeta fallbackMeta = mock(ItemMeta.class);
-        modelEdit.getValue().accept(fallbackMeta);
-        verify(fallbackMeta).setItemModel(null);
+        verify(customCopy, never()).editMeta(any());
 
         ItemStack stack = mock(ItemStack.class);
         ItemStack head = mock(ItemStack.class);
@@ -64,9 +61,10 @@ class RecipeGuideTest {
         guide.ingredient(new NamespacedKey("galaxy", "astral_sword"), 0, 0, choice);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Consumer<ItemMeta>> edits = ArgumentCaptor.forClass(Consumer.class);
-        verify(head, org.mockito.Mockito.times(2)).editMeta(edits.capture());
+        verify(head).editMeta(edits.capture());
         ItemMeta meta = mock(ItemMeta.class);
-        edits.getAllValues().get(1).accept(meta);
+        edits.getValue().accept(meta);
+        verify(meta, never()).setItemModel(any());
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Component>> lore = ArgumentCaptor.forClass(List.class);
         verify(meta).lore(lore.capture());
@@ -80,9 +78,10 @@ class RecipeGuideTest {
         when(stack.clone()).thenReturn(plankIcon);
         when(plankIcon.getType()).thenReturn(Material.OAK_PLANKS);
         guide.ingredient(new NamespacedKey("galaxy", "nova_shield"), 0, 0, planks);
-        verify(plankIcon, org.mockito.Mockito.times(2)).editMeta(edits.capture());
+        verify(plankIcon).editMeta(edits.capture());
         ItemMeta plankMeta = mock(ItemMeta.class);
         edits.getAllValues().getLast().accept(plankMeta);
+        verify(plankMeta, never()).setItemModel(any());
         verify(plankMeta).lore(lore.capture());
         assertTrue(PlainTextComponentSerializer.plainText().serialize(lore.getValue().getFirst())
                 .contains("all four must match"));
@@ -138,10 +137,18 @@ class RecipeGuideTest {
 
         verify(click).setCancelled(true);
         verify(drag).setCancelled(true);
+        verify(list).setItem(0, resultCopy);
         verify(detail).setItem(11, ingredientCopy);
         verify(detail).setItem(19, ingredientCopy);
         verify(detail).setItem(21, ingredientCopy);
         verify(detail).setItem(24, resultCopy);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Consumer<ItemMeta>> resultEdit = ArgumentCaptor.forClass(Consumer.class);
+        verify(resultCopy, times(1)).editMeta(resultEdit.capture());
+        ItemMeta resultMeta = mock(ItemMeta.class);
+        resultEdit.getValue().accept(resultMeta);
+        verify(resultMeta, never()).setItemModel(any());
+        verify(ingredientCopy, never()).editMeta(any());
         assertSame(detail, detail.getHolder().getInventory());
     }
 }

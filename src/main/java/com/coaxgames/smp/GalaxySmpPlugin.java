@@ -56,7 +56,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
             saveConfig();
             getLogger().info("Updated the default Mass Orb cooldown from 20 seconds to 120 seconds.");
         }
-        validatePlayerItemLimits();
         validateItemNameGradients();
         validateRitualSettings();
         validatePhaseFourSettings();
@@ -250,25 +249,6 @@ public final class GalaxySmpPlugin extends JavaPlugin {
         String version = dependency.getDescription().getVersion();
         if (!HeadDropVersion.isSupported(version)) {
             throw new IllegalStateException("Head Drop 3.1.0 or newer is required; found " + version + ".");
-        }
-    }
-
-    private void validatePlayerItemLimits() {
-        String defaultPath = "legendary-items.max-per-player.default";
-        if (getConfig().contains(defaultPath)
-                && (!getConfig().isInt(defaultPath) || getConfig().getInt(defaultPath) < 0)) {
-            throw new IllegalStateException(defaultPath + " must be a non-negative integer (0 means unlimited).");
-        }
-        String itemLimitsPath = "legendary-items.max-per-player.items";
-        var itemLimits = getConfig().getConfigurationSection(itemLimitsPath);
-        if (itemLimits == null) {
-            return;
-        }
-        for (String itemId : itemLimits.getKeys(false)) {
-            String path = itemLimitsPath + "." + itemId;
-            if (!getConfig().isInt(path) || getConfig().getInt(path) < 0) {
-                throw new IllegalStateException(path + " must be a non-negative integer (0 means unlimited).");
-            }
         }
     }
 

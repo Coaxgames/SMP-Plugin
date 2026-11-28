@@ -109,7 +109,7 @@ class CorruptEnderPearlTest {
     }
 
     @Test
-    void corruptPearlUsesItsCustomModelAndEightItemStackLimit() {
+    void corruptPearlUsesItsCustomModelWithoutAPluginStackLimit() {
         ItemMeta meta = mock(ItemMeta.class);
         try (var construction = mockConstruction(ItemStack.class, (item, context) -> {
             assertEquals(Material.ENDER_PEARL, context.arguments().get(0));
@@ -120,7 +120,7 @@ class CorruptEnderPearlTest {
             ItemStack item = pearl.createBaseItem();
 
             verify(meta).setItemModel(new NamespacedKey("galaxy", "corrupt_ender_pearl"));
-            verify(meta).setMaxStackSize(8);
+            verify(meta, org.mockito.Mockito.never()).setMaxStackSize(org.mockito.ArgumentMatchers.any());
             verify(item).setItemMeta(meta);
         }
     }

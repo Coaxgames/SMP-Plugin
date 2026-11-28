@@ -42,12 +42,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         CraftingInventory inventory = event.getInventory();
-        Player player = event.getView().getPlayer() instanceof Player p ? p : null;
-        if (player != null && isLimitBlocked(player, item)) {
-            inventory.setResult(null);
-            return;
-        }
-        String blockedReason = craftBlockReason(item, inventory.getMatrix(), player != null && player.isOp());
+        String blockedReason = craftBlockReason(item, inventory.getMatrix());
         if (blockedReason != null) {
             inventory.setResult(blockedPreview(blockedReason));
             return;
@@ -63,26 +58,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         ItemStack result = plugin.getLegendaryItems().createItem(item.id());
-        if (player != null && !plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
-            inventory.setResult(blockedPreview("You are carrying the maximum allowed " + item.id() + "."));
-            return;
-        }
         inventory.setResult(result);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onRecipeBookClick(com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent event) {
-        Recipe recipe = plugin.getServer().getRecipe(event.getRecipe());
-        LegendaryItem item = plugin.getLegendaryItems().getForRecipe(recipe).orElse(null);
-        if (item != null && isLimitBlocked(event.getPlayer(), item)) {
-            event.setCancelled(true);
-        }
-    }
-
-    private boolean isLimitBlocked(Player player, LegendaryItem item) {
-        return !plugin.getRitualManager().hasCapacity(player, item.id(), 1)
-                || !player.isOp() && item.craftOnce()
-                && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -99,7 +75,7 @@ public final class LegendaryCraftListener implements Listener {
             event.getInventory().setResult(null);
             return;
         }
-        String blockedReason = craftBlockReason(item, event.getInventory().getMatrix(), player.isOp());
+        String blockedReason = craftBlockReason(item, event.getInventory().getMatrix());
         if (blockedReason != null) {
             event.setCancelled(true);
             event.getInventory().setResult(null);
@@ -107,13 +83,6 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         if (item.craftOnce()) {
-            if (!plugin.getRitualManager().hasCapacity(player, item.id(), 1)) {
-                event.setCancelled(true);
-                event.getInventory().setResult(null);
-                player.sendMessage(Component.text(
-                        "You are carrying the maximum allowed " + item.id() + "."));
-                return;
-            }
             event.setCancelled(true);
             Location location = event.getInventory().getLocation();
             if (location == null || location.getWorld() == null) {
@@ -135,7 +104,6 @@ public final class LegendaryCraftListener implements Listener {
                     return;
                 }
                 consumeIngredients(originalIngredients, event.getInventory(), ingredientSlots);
-                logCraft(player.getName(), item.createBaseItem(), originalIngredients, location);
                 player.sendMessage(Component.text("Your ritual has begun. The item will appear after "
                         + formatDuration(ritualDurationSeconds()) + "."));
             } catch (IOException | RuntimeException exception) {
@@ -155,13 +123,6 @@ public final class LegendaryCraftListener implements Listener {
                 .filter(registered -> registered.id().equals(item.id())).isEmpty()) {
             result = plugin.getLegendaryItems().createItem(item.id());
         }
-        if (!plugin.getRitualManager().hasCapacity(player, item.id(), result.getAmount())) {
-            event.setCancelled(true);
-            event.getInventory().setResult(null);
-            player.sendMessage(Component.text(
-                    "You are carrying the maximum allowed " + item.id() + "."));
-            return;
-        }
         event.setCurrentItem(result);
         if (!item.trackUniqueInstance()) {
             return;
@@ -175,7 +136,7 @@ public final class LegendaryCraftListener implements Listener {
                     itemUuid,
                     player.getUniqueId(),
                     player.getLocation(),
-                    item.craftOnce()
+                    false
             )) {
                 event.setCancelled(true);
                 event.getInventory().setResult(null);
@@ -196,7 +157,7 @@ public final class LegendaryCraftListener implements Listener {
             return;
         }
         if (!(event.getBlock().getState() instanceof Crafter crafter)
-                || craftBlockReason(item, crafter.getInventory().getContents(), false) != null) {
+                || craftBlockReason(item, crafter.getInventory().getContents()) != null) {
             event.setCancelled(true);
             return;
         }
@@ -215,11 +176,6 @@ public final class LegendaryCraftListener implements Listener {
                 ritualUuid = plugin.getRitualManager().start(item, null, event.getBlock().getLocation());
                 if (ritualUuid.isPresent()) {
                     consumeIngredients(originalIngredients, inventory, ingredientSlots);
-                    logCraft(
-                            "automated crafter",
-                            item.createBaseItem(),
-                            originalIngredients,
-                            event.getBlock().getLocation());
                 }
             } catch (IOException | RuntimeException exception) {
                 rollbackFailedRitualStart(ritualUuid, item, exception, inventory, originalIngredients);
@@ -245,7 +201,7 @@ public final class LegendaryCraftListener implements Listener {
                     itemUuid,
                     null,
                     event.getBlock().getLocation(),
-                    item.craftOnce()
+                    false
             )) {
                 event.setCancelled(true);
                 return;
@@ -259,37 +215,7 @@ public final class LegendaryCraftListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void logAcceptedCraft(CraftItemEvent event) {
-        ItemStack result = event.getCurrentItem();
-        if (result == null || result.getType().isAir()) {
-            return;
-        }
-        logCraft(
-                event.getWhoClicked().getName(),
-                result,
-                event.getInventory().getMatrix(),
-                event.getInventory().getLocation());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void logAcceptedCrafterCraft(CrafterCraftEvent event) {
-        if (!(event.getBlock().getState() instanceof Crafter crafter)) {
-            plugin.getLogger().warning("[Craft] Accepted automated craft came from a non-Crafter block at "
-                    + event.getBlock().getLocation() + ".");
-            return;
-        }
-        logCraft(
-                "automated crafter",
-                event.getResult(),
-                crafter.getInventory().getContents(),
-                event.getBlock().getLocation());
-    }
-
-    private String craftBlockReason(LegendaryItem item, ItemStack[] matrix, boolean operator) {
-        if (!operator && item.craftOnce() && plugin.getDataStore().getCraftCount(item.id()) >= item.maxCrafts()) {
-            return "The one-time craft for " + item.id() + " has already been used.";
-        }
+    private String craftBlockReason(LegendaryItem item, ItemStack[] matrix) {
         if (!HeadDropHead.allRecipeHeadsAreMarked(matrix)) {
             return "Use player heads dropped by Head Drop in this recipe.";
         }
@@ -312,27 +238,6 @@ public final class LegendaryCraftListener implements Listener {
             return "The Nova Shield requires one matching plank type in all four plank slots.";
         }
         return null;
-    }
-
-    private void logCraft(String crafter, ItemStack result, ItemStack[] ingredients, Location location) {
-        java.util.List<String> heads = new java.util.ArrayList<>();
-        if (ingredients != null) {
-            for (ItemStack ingredient : ingredients) {
-                if (ingredient != null && ingredient.getType() == Material.PLAYER_HEAD) {
-                    heads.add(HeadDropHead.describeOwner(ingredient));
-                }
-            }
-        }
-        String output = result == null
-                ? "unknown"
-                : result.getAmount() + "x " + result.getType().getKey();
-        String coordinates = location == null || location.getWorld() == null
-                ? "unknown location"
-                : location.getWorld().getName() + " " + location.getBlockX() + ","
-                + location.getBlockY() + "," + location.getBlockZ();
-        plugin.getLogger().info("[Craft] " + crafter + " crafted " + output
-                + " at " + coordinates + "; player heads: "
-                + (heads.isEmpty() ? "none" : String.join(", ", heads)) + ".");
     }
 
     static boolean matchingShieldPlanks(ItemStack[] matrix) {

@@ -238,15 +238,6 @@ public final class LegendaryItemRegistry {
         return count;
     }
 
-    public boolean hasCapacity(Player player, String itemId, int additionalItems) {
-        if (additionalItems < 0) {
-            throw new IllegalArgumentException("additionalItems cannot be negative.");
-        }
-        LegendaryItem definition = get(itemId).orElseThrow();
-        return LegendaryCarryLimit.allows(player.isOp(), definition.protectedFromLossAndStorage(),
-                countLegendaryForPlayer(player), 0, additionalItems);
-    }
-
     public int countLegendaryForPlayer(Player player) {
         int total = 0;
         for (LegendaryItem definition : getAll()) {
@@ -712,8 +703,8 @@ public final class LegendaryItemRegistry {
         }
         ItemMeta meta = item.getItemMeta();
         boolean changed = false;
-        if (!meta.hasMaxStackSize() || meta.getMaxStackSize() != 1) {
-            meta.setMaxStackSize(1);
+        if (meta.hasMaxStackSize() && meta.getMaxStackSize() == 1) {
+            meta.setMaxStackSize(null);
             changed = true;
         }
         List<Component> lore = meta.lore();

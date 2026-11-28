@@ -38,7 +38,6 @@ public final class RitualManager {
     private static final long DEFAULT_REVEAL_INTERVAL_SECONDS = 3 * 60L;
 
     private final GalaxySmpPlugin plugin;
-    private final Set<UUID> capacityWarnings = new HashSet<>();
     private final Set<String> missingDefinitionsWarned = new HashSet<>();
     private final Set<UUID> completionWarnings = new HashSet<>();
     private final java.util.Map<UUID, BossBar> bossBars = new java.util.HashMap<>();
@@ -66,14 +65,6 @@ public final class RitualManager {
         displays.clear();
     }
 
-    public boolean hasCapacity(Player player, String itemId, int additionalItems) {
-        return hasCapacity(player, itemId, additionalItems, null);
-    }
-
-    public boolean hasCapacityForDelivery(Player player, String itemId, UUID ritualItemUuid) {
-        return hasCapacity(player, itemId, 1, ritualItemUuid);
-    }
-
     public boolean isPending(UUID ritualItemUuid) {
         return plugin.getDataStore().hasActiveRitual(ritualItemUuid);
     }
@@ -83,9 +74,6 @@ public final class RitualManager {
         Objects.requireNonNull(ritualLocation, "ritualLocation");
         if (ritualLocation.getWorld() == null) {
             throw new IllegalArgumentException("Ritual location must have a world.");
-        }
-        if (crafter != null && !hasCapacity(crafter, item.id(), 1)) {
-            return Optional.empty();
         }
         long now = System.currentTimeMillis();
         long durationMillis = configuredSeconds("rituals.duration-seconds", DEFAULT_DURATION_SECONDS)
@@ -110,29 +98,11 @@ public final class RitualManager {
                 crafterLocation.getZ(),
                 now,
                 completesAt,
-                item.craftOnce() && (crafter == null || !crafter.isOp()));
+                false);
         if (started && task == null) {
             resume();
         }
         return started ? Optional.of(itemUuid) : Optional.empty();
-    }
-
-    private boolean hasCapacity(Player player, String itemId, int additionalItems, UUID excludedRitual) {
-        LegendaryItem definition = plugin.getLegendaryItems().get(itemId).orElseThrow();
-        if (player.isOp() || !definition.protectedFromLossAndStorage()) {
-            return true;
-        }
-        int reserved = 0;
-        for (RitualRecord ritual : plugin.getDataStore().getActiveRituals()) {
-            if (plugin.getLegendaryItems().get(ritual.itemId())
-                    .map(LegendaryItem::protectedFromLossAndStorage).orElse(false)
-                    && player.getUniqueId().equals(ritual.crafterUuid())
-                    && !ritual.itemUuid().equals(excludedRitual)) {
-                reserved++;
-            }
-        }
-        return com.coaxgames.smp.item.LegendaryCarryLimit.allows(false, true,
-                plugin.getLegendaryItems().countLegendaryForPlayer(player), reserved, additionalItems);
     }
 
     private void tick() {
@@ -234,7 +204,6 @@ public final class RitualManager {
             }
             return;
         }
-        Player owner = ritual.crafterUuid() == null ? null : Bukkit.getPlayer(ritual.crafterUuid());
         int blockX = Location.locToBlock(ritual.x());
         int blockY = Location.locToBlock(ritual.y());
         int blockZ = Location.locToBlock(ritual.z());
@@ -242,13 +211,6 @@ public final class RitualManager {
         Item existing = findRitualItem(chunk.getEntities(), ritual);
         if (existing != null) {
             finish(ritual, existing);
-            return;
-        }
-        if (owner != null && !hasCapacityForDelivery(owner, ritual.itemId(), ritual.itemUuid())) {
-            if (capacityWarnings.add(ritual.itemUuid())) {
-                owner.sendMessage("Your ritual for " + ritual.itemId()
-                        + " is complete, but delivery is waiting until you have room for that item.");
-            }
             return;
         }
         Location dropLocation = new Location(world, blockX + 0.5, blockY + 1.0, blockZ + 0.5);
@@ -261,7 +223,6 @@ public final class RitualManager {
                     dropped.getLocation().getX(),
                     dropped.getLocation().getY(),
                     dropped.getLocation().getZ());
-            capacityWarnings.remove(ritual.itemUuid());
             completionWarnings.remove(ritual.itemUuid());
             removeBossBar(ritual.itemUuid());
             removeDisplay(ritual.itemUuid());
@@ -298,7 +259,6 @@ public final class RitualManager {
                     location.getX(),
                     location.getY(),
                     location.getZ());
-            capacityWarnings.remove(ritual.itemUuid());
             completionWarnings.remove(ritual.itemUuid());
             item.setPickupDelay(0);
             removeBossBar(ritual.itemUuid());

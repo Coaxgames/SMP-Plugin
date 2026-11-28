@@ -29,6 +29,10 @@ public final class LegendaryDataStore {
         file = dataDirectory.resolve("data.yml");
         if (Files.exists(file)) {
             data.load(file.toFile());
+            if (data.contains("item-removals")) {
+                data.set("item-removals", null);
+                save();
+            }
         } else {
             save();
         }
@@ -514,39 +518,6 @@ public final class LegendaryDataStore {
         data.set(path + ".y", location.getY());
         data.set(path + ".z", location.getZ());
         save();
-    }
-
-    public synchronized void recordItemRemoval(
-            String itemId, UUID itemUuid, UUID playerUuid, String playerName, String reason, Location location
-    ) throws IOException {
-        validateId(itemId);
-        Objects.requireNonNull(playerUuid, "playerUuid");
-        Objects.requireNonNull(playerName, "playerName");
-        Objects.requireNonNull(reason, "reason");
-        Objects.requireNonNull(location, "location");
-        String snapshot = data.saveToString();
-        List<Map<?, ?>> removals = new ArrayList<>(data.getMapList("item-removals"));
-        Map<String, Object> removal = new java.util.LinkedHashMap<>();
-        removal.put("time", System.currentTimeMillis());
-        removal.put("item_id", itemId);
-        removal.put("item_uuid", itemUuid == null ? "missing" : itemUuid.toString());
-        removal.put("player_uuid", playerUuid.toString());
-        removal.put("player_name", playerName);
-        removal.put("reason", reason);
-        if (location.getWorld() != null) {
-            removal.put("world", location.getWorld().getName());
-            removal.put("x", location.getX());
-            removal.put("y", location.getY());
-            removal.put("z", location.getZ());
-        }
-        removals.add(removal);
-        data.set("item-removals", removals);
-        try {
-            save();
-        } catch (IOException exception) {
-            restoreSnapshot(snapshot, exception);
-            throw exception;
-        }
     }
 
     public synchronized void updateItemTracking(

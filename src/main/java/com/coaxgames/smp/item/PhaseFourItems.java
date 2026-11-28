@@ -26,7 +26,7 @@ public final class PhaseFourItems {
                         'S', Material.SNOWBALL), new Ingredient('B', Material.WIND_CHARGE),
                 new Ingredient('P', Material.POWDER_SNOW_BUCKET)));
         registry.register(repeatable(plugin, "mass_orb", Material.HEAVY_CORE, 1,
-                1, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
+                null, false, new String[] {"GBG", "NHN", "GBG"}, new Ingredient(
                         'G', Material.GOLD_BLOCK), new Ingredient('B', Material.BLUE_ICE),
                 new Ingredient('N', Material.NETHERITE_BLOCK), new Ingredient('H', Material.HEAVY_CORE)));
         ShapedRecipe cobweb = new ShapedRecipe(new NamespacedKey(plugin, "ordinary_string_cobweb"),

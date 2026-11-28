@@ -26,8 +26,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 public final class PhaseFiveItems {
-    public static final int CORRUPT_PEARL_STACK_LIMIT =
-            com.coaxgames.smp.listener.EnderPearlStackListener.STACK_LIMIT;
 
     private PhaseFiveItems() {
     }
@@ -178,7 +176,6 @@ public final class PhaseFiveItems {
         public ItemStack createBaseItem() {
             ItemStack item = new ItemStack(Material.ENDER_PEARL);
             var meta = item.getItemMeta();
-            meta.setMaxStackSize(CORRUPT_PEARL_STACK_LIMIT);
             meta.setItemModel(Objects.requireNonNull(NamespacedKey.fromString("galaxy:corrupt_ender_pearl")));
             if (!item.setItemMeta(meta)) {
                 throw new IllegalStateException("Could not apply Corrupt Ender Pearl metadata.");
